@@ -24,7 +24,7 @@ execAverage = 'ffdaverage'
 base_folder = '/vol/biomedic/users/aschmidt/ADNI'
 dof_folder_adni1 = os.path.join( base_folder, 'data/ADNI1/MNI152_svffd_10mm_followup_to_baseline/dof' )
 dof_folder_adni2 = os.path.join( base_folder, 'data/ADNI2/MNI152_svffd_10mm_followup_to_baseline/dof' )
-velocities = adni.get_velocities( dof_folder_adni1, dof_folder_adni2, a.viscode, a.diagnosis )
+velocities = adni.get_baseline_transformations( dof_folder_adni1, dof_folder_adni2, a.viscode, a.diagnosis )
 
 print 'Found ' + str(len( velocities )) + ' velocities in total for viscode ' + a.viscode + '...'
  
@@ -32,11 +32,10 @@ atlas_folder_in = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_
 atlas_folder_out = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_' + str(a.iteration)
 input_datafile =  os.path.join( atlas_folder_in, 'data_' + a.viscode + '_' + a.diagnosis + '.csv' )
 
-
 #-------------------------------------------------------------------------------
 # get data
 rids_bl, _, _, states_bl, _ = at.read_datafile( input_datafile, a.diagnosis )
-velocities_fu, rids_fu = adni.get_velocities_and_rids( dof_folder_adni1, dof_folder_adni2, a.viscode, a.diagnosis )
+velocities_fu, rids_fu = adni.get_baseline_transformations_and_rids( dof_folder_adni1, dof_folder_adni2, a.viscode, a.diagnosis )
 
 #-------------------------------------------------------------------------------
 # sort data to match velocities with templates

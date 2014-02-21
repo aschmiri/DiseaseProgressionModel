@@ -1,27 +1,25 @@
 #! /usr/bin/env python
 # print __doc__
 
-import sys
+import argparse
 import os.path
 from subprocess import call
 import common.adni_tools as adni
 
-if len( sys.argv ) < 3:
-    print 'Usage: apply_brain_masks_baseline.py <study> <field_strength>'
-    exit()
-  
-study = sys.argv[1]
-fs = sys.argv[2]
+parser = argparse.ArgumentParser()
+parser.add_argument( 'study', type=str, help='the study, should be ADNI1, ADNI2, or ADNIGO' )
+parser.add_argument( 'field_strength', type=str,  help='the field strength, usually 1.5 for ADNI1 and 3 otherwise' )
+a = parser.parse_args()
 
 execMask = 'padding'
 
 base_folder = '/vol/biomedic/users/aschmidt/ADNI'
-data_folder = os.path.join( base_folder, 'data', study )
+data_folder = os.path.join( base_folder, 'data', a.study )
 output_folder = os.path.join( data_folder, 'native/images' )
 mask_folder = os.path.join( data_folder, 'native/masks_brain' )
 baseline_folder = os.path.join( data_folder, 'native/images_unstripped' )
 
-baseline_files = adni.get_baseline( baseline_folder, study, fs )
+baseline_files = adni.get_baseline( baseline_folder, a.study, a.field_strength )
 
 print 'Found ' + str(len( baseline_files )) + ' images...'
 for i in range( len( baseline_files ) ):

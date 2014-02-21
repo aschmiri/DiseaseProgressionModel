@@ -1,23 +1,21 @@
 #! /usr/bin/env python
 # print __doc__
 
-import sys
+import argparse
 import os.path
 import threading
 import common.adni_tools as adni
 import ireg_linear
 
-if len( sys.argv ) < 5:
-    print 'Usage: run_ireg_baseline_linear.py <threads> <study> <field_strength> <viscode>'
-    exit()
-  
-nr_threads = int( sys.argv[1] )
-study = sys.argv[2]
-fs = sys.argv[3]
-viscode = sys.argv[4]
+parser = argparse.ArgumentParser()
+parser.add_argument( 'study', type=str, help='the study, should be ADNI1, ADNI2, or ADNIGO' )
+parser.add_argument( 'field_strength', type=str,  help='the field strength, usually 1.5 for ADNI1 and 3 otherwise' )
+parser.add_argument( 'viscode', type=str, help='the visit code, e.g. bl, m12, m24, ...' )
+parser.add_argument( '-n', '--nr_threads', dest = 'nr_threads', type=int, default = 1 )
+a = parser.parse_args()
 
 base_folder = '/vol/biomedic/users/aschmidt/ADNI'
-data_folder = os.path.join( base_folder, 'data', study )
+data_folder = os.path.join( base_folder, 'data', a.study )
 rreg_params = '/vol/biomedic/users/aschmidt/ADNI/scripts/registration/params-ireg-rigid.txt'
 areg_params = '/vol/biomedic/users/aschmidt/ADNI/scripts/registration/params-ireg-affine.txt'
 
@@ -29,7 +27,7 @@ output_folder_dof = adni.make_dir( output_folder, 'dof' )
 
 baseline_folder = os.path.join( data_folder, 'native/images_unstripped' )
 followup_folder = os.path.join( data_folder, 'native/images_unstripped' )
-baseline_files, followup_files = adni.get_baseline_and_followup( baseline_folder, followup_folder, study, fs, viscode )
+baseline_files, followup_files = adni.get_baseline_and_followup( baseline_folder, followup_folder, a.study, a.field_strength, a.viscode )
 
 class RegistrationThread(threading.Thread):
     def __init__(self, index):
@@ -54,7 +52,7 @@ for i in range( len( baseline_files ) ):
     threads.append(thread)
     thread_ctr += 1
      
-    if thread_ctr == nr_threads:
+    if thread_ctr == a.nr_threads:
         for t in threads:
             t.join()
         threads = []

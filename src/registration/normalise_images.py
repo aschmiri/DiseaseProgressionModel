@@ -10,8 +10,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument( 'study' )
 a = parser.parse_args()
 
-reg_algorithm = 'MNI152_svffd_10mm_after_linear'
-#reg_algorithm = 'MNI152_linear'
+#reg_algorithm = 'MNI152_svffd_10mm_after_linear'
+reg_algorithm = 'MNI152_linear'
 
 execNormalise = 'normalize_percentiles_apply'
 percentiles = '/vol/biomedic/users/reg09/posdoc/manifold_alignment/percentiles_10.csv'
@@ -37,5 +37,5 @@ for infile in os.listdir( image_folder ):
             print 'Starting: normalize_percentiles_apply'
             print 'Input:  ' + image_in
             print 'Output: ' + image_out
-            call([ execNormalise, percentiles, image_in, norm_folder ])
+            call([ execNormalise, percentiles, image_in, norm_folder + '/' ])
         

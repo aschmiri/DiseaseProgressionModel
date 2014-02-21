@@ -1,24 +1,22 @@
 #! /usr/bin/env python
 # print __doc__
 
-import sys
+import argparse
 import os.path
 import csv
     
-if len( sys.argv ) < 3:
-    print 'Usage: applyBrainMasks.py <study> <field_strength>'
-    exit()
-  
-study = sys.argv[1]
-fs = sys.argv[2]
+parser = argparse.ArgumentParser()
+parser.add_argument( 'study', type=str, help='the study, should be ADNI1, ADNI2, or ADNIGO' )
+parser.add_argument( 'field_strength', type=str,  help='the field strength, usually 1.5 for ADNI1 and 3 otherwise' )
+a = parser.parse_args()
 
-listt = '/vol/biomedic/users/aschmidt/AgingAtlas/lists/query_' + study + '_m24_' + fs + 'T.csv'
-folder = '/vol/biomedic/users/aschmidt/ADNI/data/' + study + '/baseline_linear_niftyreg/images_unstripped'
+data_list = '/vol/biomedic/users/aschmidt/AgingAtlas/lists/query_' + a.study + '_m24_' + a.field_strength + 'T.csv'
+folder = '/vol/biomedic/users/aschmidt/ADNI/data/' + a.study + '/baseline_linear/images_unstripped'
 
 # Read CSV file
 num_files = 0
 found = []
-with open( listt, 'rb' ) as csvfile:
+with open( data_list, 'rb' ) as csvfile:
     reader = csv.reader( csvfile, delimiter=',' )
     headers = reader.next()
     for row in reader:

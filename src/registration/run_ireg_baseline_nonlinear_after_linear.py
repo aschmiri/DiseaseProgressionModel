@@ -1,33 +1,31 @@
 #! /usr/bin/env python
 # print __doc__
 
-import sys
+import argparse
 import os.path
 import threading
 import common.adni_tools as adni
 import ireg_nonlinear
 
-if len( sys.argv ) < 7:
-    print 'Usage: run_ireg_baseline_nonlinear_after_linear.py <threads> <study> <field_strength> <viscode> <transformation> <spacing>'
-    exit()
-  
-nr_threads = int( sys.argv[1] )
-study = sys.argv[2]
-fs = sys.argv[3]
-viscode = sys.argv[4]
-trans = sys.argv[5]
-sx = sys.argv[6]
+parser = argparse.ArgumentParser()
+parser.add_argument( 'study', type=str, help='the study, should be ADNI1, ADNI2, or ADNIGO' )
+parser.add_argument( 'field_strength', type=str,  help='the field strength, usually 1.5 for ADNI1 and 3 otherwise' )
+parser.add_argument( 'viscode', type=str, help='the visit code, e.g. bl, m12, m24, ...' )
+parser.add_argument( 'trans', type=str, help='the transformation model, e.g. ffd, svffd, sym, or ic' )
+parser.add_argument( '-n', '--nr_threads', dest = 'nr_threads', type=int, default = 1 )
+parser.add_argument( '-s', '--spacing', dest = 'sx', type=str, default = '10' )
+a = parser.parse_args()
 
 base_folder = '/vol/biomedic/users/aschmidt/ADNI'
-data_folder = os.path.join( base_folder, 'data', study )
+data_folder = os.path.join( base_folder, 'data', a.study )
 
-ireg_params = '/vol/biomedic/users/aschmidt/ADNI/scripts/registration/params-ireg-' + trans + '-' + sx + 'mm.txt'
+ireg_params = '/vol/biomedic/users/aschmidt/ADNI/scripts/registration/params-ireg-' + a.trans + '-' + a.sx + 'mm.txt'
 
 baseline_folder = os.path.join( data_folder, 'native/images' )
 followup_folder = os.path.join( data_folder, 'baseline_linear/images' )
-baseline_files, followup_files = adni.get_baseline_and_followup( baseline_folder, followup_folder, study, fs, viscode )
+baseline_files, followup_files = adni.get_baseline_and_followup( baseline_folder, followup_folder, a.study, a.field_strength, a.viscode )
 
-output_folder = adni.make_dir( data_folder, 'baseline_' + trans + '_' + sx + 'mm_after_linear' )
+output_folder = adni.make_dir( data_folder, 'baseline_' + a.trans + '_' + a.sx + 'mm_after_linear' )
 output_folder_img = adni.make_dir( output_folder, 'images' )
 output_folder_dof = adni.make_dir( output_folder, 'dof' )
 
@@ -54,7 +52,7 @@ for i in range( len( baseline_files ) ):
     threads.append(thread)
     thread_ctr += 1
      
-    if thread_ctr == nr_threads:
+    if thread_ctr == a.nr_threads:
         for t in threads:
             t.join()
         threads = []

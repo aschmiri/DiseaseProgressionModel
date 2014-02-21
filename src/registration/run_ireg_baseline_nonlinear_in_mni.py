@@ -10,7 +10,7 @@ import ireg_nonlinear
 parser = argparse.ArgumentParser()
 parser.add_argument( 'study', type=str, help='the study, should be ADNI1, ADNI2, or ADNIGO' )
 parser.add_argument( 'field_strength', type=str,  help='the field strength, usually 1.5 for ADNI1 and 3 otherwise' )
-parser.add_argument( 'viscode', type=str, help='the viscode, e.g. AD, MCI, CN, ...' )
+parser.add_argument( 'viscode', type=str, help='the visit code, e.g. bl, m12, m24, ...' )
 parser.add_argument( 'trans', type=str, help='the transformation model, e.g. ffd, svffd, sym, or ic' )
 parser.add_argument( '-n', '--nr_threads', dest = 'nr_threads', type=int, default = 1 )
 parser.add_argument( '-s', '--spacing', dest = 'sx', type=str, default = '10' )

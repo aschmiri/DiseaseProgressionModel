@@ -1,37 +1,35 @@
 #! /usr/bin/env python
 # print __doc__
 
-import sys
+import argparse
 import os.path
 import threading
 import common.adni_tools as adni
 import ireg_nonlinear
 
-if len( sys.argv ) < 6:
-    print 'Usage: run_ireg_mni_nonlinear_after_linear.py <threads> <study> <field_strength> <transformation> <spacing>'
-    exit()
-  
-nr_threads = int( sys.argv[1] )
-study = sys.argv[2]
-fs = sys.argv[3]
-trans = sys.argv[4]
-sx = sys.argv[5]
-viscode = 'bl'
+parser = argparse.ArgumentParser()
+parser.add_argument( 'study', type=str, help='the study, should be ADNI1, ADNI2, or ADNIGO' )
+parser.add_argument( 'field_strength', type=str,  help='the field strength, usually 1.5 for ADNI1 and 3 otherwise' )
+parser.add_argument( 'viscode', type=str, help='the visit code, e.g. bl, m12, m24, ...' )
+parser.add_argument( 'trans', type=str, help='the transformation model, e.g. ffd, svffd, sym, or ic' )
+parser.add_argument( '-n', '--nr_threads', dest = 'nr_threads', type=int, default = 1 )
+parser.add_argument( '-s', '--spacing', dest = 'sx', type=str, default = '10' )
+a = parser.parse_args()
 
 base_folder = '/vol/biomedic/users/aschmidt/ADNI'
-data_folder = os.path.join( base_folder, 'data', study )
+data_folder = os.path.join( base_folder, 'data', a.study )
 
 target_mni = '/vol/medic01/users/aschmidt/projects/Data/MNI152-Template/MNI152_T1_1mm_brain.nii'
-ireg_params = '/vol/biomedic/users/aschmidt/ADNI/scripts/registration/params-ireg-' + trans + '-' + sx + 'mm.txt'
+ireg_params = '/vol/biomedic/users/aschmidt/ADNI/scripts/registration/params-ireg-' + a.trans + '-' + a.sx + 'mm.txt'
 
-if viscode == 'bl':
+if a.viscode == 'bl':
     baseline_folder = os.path.join( data_folder, 'MNI152_linear/images' )
-    baseline_files = adni.get_baseline( baseline_folder, study, fs, 'bl' )
-    output_folder = adni.make_dir( data_folder, 'MNI152_' + trans + '_' + sx + 'mm_after_linear' )
-elif viscode == 'm12' or viscode == 'm24':
+    baseline_files = adni.get_baseline( baseline_folder, a.study, a.field_strength, 'bl' )
+    output_folder = adni.make_dir( data_folder, 'MNI152_' + a.trans + '_' + a.sx + 'mm_after_linear' )
+elif a.viscode in ['m06', 'm12', 'm24']:
     baseline_folder = os.path.join( data_folder, 'MNI152_linear_via_baseline/images' )
-    baseline_files = adni.get_baseline( baseline_folder, study, fs, 'm24' )
-    output_folder = adni.make_dir( data_folder, 'MNI152_' + trans + '_' + sx + 'mm_after_linear_via_baseline' )
+    baseline_files = adni.get_baseline( baseline_folder, a.study, a.field_strength, 'm24' )
+    output_folder = adni.make_dir( data_folder, 'MNI152_' + a.trans + '_' + a.sx + 'mm_after_linear_via_baseline' )
 
 output_folder_img = adni.make_dir( output_folder, 'images' )
 output_folder_dof = adni.make_dir( output_folder, 'dof' )
@@ -58,7 +56,7 @@ for i in range( len( baseline_files ) ):
     threads.append(thread)
     thread_ctr += 1
      
-    if thread_ctr == nr_threads:
+    if thread_ctr == a.nr_threads:
         for t in threads:
             t.join()
         threads = []

@@ -30,8 +30,6 @@ atlas_folder = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_' +
 datafile = os.path.join( atlas_folder, 'data_' + a.viscode + '_' + a.diagnosis + '.csv' )
 
 _, _, _, states, images = at.read_datafile( datafile, a.diagnosis )
-images = np.array( images )
-states = np.array( states )
 
 for state in np.linspace( a.state_min, a.state_max, a.state_steps ):
     # Find sigma and corresponding images

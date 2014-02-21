@@ -17,7 +17,7 @@ base_folder = '/vol/biomedic/users/aschmidt/ADNI'
 dof_folder_adni1 = os.path.join( base_folder, 'data/ADNI1/MNI152_svffd_10mm_followup_to_baseline/dof' )
 dof_folder_adni2 = os.path.join( base_folder, 'data/ADNI2/MNI152_svffd_10mm_followup_to_baseline/dof' )
 
-velocities = adni.get_velocities( dof_folder_adni1, dof_folder_adni2, a.viscode, a.diagnosis )
+velocities = adni.get_baseline_transformations( dof_folder_adni1, dof_folder_adni2, a.viscode, a.diagnosis )
 out_average_velo = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_0/velo_' + a.viscode + '_' + a.diagnosis + '.dof.gz'    
 
 print 'Found ' + str(len( velocities )) + ' velocities in total for viscode ' + a.viscode + '...'

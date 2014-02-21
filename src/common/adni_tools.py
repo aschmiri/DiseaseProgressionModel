@@ -178,10 +178,10 @@ def get_baseline_and_followup( baseline_folder, followup_folder, study, field_st
 
 ################################################################################
 #
-# get_velocities
+# get_baseline_transformations
 #
 ################################################################################
-def get_velocities( dof_folder_adni1, dof_folder_adni2, viscode, diagnosis='ALL' ):
+def get_baseline_transformations( dof_folder_adni1, dof_folder_adni2, viscode, diagnosis='ALL' ):
     adni1_list = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/lists/query_ADNI1_' + viscode + '_1.5T.csv'
     adni2_list = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/lists/query_ADNI2_' + viscode + '_3T.csv'
 
@@ -195,10 +195,10 @@ def get_velocities( dof_folder_adni1, dof_folder_adni2, viscode, diagnosis='ALL'
 
 ################################################################################
 #
-# get_velocities
+# get_baseline_transformations_and_rids
 #
 ################################################################################
-def get_velocities_and_rids( dof_folder_adni1, dof_folder_adni2, viscode, diagnosis ):
+def get_baseline_transformations_and_rids( dof_folder_adni1, dof_folder_adni2, viscode, diagnosis ):
     adni1_list = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/lists/query_ADNI1_' + viscode + '_1.5T.csv'
     adni2_list = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/lists/query_ADNI2_' + viscode + '_3T.csv'
 
