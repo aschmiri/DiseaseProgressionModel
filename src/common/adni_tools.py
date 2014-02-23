@@ -51,9 +51,10 @@ def read_list_for_diagnosis( query_list, folder, diagnosis ):
             filename = filename.replace( '.nii.gz', '.dof.gz' )
             rid = int( row[headers.index('RID')] )
             dx = row[headers.index('DX.bl')]
-            if os.path.isfile( filename ) and (diagnosis == 'ALL' or diagnosis in dx):
-                files.append( filename )
-                rids.append( rid )
+            if diagnosis == 'ALL' or diagnosis in dx or dx in diagnosis:
+                if os.path.isfile( filename ):
+                    files.append( filename )
+                    rids.append( rid )
     return files, rids
 
 ################################################################################

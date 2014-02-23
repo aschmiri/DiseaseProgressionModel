@@ -62,7 +62,7 @@ def read_datafile( datafile, diagnosis='ALL' ):
             state = float( row[headers.index('VIRT_NMI')] )
             image = row[headers.index('FILE')]
             if os.path.exists( image ):
-                if diagnosis == 'ALL' or diagnosis in dx:
+                if diagnosis == 'ALL' or diagnosis in dx or dx in diagnosis:
                     rids.append( rid )
                     ages.append( age )
                     mmses.append( mmse )

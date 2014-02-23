@@ -5,7 +5,7 @@ import csv
 import matplotlib.pyplot as plt
 from scipy.stats.stats import pearsonr
 
-datafile_bl  = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_0/data_m24_AD.csv'
+datafile_bl  = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_1/data_m24_AD_fielddist.csv'
 
 def read_data( datafile, diagnoses ):
     ages = []

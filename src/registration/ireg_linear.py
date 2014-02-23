@@ -28,7 +28,7 @@ def run( source, template, mask, dofFile, rregParamFile, aregParamFile, wapedImg
             print 'DOF out:  ' + dofRigid
             print 'Param:    ' + rregParamFile
             
-            if mask == 'none':
+            if mask in ['None', 'none']:
                 call([ regExec, template, source, '-dofout', dofRigid, '-parin', rregParamFile ])
             else:
                 call([ regExec, template, source, '-dofout', dofRigid, '-parin', rregParamFile, '-mask', mask ])
@@ -45,7 +45,7 @@ def run( source, template, mask, dofFile, rregParamFile, aregParamFile, wapedImg
         print 'DOF out:  ' + dofFile
         print 'Param:    ' + aregParamFile
         
-        if mask == 'none':
+        if mask in ['None', 'none']:
             call([ regExec, template, source, '-dofin', dofRigid,  '-dofout', dofFile, '-parin', aregParamFile ])
         else:
             call([ regExec, template, source, '-dofin', dofRigid,  '-dofout', dofFile, '-parin', aregParamFile, '-mask', mask ])
@@ -59,15 +59,16 @@ def run( source, template, mask, dofFile, rregParamFile, aregParamFile, wapedImg
     #
     # Run transformation
     #
-    if os.path.exists( wapedImg ):
-        print 'File ' + wapedImg + 'already exists'
-    else:
-        print '--------------------'
-        print 'Starting: transformation'
-        print 'Source:   ' + source
-        print 'Template: ' + template
-        print 'DOF:      ' + dofFile
-        print 'Deformed: ' + wapedImg
-      
-        call([ transExec, source, wapedImg, '-target', template, '-dofin', dofFile, '-cspline', '-matchInputType', '-Sp', '0' ])
+    if not wapedImg in ['None', 'none']:
+        if os.path.exists( wapedImg ):
+            print 'File ' + wapedImg + 'already exists'
+        else:
+            print '--------------------'
+            print 'Starting: transformation'
+            print 'Source:   ' + source
+            print 'Template: ' + template
+            print 'DOF:      ' + dofFile
+            print 'Deformed: ' + wapedImg
+          
+            call([ transExec, source, wapedImg, '-target', template, '-dofin', dofFile, '-cspline', '-matchInputType', '-Sp', '0' ])
         

@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 datafile_m0  = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_0/data_m24_AD.csv'
-datafile_m1  = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_1/data_m24_AD.csv'
+datafile_m1  = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/__model_1/data_m24_AD.csv'
+#datafile_m1  = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_0/data_m24_AD_atlasp.csv'
 
 def read_data( datafile, diagnoses ):
     states = []
@@ -41,8 +42,8 @@ y = np.square(x) * coefs[0] + x * coefs[1] + coefs[2]
 plt.plot( x, y )
 
 
-plt.xlabel('Virtual disease state m0')
-plt.ylabel('Virtual disease state m1')
+plt.xlabel('Virtual disease state, iteration 0')
+plt.ylabel('Virtual disease state, iteration 1')
 
 # Tweak spacing to prevent clipping of ylabel
 plt.subplots_adjust(left=0.15)

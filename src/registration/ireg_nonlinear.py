@@ -26,7 +26,7 @@ def run( source, template, dofIn, dofOut, paramFile, wapedImg ):
         print 'DOF out:  ' + dofOut
         print 'Param:    ' + paramFile
         
-        if dofIn == 'none':
+        if dofIn in ['None', 'none']:
             call([ iregExec, template, source, '-dofout', dofOut, '-parin', paramFile, '-v' ])
         else:
             call([ iregExec, template, source, '-dofin', dofIn, '-dofout', dofOut, '-parin', paramFile, '-v' ])
@@ -34,15 +34,16 @@ def run( source, template, dofIn, dofOut, paramFile, wapedImg ):
     
     #
     # Run transformation
-    #  
-    if os.path.exists( wapedImg ):
-        print 'File ' + wapedImg + ' already exists'
-    else:
-        print '--------------------'
-        print 'Starting transformation'
-        print 'Source:   ' + source
-        print 'Template: ' + template
-        print 'DOF:      ' + dofOut
-        print 'Deformed: ' + wapedImg
-        
-        call([ transExec, source, wapedImg, '-target', template, '-dofin', dofOut, '-cspline', '-matchInputType', '-Sp', '0' ])
+    #
+    if not wapedImg in ['None', 'none']:
+        if os.path.exists( wapedImg ):
+            print 'File ' + wapedImg + ' already exists'
+        else:
+            print '--------------------'
+            print 'Starting transformation'
+            print 'Source:   ' + source
+            print 'Template: ' + template
+            print 'DOF:      ' + dofOut
+            print 'Deformed: ' + wapedImg
+            
+            call([ transExec, source, wapedImg, '-target', template, '-dofin', dofOut, '-cspline', '-matchInputType', '-Sp', '0' ])

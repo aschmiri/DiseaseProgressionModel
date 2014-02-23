@@ -13,9 +13,9 @@ parser.add_argument( 'viscode', type=str, help='the visit code, e.g. bl, m12, m2
 parser.add_argument( 'diagnosis', type=str, help='the diagnosis, e.g. AD, MCI, CN, ...' )
 parser.add_argument( '-i', '--iteration', dest='iteration', type=int, default=1 )
 parser.add_argument( '-r', '--required_subjects', dest='required_subjects', type=int, default=50 )
-parser.add_argument( '--min', dest='state_min', type=float, default=0 )
-parser.add_argument( '--max', dest='state_max', type=float, default=10 )
-parser.add_argument( '--steps', dest = 'state_steps', type=int, default=11 )
+parser.add_argument( '--state_min', type=float, default=0 )
+parser.add_argument( '--state_max', type=float, default=15 )
+parser.add_argument( '--state_steps', type=int, default=16 )
 a = parser.parse_args()
 
 exec_atlas = 'atlas'

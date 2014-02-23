@@ -9,13 +9,13 @@ import common.adni_tools as adni
 import common.atlas_tools as at
 
 parser = argparse.ArgumentParser()
+parser.add_argument( 'viscode', type=str, help='the visit code, e.g. bl, m12, m24, ...' )
+parser.add_argument( 'diagnosis', type=str, help='the diagnosis, e.g. AD, MCI, CN, ...' )
 parser.add_argument( 'state', type=float, help='the state for which relevant images should be registered' )
-parser.add_argument( '-t', '--trans', dest='trans', type=str, default='svffd', help='the transformation model, e.g. ffd, svffd, sym, or ic' )
-parser.add_argument( '-v', '--viscode', dest='viscode', type=str, default='m24', help='the visit code, e.g. bl, m12, m24, ...' )
-parser.add_argument( '-d', '--diagnosis', dest='diagnosis', type=str, default='AD', help='the diagnosis, e.g. AD, MCI, CN, ...' )
-parser.add_argument( '-i', '--iteration', dest='iteration', type=int, default=1 )
-parser.add_argument( '-r', '--required_subjects', dest='required_subjects', type=int, default=20 )
-parser.add_argument( '-s', '--spacing', dest='sx', type=str, default='10' )
+parser.add_argument( '-i', '--iteration', type=int, default=1 )
+parser.add_argument( '-r', '--required_subjects', type=int, default=20 )
+parser.add_argument( '-t', '--trans', type=str, default='svffd', help='the transformation model, e.g. ffd, svffd, sym, or ic' )
+parser.add_argument( '-s', '--spacing', type=str, default='10' )
 a = parser.parse_args()
     
 exec_atlas = 'atlas'
@@ -26,7 +26,7 @@ image_method_folder = 'MNI152_linear'
 image_type_folder = 'images_normalised'
 
 data_folder = '/vol/biomedic/users/aschmidt/ADNI/data/ADNI'
-dof_folder = os.path.join( data_folder, 'MNI152_intra_' + a.trans + '_' + a.sx + 'mm', 'dof' )
+dof_folder = os.path.join( data_folder, 'MNI152_intra_' + a.trans + '_' + a.spacing + 'mm', 'dof' )
 
 atlas_folder = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_' + str(a.iteration)
 atlas_folder_temp = adni.make_dir( atlas_folder, 'temp' ) 
@@ -53,7 +53,7 @@ with open( data_file_images, 'wb') as csvfile:
         
         # Define the base name of output files
         
-        temp_base = str(target_rid) + '_' + str(a.state)
+        temp_base = str(target_rid) + '_' + str(a.state) + '_' + a.diagnosis
         
         # Print data file for IRTK ffd averaging
         data_file_dofs = os.path.join( atlas_folder_temp, temp_base + '_dofs.txt' )

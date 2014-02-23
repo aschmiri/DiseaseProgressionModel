@@ -9,18 +9,23 @@ import common.atlas_tools as at
 import ireg_nonlinear
 
 parser = argparse.ArgumentParser()
+parser.add_argument( 'viscode', type=str, help='the visit code, e.g. bl, m12, m24, ...' )
+parser.add_argument( 'diagnosis', type=str, help='the diagnosis, e.g. AD, MCI, CN, ...' )
 parser.add_argument( 'trans', type=str, help='the transformation model, e.g. ffd, svffd, sym, or ic' )
 parser.add_argument( 'state', type=float, help='the state for which relevant images should be registered' )
-parser.add_argument( '-n', '--nr_threads', dest='nr_threads', type=int, default=1 )
-parser.add_argument( '-i', '--iteration', dest='iteration', type=int, default=1 )
-parser.add_argument( '-r', '--required_subjects', dest='required_subjects', type=int, default=20 )
-parser.add_argument( '-s', '--spacing', dest='sx', type=str, default='10' )
+parser.add_argument( '-n', '--nr_threads', type=int, default=1 )
+parser.add_argument( '-i', '--iteration', type=int, default=1 )
+parser.add_argument( '-r', '--required_subjects', type=int, default=20 )
+parser.add_argument( '-s', '--spacing', type=str, default='10' )
+parser.add_argument( '--save_image', action='store_true', help='save the warped image' )
 a = parser.parse_args()
 
-ireg_params = '/vol/biomedic/users/aschmidt/ADNI/scripts/registration/params-ireg-' + a.trans + '-' + a.sx + 'mm.txt'
+ireg_params = '/vol/biomedic/users/aschmidt/ADNI/scripts/registration/params-ireg-' + a.trans + '-' + a.spacing + 'mm.txt'
 
-datafile = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_' + str(a.iteration) + '/data_m24_AD.csv'
-rids, _, _, states, images = at.read_datafile( datafile, 'AD' )
+data_folder = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_' + str(a.iteration)
+datafile = os.path.join( data_folder, 'data_' + a.viscode + '_' + a.diagnosis + '.csv' )
+
+rids, _, _, states, images = at.read_datafile( datafile, a.diagnosis )
 
 sigma, weights, indices = at.adaptive_kernel_regression( states, a.state, required_subjects = a.required_subjects )
 
@@ -29,7 +34,7 @@ selected_images = images[indices]
 selected_weights = weights[indices]
 
 data_folder = '/vol/biomedic/users/aschmidt/ADNI/data/ADNI'
-output_folder = adni.make_dir( data_folder, 'MNI152_intra_' + a.trans + '_' + a.sx + 'mm' )
+output_folder = adni.make_dir( data_folder, 'MNI152_intra_' + a.trans + '_' + a.spacing + 'mm' )
 output_folder_img = adni.make_dir( output_folder, 'images' )
 output_folder_dof = adni.make_dir( output_folder, 'dof' )
 
@@ -46,7 +51,10 @@ class RegistrationThread(threading.Thread):
         out_basename = str(source_rid) + '_to_' + str(target_rid)
 
         out_dof = os.path.join( output_folder_dof, out_basename + '.dof.gz' )
-        out_warped = os.path.join( output_folder_img, out_basename + '.nii.gz' )
+        if a.save_image:
+            out_warped = os.path.join( output_folder_img, out_basename + '.nii.gz' )
+        else:
+            out_warped = 'none'
                 
         ireg_nonlinear.run( source, target, 'none', out_dof, ireg_params, out_warped )
 

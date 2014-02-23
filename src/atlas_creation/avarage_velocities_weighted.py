@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument( 'viscode', type=str, help='the visit code, e.g. bl, m12, m24, ...' )
 parser.add_argument( 'diagnosis', type=str, help='the diagnosis, e.g. AD, MCI, CN, ...' )
 parser.add_argument( '-i', '--iteration', dest='iteration', type=int, default=1 )
-parser.add_argument( '-r', '--required_subjects', dest='required_subjects', type=int, default=50 )
+parser.add_argument( '-r', '--required_subjects', dest='required_subjects', type=int, default=20 )
 parser.add_argument( '--min', dest='state_min', type=float, default=0 )
 parser.add_argument( '--max', dest='state_max', type=float, default=10 )
 parser.add_argument( '--steps', dest='state_steps', type=int, default=11 )
@@ -22,8 +22,11 @@ a = parser.parse_args()
 execAverage = 'ffdaverage'
 
 base_folder = '/vol/biomedic/users/aschmidt/ADNI'
-dof_folder_adni1 = os.path.join( base_folder, 'data/ADNI1/MNI152_svffd_10mm_followup_to_baseline/dof' )
-dof_folder_adni2 = os.path.join( base_folder, 'data/ADNI2/MNI152_svffd_10mm_followup_to_baseline/dof' )
+#dof_folder_adni1 = os.path.join( base_folder, 'data/ADNI1/MNI152_svffd_10mm_followup_to_baseline/dof' )
+#dof_folder_adni2 = os.path.join( base_folder, 'data/ADNI2/MNI152_svffd_10mm_followup_to_baseline/dof' )
+dof_folder_adni1 = os.path.join( base_folder, 'data/ADNI1/MNI152_linear_followup_to_baseline_svffd_10mm/dof' )
+dof_folder_adni2 = os.path.join( base_folder, 'data/ADNI2/MNI152_linear_followup_to_baseline_svffd_10mm/dof' )
+
 velocities = adni.get_baseline_transformations( dof_folder_adni1, dof_folder_adni2, a.viscode, a.diagnosis )
 
 print 'Found ' + str(len( velocities )) + ' velocities in total for viscode ' + a.viscode + '...'
@@ -52,6 +55,7 @@ for i in range( len(rids_bl) ):
                 
 dofs = np.array( dofs )
 states = np.array( states )
+print 'Found ' + str(len( dofs )) + ' velocities with corresponding disease state...'
 
 #-------------------------------------------------------------------------------
 # sort data
@@ -63,12 +67,13 @@ for state in np.linspace( a.state_min, a.state_max, a.state_steps ):
     selected_weights = weights[indices]
     selected_states = states[indices]
     
-    out_average_velo = os.path.join( atlas_folder_out, 'velo_' + a.viscode + '_' + a.diagnosis + '_s' + str(state) + ".dof.gz" )
+    statestr = '%.2f' % state
+    out_average_velo = os.path.join( atlas_folder_out, 'velo_' + a.viscode + '_' + a.diagnosis + '_s' + statestr + ".dof.gz" )
     
     if os.path.isfile( out_average_velo ):
         print 'Image already exists: ' + out_average_velo
     else:
-        dof_names_file = os.path.join( atlas_folder_out, 'velo_' + a.viscode + '_' + a.diagnosis + '_s' + str(state) + ".txt" )
+        dof_names_file = os.path.join( atlas_folder_out, 'velo_' + a.viscode + '_' + a.diagnosis + '_s' + statestr + ".txt" )
         with open( dof_names_file, 'wb') as csvfile:
             csv_writer = csv.writer( csvfile, delimiter=' ' )
             for i in range(len( selected_dofs )):
