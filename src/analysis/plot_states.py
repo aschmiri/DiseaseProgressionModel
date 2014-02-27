@@ -3,9 +3,11 @@
 
 import csv
 import matplotlib.pyplot as plt
+import matplotlib.mlab as mlab
 import numpy as np
+import common.atlas_tools as at
 
-datafile_bl  = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_1/data_m24_AD_fielddist.csv'
+datafile_bl  = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_1/data_m24_AD.csv'
 
 def read_data( datafile, diagnoses ):
     states = []
@@ -25,20 +27,54 @@ def read_data( datafile, diagnoses ):
 states_cn  = read_data( datafile_bl, ['CN'] )
 states_mci  = read_data( datafile_bl, ['EMCI', 'LMCI'] )
 states_ad  = read_data( datafile_bl, ['AD'] )
-states = [states_cn, states_mci , states_ad]
 
-print len(states_ad)
+x = np.arange(0, 10.5, 0.5)
+y = np.zeros(21)
+for i in range(len(states_ad)):
+    a = np.floor( states_ad[i] )
+    b = states_ad[i] - a
+    if b == 0:
+        index = 2 * a
+        y[index] += 1
+    elif b == 0.5:
+        index = 2 * a + 1
+        y[index] += 1
+    elif b == 0.25:
+        index1 = 2 * a
+        index2 = 2 * a + 1 
+        y[index1] += 0.5
+        y[index2] += 0.5
+    elif b == 0.75:
+        index1 = 2 * a + 1
+        index2 = 2 * a + 2 
+        y[index1] += 0.5
+        y[index2] += 0.5
+    else:
+        print ' unknown value '
 
-num_bins = 41
-
-y, bin_edges = np.histogram( states_ad, num_bins )
-bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
-#n, bins, patches = plt.hist(states, num_bins, normed=1, color=['green','yellow','red'], alpha = 0.5)
-n, bins, patches = plt.hist(states_ad, num_bins, normed=1, color='red', alpha = 0.5, histtype='step' )
-#plt.plot( bin_centers, y, '-' )
+plt.bar( x, y, align='center', width=0.4, linewidth=0, color=(0,0.38,0.48), alpha=0.7 )
 plt.xlabel('Virtual disease state')
 plt.ylabel('Probability')
-
+plt.xlim([-0.5,10.5])
+# ocean green (0,0.29,0.35) // '#004B5A'
+prob_x = np.arange(-1, 11, 0.05)
+for i in range(11):
+    sigma, _, _ = at.adaptive_kernel_regression( np.array( states_ad ), i, required_subjects=50 )
+    prob_y = mlab.normpdf( prob_x, i, sigma )
+    plt.plot( prob_x, 6*prob_y, linewidth=1.5, color='black' )
+    
+    
 # Tweak spacing to prevent clipping of ylabel
-plt.subplots_adjust(left=0.15)
+#plt.subplots_adjust(left=0.15)
 plt.show()
+    
+
+
+
+
+
+
+
+
+
+    

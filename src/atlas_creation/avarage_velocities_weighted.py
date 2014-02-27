@@ -17,22 +17,21 @@ parser.add_argument( '-r', '--required_subjects', dest='required_subjects', type
 parser.add_argument( '--min', dest='state_min', type=float, default=0 )
 parser.add_argument( '--max', dest='state_max', type=float, default=10 )
 parser.add_argument( '--steps', dest='state_steps', type=int, default=11 )
+parser.add_argument( '--postfix', type=str, default='' )
 a = parser.parse_args()
 
 execAverage = 'ffdaverage'
 
 base_folder = '/vol/biomedic/users/aschmidt/ADNI'
-#dof_folder_adni1 = os.path.join( base_folder, 'data/ADNI1/MNI152_svffd_10mm_followup_to_baseline/dof' )
-#dof_folder_adni2 = os.path.join( base_folder, 'data/ADNI2/MNI152_svffd_10mm_followup_to_baseline/dof' )
-dof_folder_adni1 = os.path.join( base_folder, 'data/ADNI1/MNI152_linear_followup_to_baseline_svffd_10mm/dof' )
-dof_folder_adni2 = os.path.join( base_folder, 'data/ADNI2/MNI152_linear_followup_to_baseline_svffd_10mm/dof' )
+dof_folder_adni1 = os.path.join( base_folder, 'data/ADNI1/MNI152_svffd_10mm_followup_to_baseline/dof' )
+dof_folder_adni2 = os.path.join( base_folder, 'data/ADNI2/MNI152_svffd_10mm_followup_to_baseline/dof' )
 
 velocities = adni.get_baseline_transformations( dof_folder_adni1, dof_folder_adni2, a.viscode, a.diagnosis )
 
 print 'Found ' + str(len( velocities )) + ' velocities in total for viscode ' + a.viscode + '...'
  
-atlas_folder_in = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_' + str(a.iteration-1)
-atlas_folder_out = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_' + str(a.iteration)
+atlas_folder_in = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_' + str(a.iteration-1) + a.postfix
+atlas_folder_out = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_' + str(a.iteration) + a.postfix
 input_datafile =  os.path.join( atlas_folder_in, 'data_' + a.viscode + '_' + a.diagnosis + '.csv' )
 
 #-------------------------------------------------------------------------------
@@ -88,7 +87,7 @@ for state in np.linspace( a.state_min, a.state_max, a.state_steps ):
 # Save model file required for 'model_generation'
 model_file = os.path.join( atlas_folder_out, 'velo_' + a.viscode + '_' + a.diagnosis + '.txt' )
 if not os.path.isfile( model_file ):
-    call([ 'ls -rt -d -1 ' + atlas_folder_out + '/*.dof.gz > ' + model_file ], shell=True )
+    call([ 'ls -rt -d -1 ' + atlas_folder_out + '/*' + a.viscode + '_' + a.diagnosis + '*.dof.gz > ' + model_file ], shell=True )
     
     
     

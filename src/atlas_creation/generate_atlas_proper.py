@@ -42,7 +42,7 @@ selected_images = images[indices]
 selected_weights = weights[indices]
 
 # Print data file for IRTK image averaging
-atlas_base = 'atlasp_' + a.viscode + '_' + a.diagnosis + '_' + str(a.state)
+atlas_base = 'atlas_' + a.viscode + '_' + a.diagnosis + '_' + str(a.state)
 data_file_images = os.path.join( atlas_folder, atlas_base + '_images.txt' )
 
 with open( data_file_images, 'wb') as csvfile:

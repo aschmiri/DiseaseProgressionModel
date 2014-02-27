@@ -13,14 +13,15 @@ parser.add_argument( 'diagnosis', type=str, help='the diagnosis, e.g. AD, MCI, C
 parser.add_argument( '-i', '--iteration', dest='iteration', type=int, default=0 )
 parser.add_argument( '--state_min', type=float, default=0 )
 parser.add_argument( '--state_max', type=float, default=15 )
-parser.add_argument( '--state_stepsize', type=float, default = 0.25 )
+parser.add_argument( '--state_stepsize', type=float, default=0.25 )
+parser.add_argument( '--postfix', type=str, default='' )
 a = parser.parse_args()
                  
 execEstimate = 'stateestimation'
 
 mask_brain = '/vol/medic01/users/aschmidt/projects/Data/MNI152-Template/MNI152_T1_1mm_brain.nii'
 
-atlas_folder = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_' + str(a.iteration)
+atlas_folder = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_' + str(a.iteration) + a.postfix
 data_folder = '/vol/biomedic/users/aschmidt/ADNI'
 
 image_folder_adni1_bl = os.path.join( data_folder, 'data/ADNI1/MNI152_linear/images' )

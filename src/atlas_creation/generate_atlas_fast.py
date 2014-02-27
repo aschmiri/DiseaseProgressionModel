@@ -39,7 +39,7 @@ for state in np.linspace( a.state_min, a.state_max, a.state_steps ):
     selected_weights = weights[indices]
     
     # Define the base name of output files
-    atlas_base = 'atlas_' + a.viscode + '_' + a.diagnosis + '_' + str(state)
+    atlas_base = 'atlas_fast_' + a.viscode + '_' + a.diagnosis + '_' + str(state)
     
     # Print data file for IRTK ffd averaging
     data_file_dofs = os.path.join( atlas_folder, atlas_base + '_dofs.txt' )
