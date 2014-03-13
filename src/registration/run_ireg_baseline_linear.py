@@ -14,11 +14,10 @@ parser.add_argument( 'viscode', type=str, help='the visit code, e.g. bl, m12, m2
 parser.add_argument( '-n', '--nr_threads', dest = 'nr_threads', type=int, default = 1 )
 a = parser.parse_args()
 
-base_folder = '/vol/biomedic/users/aschmidt/ADNI'
-data_folder = os.path.join( base_folder, 'data', a.study )
-rreg_params = '/vol/biomedic/users/aschmidt/ADNI/scripts/registration/params-ireg-rigid.txt'
-areg_params = '/vol/biomedic/users/aschmidt/ADNI/scripts/registration/params-ireg-affine.txt'
+rreg_params = os.path.join( adni.param_folder, 'params-ireg-rigid.txt' )
+areg_params = os.path.join( adni.param_folder, 'params-ireg-affine.txt' )
 
+data_folder = os.path.join( adni.data_folder, a.study )
 mask_folder = os.path.join( data_folder, 'native/masks_brain' )
 
 output_folder = adni.make_dir( data_folder, 'baseline_linear' )

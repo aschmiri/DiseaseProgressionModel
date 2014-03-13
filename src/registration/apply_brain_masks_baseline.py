@@ -12,9 +12,7 @@ parser.add_argument( 'field_strength', type=str,  help='the field strength, usua
 a = parser.parse_args()
 
 execMask = 'padding'
-
-base_folder = '/vol/biomedic/users/aschmidt/ADNI'
-data_folder = os.path.join( base_folder, 'data', a.study )
+data_folder = os.path.join( adni.data_folder, a.study )
 output_folder = os.path.join( data_folder, 'native/images' )
 mask_folder = os.path.join( data_folder, 'native/masks_brain' )
 baseline_folder = os.path.join( data_folder, 'native/images_unstripped' )

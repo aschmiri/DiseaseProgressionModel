@@ -8,16 +8,13 @@ import common.adni_tools as adni
 
 parser = argparse.ArgumentParser()
 parser.add_argument( 'study' )
+parser.add_argument( '-a', '--algorithm', type=str, default='MNI152_linear' )
 a = parser.parse_args()
-
-#reg_algorithm = 'MNI152_svffd_10mm_after_linear'
-reg_algorithm = 'MNI152_linear'
 
 execNormalise = 'normalize_percentiles_apply'
 percentiles = '/vol/biomedic/users/reg09/posdoc/manifold_alignment/percentiles_10.csv'
 
-base_folder = '/vol/biomedic/users/aschmidt/ADNI'
-reg_folder = os.path.join( base_folder, 'data', a.study, reg_algorithm )
+reg_folder = os.path.join( adni.data_folder, a.study, a.algorithm )
 image_folder = os.path.join( reg_folder, 'images' )
 if not os.path.isdir( image_folder ):
     print 'Input folder does not exist.'

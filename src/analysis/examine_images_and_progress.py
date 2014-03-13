@@ -5,12 +5,13 @@ import csv
 import os.path
 import numpy as np
 from subprocess import call
+import common.adni_tools as adni
 
 rview = '/vol/medic01/users/as12312/Code/Build/merapi/irtk-testing/bin/rview'
 
-datafile_bl  = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/data_bl.csv'
-datafile_m24 = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/data_m24.csv'
-image_folder = '/vol/biomedic/users/aschmidt/ADNI/data/ADNI1/MNI152_linear/images'
+datafile_bl  = os.path.join( adni.project_folder, 'atlas/data_bl.csv' )
+datafile_m24 = os.path.join( adni.project_folder, 'atlas/data_m24.csv' )
+image_folder = os.path.join( adni.data_folder, 'ADNI1/MNI152_linear/images' )
 
 def read_data( datafile, diagnoses ):
     images = []

@@ -16,11 +16,9 @@ parser.add_argument( '-n', '--nr_threads', dest = 'nr_threads', type=int, defaul
 parser.add_argument( '-s', '--spacing', dest = 'sx', type=str, default = '10' )
 a = parser.parse_args()
 
-base_folder = '/vol/biomedic/users/aschmidt/ADNI'
-data_folder = os.path.join( base_folder, 'data', a.study )
+ireg_params = os.path.join( adni.param_folder, 'params-ireg-' + a.trans + '-' + a.sx + 'mm.txt' )
 
-ireg_params = '/vol/biomedic/users/aschmidt/ADNI/scripts/registration/params-ireg-' + a.trans + '-' + a.sx + 'mm.txt'
-
+data_folder = os.path.join( adni.data_folder, a.study )
 baseline_folder = os.path.join( data_folder, 'native/images' )
 followup_folder = os.path.join( data_folder, 'baseline_linear/images' )
 baseline_files, followup_files = adni.get_baseline_and_followup( baseline_folder, followup_folder, a.study, a.field_strength, a.viscode )

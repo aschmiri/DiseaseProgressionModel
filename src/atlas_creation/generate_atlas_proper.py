@@ -25,10 +25,9 @@ exec_transform = 'transformation'
 image_method_folder = 'MNI152_linear'
 image_type_folder = 'images_normalised'
 
-data_folder = '/vol/biomedic/users/aschmidt/ADNI/data/ADNI'
-dof_folder = os.path.join( data_folder, 'MNI152_intra_' + a.trans + '_' + a.spacing + 'mm', 'dof' )
+dof_folder = os.path.join(  adni.data_folder, 'ADNI', 'MNI152_intra_' + a.trans + '_' + a.spacing + 'mm', 'dof' )
 
-atlas_folder = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_' + str(a.iteration)
+atlas_folder = os.path.join( adni.project_folder, 'atlas/model_' + str(a.iteration) )
 atlas_folder_temp = adni.make_dir( atlas_folder, 'temp' ) 
 datafile = os.path.join( atlas_folder, 'data_' + a.viscode + '_' + a.diagnosis + '.csv' )
 

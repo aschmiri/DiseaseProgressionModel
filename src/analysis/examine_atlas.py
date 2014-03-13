@@ -7,6 +7,7 @@ import numpy as np
 import nibabel as nib
 import matplotlib.pyplot as pyplot
 import matplotlib.cm as cm
+import common.adni_tools as adni
 
 parser = argparse.ArgumentParser()
 parser.add_argument( '-i', '--iteration', dest='iteration', type=int, default=1 )
@@ -48,10 +49,9 @@ class EventHandler:
         self.im = self.ax.imshow(self.imagedata[:,:,self.slice], interpolation = 'nearest', cmap = cm.gray ) #
         self.im.axes.figure.canvas.draw()
         
-atlas_base_folder = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas'
+atlas_folder = os.path.join( adni.project_folder, 'atlas/model_0' )
 atlases = []
 for state in np.linspace( a.state_min, a.state_max, a.state_steps ):
-    atlas_folder =  os.path.join( atlas_base_folder, 'model_0' )
     #atlas = os.path.join( atlas_folder, 'average_image_transformed.nii.gz' )
     #state = '{0}'.format(str(round(state,2) if state % 1  else int(state)),1)
     atlas = os.path.join( atlas_folder, 'atlas_m24_AD_' + str(state) + '_average_image_transformed.nii.gz' )

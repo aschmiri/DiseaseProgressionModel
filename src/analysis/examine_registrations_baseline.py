@@ -1,36 +1,27 @@
 #! /usr/bin/env python
 # print __doc__
 
-import sys
+import argparse
 import os.path
 from subprocess import call
 import common.adni_tools as adni
 
-if len( sys.argv ) < 5:
-    print 'Usage: examine_registrations_baseline.py <study> <field_strength> <transformation> <spacing> [<subject>]'
-    exit()
-  
-study = sys.argv[1]
-fs = sys.argv[2]
-trans = sys.argv[3]
-sx = sys.argv[4]
-
-subject = None
-if len( sys.argv ) == 6:
-    subject = sys.argv[5]
+parser = argparse.ArgumentParser()
+parser.add_argument( 'study', type=str, help='the study, should be ADNI1, ADNI2, or ADNIGO' )
+parser.add_argument( 'field_strength', type=str,  help='the field strength, usually 1.5 for ADNI1 and 3 otherwise' )
+parser.add_argument( 'trans', type=str, help='the transformation model, e.g. ffd, svffd, sym, or ic' )
+parser.add_argument( '-r', '--rid', type=int, default=None )
+parser.add_argument( '-s', '--spacing', dest='sx', type=str, default='10' )
+a = parser.parse_args()
     
 rview = '/vol/medic01/users/aschmidt/development/build_helvellyn/irtk-as12312/bin/rview'
 
-base_folder = '/vol/biomedic/users/aschmidt/ADNI'
-data_folder = os.path.join( base_folder, 'data', study )
-
-#baseline_folder = os.path.join( data_folder, 'native/images_unstripped' )
-#followup_folder = os.path.join( data_folder, 'baseline_linear/images_unstripped' )
+data_folder = os.path.join( adni.data_folder, a.study )
 baseline_folder = os.path.join( data_folder, 'native/images' )
 followup_folder = os.path.join( data_folder, 'baseline_linear/images' )
-dof_folder = os.path.join( data_folder, 'baseline_' + trans + '_' + sx + 'mm_after_linear/dof' )
+dof_folder = os.path.join( data_folder, 'baseline_' + a.trans + '_' + a.sx + 'mm_after_linear/dof' )
 
-baseline_files, followup_files = adni.get_baseline_and_followup( baseline_folder, followup_folder, study, fs )
+baseline_files, followup_files = adni.get_baseline_and_followup( baseline_folder, followup_folder, a.study, a.fs )
 
 print 'Found ' + str(len( baseline_files )) + ' images:'
 for i in range( len( baseline_files ) ):
@@ -39,7 +30,7 @@ for i in range( len( baseline_files ) ):
     source_base = os.path.basename( source )
     dof = os.path.join( dof_folder, source_base )
 
-    if subject == None or source.find( subject ) > 0:
+    if a.rid == None or source.find( '_S_' + str( a.rid ) ) > 0:
         print '--------------------'
         print 'Target: ' + target
         print 'Source: ' + source

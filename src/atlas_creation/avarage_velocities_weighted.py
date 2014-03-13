@@ -22,16 +22,16 @@ a = parser.parse_args()
 
 execAverage = 'ffdaverage'
 
-base_folder = '/vol/biomedic/users/aschmidt/ADNI'
-dof_folder_adni1 = os.path.join( base_folder, 'data/ADNI1/MNI152_svffd_10mm_followup_to_baseline/dof' )
-dof_folder_adni2 = os.path.join( base_folder, 'data/ADNI2/MNI152_svffd_10mm_followup_to_baseline/dof' )
+dof_folder_adni1 = os.path.join( adni.data_folder, 'ADNI1', 'MNI152_svffd_10mm_followup_to_baseline/dof' )
+dof_folder_adni2 = os.path.join( adni.data_folder, 'ADNI2', 'MNI152_svffd_10mm_followup_to_baseline/dof' )
 
 velocities = adni.get_baseline_transformations( dof_folder_adni1, dof_folder_adni2, a.viscode, a.diagnosis )
 
 print 'Found ' + str(len( velocities )) + ' velocities in total for viscode ' + a.viscode + '...'
- 
-atlas_folder_in = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_' + str(a.iteration-1) + a.postfix
-atlas_folder_out = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_' + str(a.iteration) + a.postfix
+
+atlas_folder = os.path.join( adni.project_folder, 'atlas' )
+atlas_folder_in = os.path.join( atlas_folder, 'model_' + str(a.iteration-1) + a.postfix )
+atlas_folder_out = os.path.join( atlas_folder, 'model_' + str(a.iteration) + a.postfix )
 input_datafile =  os.path.join( atlas_folder_in, 'data_' + a.viscode + '_' + a.diagnosis + '.csv' )
 
 #-------------------------------------------------------------------------------

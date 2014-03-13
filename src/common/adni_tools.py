@@ -2,6 +2,18 @@
 # print __doc__
 
 import os.path
+import numpy as np
+
+################################################################################
+#
+# global paths and variables
+#
+################################################################################
+#bin_folder     = '/vol/biomedic/users/aschmidt/ADNI/data'
+data_folder    = '/vol/biomedic/users/aschmidt/ADNI/data'
+project_folder = '/vol/medic01/users/aschmidt/projects/AgeingAtlas'
+param_folder   = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/parameters'
+mni_folder     = '/vol/medic01/users/aschmidt/projects/Data/MNI152-Template'
 
 ################################################################################
 #
@@ -32,7 +44,7 @@ def read_list( query_list, folder ):
             if os.path.isfile( filename ) and qc_check( rid ):
                 files.append( filename )
                 rids.append( rid )
-    return (files, rids)
+    return files, rids
 
 ################################################################################
 #
@@ -62,13 +74,14 @@ def read_list_for_diagnosis( query_list, folder, diagnosis ):
 # read_list_all_data
 #
 ################################################################################
-def read_list_all_data( query_list, folder ):
+def read_list_all_data( query_list, folder, diagnosis='ALL' ):
     import csv
     files = []
     rids = []
     diagnoses = []
     ages = []
     mmses = []
+    
     with open( query_list, 'rb' ) as csvfile:
         reader = csv.reader( csvfile, delimiter=',' )
         headers = reader.next()
@@ -78,17 +91,18 @@ def read_list_all_data( query_list, folder ):
                 filename = filename.replace( '.nii.gz', '.dof.gz' )
             if os.path.isfile( filename ):
                 rid = row[headers.index('RID')]
-                diagnosis = row[headers.index('DX.bl')]
+                dx = row[headers.index('DX.bl')]
                 age = row[headers.index('AGE')]
                 mmse = row[headers.index('MMSE')]
                 
-                files.append( filename )
-                rids.append( rid )
-                diagnoses.append( diagnosis )
-                ages.append( age )
-                mmses.append( mmse )
+                if diagnosis == 'ALL' or diagnosis in dx or dx in diagnosis:
+                    files.append( filename )
+                    rids.append( rid )
+                    diagnoses.append( diagnosis )
+                    ages.append( age )
+                    mmses.append( mmse )
                 
-    return (files, rids, diagnoses, ages, mmses)
+    return files, rids, diagnoses, ages, mmses
 
 ################################################################################
 #
@@ -140,7 +154,7 @@ def get_baseline( baseline_folder, study, field_strength, viscode = 'bl' ):
     baseline_list = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/lists/query_' + study + '_' + viscode + '_' + field_strength + 'T.csv'
     baseline_files, _ = read_list( baseline_list, baseline_folder )
                 
-    return baseline_files
+    return np.array( baseline_files )
 
 ################################################################################
 #
@@ -175,7 +189,7 @@ def get_baseline_and_followup( baseline_folder, followup_folder, study, field_st
                 baseline_files.append( baseline_files_unsorted[i] )
                 followup_files.append( followup_files_unsorted[j] )
                 
-    return (baseline_files, followup_files)
+    return np.array( baseline_files), np.array( followup_files )
 
 ################################################################################
 #
@@ -192,14 +206,14 @@ def get_baseline_transformations( dof_folder_adni1, dof_folder_adni2, viscode, d
     print 'Found ' + str(len( velocities_ADNI1 )) + ' velocities in ADNI1...'
     print 'Found ' + str(len( velocities_ADNI2 )) + ' velocities in ADNI2/GO...'
     
-    return velocities_ADNI1 + velocities_ADNI2
+    return np.array( velocities_ADNI1 + velocities_ADNI2 )
 
 ################################################################################
 #
 # get_baseline_transformations_and_rids
 #
 ################################################################################
-def get_baseline_transformations_and_rids( dof_folder_adni1, dof_folder_adni2, viscode, diagnosis ):
+def get_baseline_transformations_and_rids( dof_folder_adni1, dof_folder_adni2, viscode, diagnosis='ALL' ):
     adni1_list = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/lists/query_ADNI1_' + viscode + '_1.5T.csv'
     adni2_list = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/lists/query_ADNI2_' + viscode + '_3T.csv'
 
@@ -209,34 +223,39 @@ def get_baseline_transformations_and_rids( dof_folder_adni1, dof_folder_adni2, v
     print 'Found ' + str(len( velocities_ADNI1 )) + ' velocities in ADNI1...'
     print 'Found ' + str(len( velocities_ADNI2 )) + ' velocities in ADNI2/GO...'
     
-    return velocities_ADNI1 + velocities_ADNI2, rids_ADNI1 + rids_ADNI2
+    velocities = np.array( velocities_ADNI1 + velocities_ADNI2 )
+    rids = np.array( rids_ADNI1 + rids_ADNI2, dtype='int' )
+    
+    return velocities, rids
 
 ################################################################################
 #
 # get_all_data
 #
 ################################################################################
-def get_all_data( data_folder_adni1, data_folder_adni2, data_folder_adniG, viscode ):
+def get_all_data( data_folder_adni1, data_folder_adni2, data_folder_adniG, viscode, diagnosis='ALL' ):
     adni1_list = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/lists/query_ADNI1_' + viscode + '_1.5T.csv'
     adni2_list = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/lists/query_ADNI2_' + viscode + '_3T.csv'
     adniG_list = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/lists/query_ADNIGO_' + viscode + '_3T.csv'
 
-    files1, rid1, diagnoses1, age1, mmse1 = read_list_all_data( adni1_list, data_folder_adni1 )
-    files2, rid2, diagnoses2, age2, mmse2 = read_list_all_data( adni2_list, data_folder_adni2 )
+    files1, rid1, diagnoses1, age1, mmse1 = read_list_all_data( adni1_list, data_folder_adni1, diagnosis )
+    files2, rid2, diagnoses2, age2, mmse2 = read_list_all_data( adni2_list, data_folder_adni2, diagnosis )
     if viscode == 'bl':
-        filesG, ridG, diagnosesG, ageG, mmseG = read_list_all_data( adniG_list, data_folder_adniG )
+        filesG, ridG, diagnosesG, ageG, mmseG = read_list_all_data( adniG_list, data_folder_adniG, diagnosis )
     else:
         filesG = []; ridG = []; diagnosesG = []; ageG = []; mmseG = []
         
     print 'Found ' + str(len( files1 )) + ' files in ADNI1...'
     print 'Found ' + str(len( files2 )) + ' files in ADNI2...'
     print 'Found ' + str(len( filesG )) + ' files in ADNIGO...'
+        
+    files = np.array( files1 + files2 + filesG )
+    rids = np.array( rid1 + rid2 + ridG, dtype='int' )
+    diagnoses = np.array( diagnoses1 + diagnoses2 + diagnosesG )
+    ages = np.array( age1 + age2 + ageG, dtype='float' )
+    mmses = np.array( mmse1 + mmse2 + mmseG, dtype='int' )
     
-    return (files1 + files2 + filesG,
-            rid1 + rid2 + ridG,
-            diagnoses1 + diagnoses2 + diagnosesG,
-            age1 + age2 + ageG,
-            mmse1 + mmse2 + mmseG)    
+    return files, rids, diagnoses, ages, mmses 
 
 ################################################################################
 #
@@ -254,7 +273,7 @@ def find_images_with_dof( image_files, dof_folder ):
             image_files_with_dof.append( image_files[i] )
             dof_files.append( dof )
             
-    return (image_files_with_dof, dof_files)
+    return image_files_with_dof, dof_files
 
 ################################################################################
 #

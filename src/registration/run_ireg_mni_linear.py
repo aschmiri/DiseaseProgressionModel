@@ -13,13 +13,11 @@ parser.add_argument( 'field_strength', type=str,  help='the field strength, usua
 parser.add_argument( '-n', '--nr_threads', dest = 'nr_threads', type=int, default = 1 )
 a = parser.parse_args()
 
-base_folder = '/vol/biomedic/users/aschmidt/ADNI'
-data_folder = os.path.join( base_folder, 'data', a.study )
+rreg_params = os.path.join( adni.param_folder, 'params-ireg-rigid.txt' )
+areg_params = os.path.join( adni.param_folder, 'params-ireg-affine.txt' )
+target_mni = os.path.join( adni.mni_folder, 'MNI152_T1_1mm_brain.nii' )
 
-target_mni = '/vol/medic01/users/aschmidt/projects/Data/MNI152-Template/MNI152_T1_1mm_brain.nii'
-rreg_params = '/vol/biomedic/users/aschmidt/ADNI/scripts/registration/params-ireg-rigid.txt'
-areg_params = '/vol/biomedic/users/aschmidt/ADNI/scripts/registration/params-ireg-affine.txt'
-
+data_folder = os.path.join( adni.data_folder, a.study )
 baseline_folder = os.path.join( data_folder, 'native/images' )
 baseline_files = adni.get_baseline( baseline_folder, a.study, a.field_strength )
 

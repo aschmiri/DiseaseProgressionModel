@@ -7,6 +7,7 @@ import csv
 import os.path
 from subprocess import call
 import common.atlas_tools as at
+import common.adni_tools as adni
 
 parser = argparse.ArgumentParser()
 parser.add_argument( 'viscode', type=str, help='the visit code, e.g. bl, m12, m24, ...' )
@@ -26,7 +27,7 @@ method_folder = 'MNI152_svffd_10mm_after_linear'
 type_folder_images = 'images_normalised'
 type_folder_dofs = 'dof'
 
-atlas_folder = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_' + str(a.iteration)
+atlas_folder = os.path.join( adni.project_folder, 'atlas/model_' + str(a.iteration) )
 datafile = os.path.join( atlas_folder, 'data_' + a.viscode + '_' + a.diagnosis + '.csv' )
 
 _, _, _, states, images = at.read_datafile( datafile, a.diagnosis )

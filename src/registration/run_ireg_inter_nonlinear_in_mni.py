@@ -20,10 +20,10 @@ parser.add_argument( '-s', '--spacing', type=str, default='10' )
 parser.add_argument( '--save_image', action='store_true', help='save the warped image' )
 a = parser.parse_args()
 
-ireg_params = '/vol/biomedic/users/aschmidt/ADNI/scripts/registration/params-ireg-' + a.trans + '-' + a.spacing + 'mm.txt'
+ireg_params = os.path.join( adni.param_folder, 'params-ireg-' + a.trans + '-' + a.spacing + 'mm.txt' )
 
-data_folder = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_' + str(a.iteration)
-datafile = os.path.join( data_folder, 'data_' + a.viscode + '_' + a.diagnosis + '.csv' )
+atlas_folder = os.path.join( adni.project_folder, 'atlas/model_' + str(a.iteration) )
+datafile = os.path.join( atlas_folder, 'data_' + a.viscode + '_' + a.diagnosis + '.csv' )
 
 rids, _, _, states, images = at.read_datafile( datafile, a.diagnosis )
 
@@ -33,11 +33,11 @@ selected_rids = rids[indices]
 selected_images = images[indices]
 selected_weights = weights[indices]
 
-data_folder = '/vol/biomedic/users/aschmidt/ADNI/data/ADNI'
-output_folder = adni.make_dir( data_folder, 'MNI152_intra_' + a.trans + '_' + a.spacing + 'mm' )
-output_folder_img = adni.make_dir( output_folder, 'images' )
+output_folder = adni.make_dir( adni.data_folder, 'ADNI/MNI152_intra_' + a.trans + '_' + a.spacing + 'mm' )
 output_folder_dof = adni.make_dir( output_folder, 'dof' )
-
+if a.save_image:
+    output_folder_img = adni.make_dir( output_folder, 'images' )
+    
 class RegistrationThread(threading.Thread):
     def __init__(self, index_targ, index_srce):
         threading.Thread.__init__(self)
@@ -54,9 +54,9 @@ class RegistrationThread(threading.Thread):
         if a.save_image:
             out_warped = os.path.join( output_folder_img, out_basename + '.nii.gz' )
         else:
-            out_warped = 'none'
+            out_warped = None
                 
-        ireg_nonlinear.run( source, target, 'none', out_dof, ireg_params, out_warped )
+        ireg_nonlinear.run( source, target, None, out_dof, ireg_params, out_warped )
 
 print 'Found ' + str(len( selected_images )) + ' relevant images for state ' + str(a.state) + '...'
 thread_ctr = 0

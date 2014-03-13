@@ -3,7 +3,6 @@
 
 import numpy as np
 
-
 ################################################################################
 #
 # read_datafile
@@ -11,11 +10,11 @@ import numpy as np
 ################################################################################
 def find_file( filename, method_folder, type_folder ):
     import os.path
+    import adni_tools as adni
     
-    base_folder = '/vol/biomedic/users/aschmidt/ADNI/data'
-    folder_ADNI1  = os.path.join( base_folder, 'ADNI1',  method_folder, type_folder )
-    folder_ADNI2  = os.path.join( base_folder, 'ADNI2',  method_folder, type_folder )
-    folder_ADNIGO = os.path.join( base_folder, 'ADNIGO', method_folder, type_folder )
+    folder_ADNI1  = os.path.join( adni.data_folder, 'ADNI1',  method_folder, type_folder )
+    folder_ADNI2  = os.path.join( adni.data_folder, 'ADNI2',  method_folder, type_folder )
+    folder_ADNIGO = os.path.join( adni.data_folder, 'ADNIGO', method_folder, type_folder )
     
     basename = os.path.basename( filename )
     if 'dof' in  type_folder:

@@ -4,6 +4,7 @@
 import os.path
 import argparse
 from subprocess import call
+import common.adni_tools as adni
 
 parser = argparse.ArgumentParser( formatter_class=argparse.ArgumentDefaultsHelpFormatter )
 parser.add_argument( 'viscode', type=str, help='the visit code, e.g. bl, m12, m24, ...' )
@@ -15,20 +16,20 @@ parser.add_argument( '--state_stepsize', type=float, default=0.25, help='step si
 parser.add_argument( '--postfix', type=str, default='' )
 a = parser.parse_args()
 
-exec_model = '/vol/medic01/users/aschmidt/development/build_helvellyn/irtk-as12312/bin/model_generation'
+exec_model = 'model_generation'
 
-base_folder = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_' + str(a.iteration) + a.postfix
-mean_atlas = '/vol/medic01/users/aschmidt/projects/Data/MNI152-Template/MNI152_T1_1mm_brain2.nii'
-model_prefix = os.path.join( base_folder, 'model_' + a.viscode + '_' + a.diagnosis + '_s' )
+atlas_folder = os.path.join( adni.project_folder, 'atlas/model_' + str(a.iteration) + a.postfix )
+mean_atlas = os.path.join( adni.mni_folder, 'MNI152_T1_1mm_brain.nii' )
+model_prefix = os.path.join( atlas_folder, 'model_' + a.viscode + '_' + a.diagnosis + '_s' )
 
 linear = True if a.iteration == 0 else False
 if linear:
-    velo = os.path.join( base_folder, 'velo_' + a.viscode + '_' + a.diagnosis + '.dof.gz' )
+    velo = os.path.join( atlas_folder, 'velo_' + a.viscode + '_' + a.diagnosis + '.dof.gz' )
     call([ exec_model, mean_atlas, velo, 
           '-min', str(a.state_min), '-max', str(a.state_max), '-stepsize', str(a.state_stepsize),
           '-saveimg', '-prefix', model_prefix, '-linear'])
 else:
-    velo_file = os.path.join( base_folder, 'velo_' + a.viscode + '_' + a.diagnosis + '.txt' )
+    velo_file = os.path.join( atlas_folder, 'velo_' + a.viscode + '_' + a.diagnosis + '.txt' )
     call([ exec_model, mean_atlas, velo_file, 
           '-min', str(a.state_min), '-max', str(a.state_max), '-stepsize', str(a.state_stepsize),
           '-saveimg', '-prefix', model_prefix ])

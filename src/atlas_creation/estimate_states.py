@@ -19,22 +19,14 @@ a = parser.parse_args()
                  
 execEstimate = 'stateestimation'
 
-mask_brain = '/vol/medic01/users/aschmidt/projects/Data/MNI152-Template/MNI152_T1_1mm_brain.nii'
+mask_brain = os.path.join( adni.mni_folder, 'MNI152_T1_1mm_brain.nii' )
 
-atlas_folder = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_' + str(a.iteration) + a.postfix
-data_folder = '/vol/biomedic/users/aschmidt/ADNI'
+atlas_folder = os.path.join( adni.project_folder, 'atlas/model_' + str(a.iteration) + a.postfix )
 
-image_folder_adni1_bl = os.path.join( data_folder, 'data/ADNI1/MNI152_linear/images' )
-image_folder_adni2_bl = os.path.join( data_folder, 'data/ADNI2/MNI152_linear/images' )
-image_folder_adniG_bl = os.path.join( data_folder, 'data/ADNIGO/MNI152_linear/images' )
+image_folder_adni1_bl = os.path.join( adni.data_folder, 'ADNI1', 'MNI152_linear/images' )
+image_folder_adni2_bl = os.path.join( adni.data_folder, 'ADNI2', 'MNI152_linear/images' )
+image_folder_adniG_bl = os.path.join( adni.data_folder, 'ADNIGO', 'MNI152_linear/images' )
 datafile_bl = os.path.join( atlas_folder, 'data_' + a.viscode + '_' + a.diagnosis + '.csv' )
-
-image_folder_adni1_fu = os.path.join( data_folder, 'data/ADNI1/MNI152_linear_via_baseline/images' )
-image_folder_adni2_fu = os.path.join( data_folder, 'data/ADNI2/MNI152_linear_via_baseline/images' )
-image_folder_adniG_fu = os.path.join( data_folder, 'data/ADNIGO/MNI152_linear_via_baseline/images' )
-datafile_m12 = os.path.join( atlas_folder, 'data_' + a.viscode + '_' + a.diagnosis + '_testm12.csv' )
-datafile_m24 = os.path.join( atlas_folder, 'data_' + a.viscode + '_' + a.diagnosis + '_testm24.csv' )
-
 model_prefix = os.path.join( atlas_folder, 'model_' + a.viscode + '_' + a.diagnosis + '_s' )
 
 def collect_data( data_folder_adni1, data_folder_adni2, data_folder_adniG,
@@ -61,5 +53,11 @@ def collect_data( data_folder_adni1, data_folder_adni2, data_folder_adniG,
                     print virtual_nmi_brain
 
 collect_data( image_folder_adni1_bl, image_folder_adni2_bl, image_folder_adniG_bl, 'bl', datafile_bl )
-#collect_data( image_folder_adni1_fu, image_folder_adni2_fu, image_folder_adniG_fu, 'm24', datafile_m24 )
-#collect_data( image_folder_adni1_fu, image_folder_adni2_fu, image_folder_adniG_fu, 'm12', datafile_m12 )
+
+# image_folder_adni1_fu = os.path.join( adni.data_folder, 'ADNI1', 'MNI152_linear_via_baseline/images' )
+# image_folder_adni2_fu = os.path.join( adni.data_folder, 'ADNI2', 'MNI152_linear_via_baseline/images' )
+# image_folder_adniG_fu = os.path.join( adni.data_folder, 'ADNIGO', 'MNI152_linear_via_baseline/images' )
+# datafile_m12 = os.path.join( atlas_folder, 'data_' + a.viscode + '_' + a.diagnosis + '_testm12.csv' )
+# datafile_m24 = os.path.join( atlas_folder, 'data_' + a.viscode + '_' + a.diagnosis + '_testm24.csv' )
+# collect_data( image_folder_adni1_fu, image_folder_adni2_fu, image_folder_adniG_fu, 'm24', datafile_m24 )
+# collect_data( image_folder_adni1_fu, image_folder_adni2_fu, image_folder_adniG_fu, 'm12', datafile_m12 )

@@ -16,11 +16,9 @@ parser.add_argument( '-n', '--nr_threads', dest = 'nr_threads', type=int, defaul
 parser.add_argument( '-s', '--spacing', dest = 'sx', type=str, default = '10' )
 a = parser.parse_args()
 
-base_folder = '/vol/biomedic/users/aschmidt/ADNI'
-data_folder = os.path.join( base_folder, 'data', a.study )
+target_mni = os.path.join( adni.mni_folder, 'MNI152_T1_1mm_brain.nii' )
 
-target_mni = '/vol/medic01/users/aschmidt/projects/Data/MNI152-Template/MNI152_T1_1mm_brain.nii'
-
+data_folder = os.path.join( adni.data_folder, a.study )
 baseline_folder = os.path.join( data_folder, 'native/images' )
 followup_folder = os.path.join( data_folder, 'baseline_linear/images' )
 

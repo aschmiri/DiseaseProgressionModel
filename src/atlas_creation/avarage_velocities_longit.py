@@ -12,15 +12,15 @@ a = parser.parse_args()
 
 execAverage = 'ffdaverage'
 
-base_folder = '/vol/biomedic/users/aschmidt/ADNI'
-dof_folder_adni1 = os.path.join( base_folder, 'data/ADNI1/MNI152_svffd_10mm_followup_to_baseline/dof' )
-dof_folder_adni2 = os.path.join( base_folder, 'data/ADNI2/MNI152_svffd_10mm_followup_to_baseline/dof' )
+dof_folder_adni1 = os.path.join( adni.data_folder, 'ADNI1', 'MNI152_svffd_10mm_followup_to_baseline/dof' )
+dof_folder_adni2 = os.path.join( adni.data_folder, 'ADNI2', 'MNI152_svffd_10mm_followup_to_baseline/dof' )
 
 velocities_m12, rids_m12 = adni.get_baseline_transformations_and_rids( dof_folder_adni1, dof_folder_adni2, 'm12', a.diagnosis )
 velocities_m24, rids_m24 = adni.get_baseline_transformations_and_rids( dof_folder_adni1, dof_folder_adni2, 'm24', a.diagnosis )
 
-out_average_velo_m12 = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_0_longit/velo_m12_' + a.diagnosis + '.dof.gz'    
-out_average_velo_m24 = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_0_longit/velo_m24_' + a.diagnosis + '.dof.gz'
+atlas_folder = os.path.join( adni.project_folder, 'atlas/model_0_longit' )
+out_average_velo_m12 = os.path.join( atlas_folder, 'velo_m12_' + a.diagnosis + '.dof.gz' )  
+out_average_velo_m24 = os.path.join( atlas_folder, 'velo_m24_' + a.diagnosis + '.dof.gz' )
 
 selected_velocities_m12 = []
 selected_velocities_m24 = []

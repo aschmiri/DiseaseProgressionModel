@@ -28,7 +28,7 @@ def run( source, template, mask, dofFile, rregParamFile, aregParamFile, wapedImg
             print 'DOF out:  ' + dofRigid
             print 'Param:    ' + rregParamFile
             
-            if mask in ['None', 'none']:
+            if mask in [None, 'None', 'none']:
                 call([ regExec, template, source, '-dofout', dofRigid, '-parin', rregParamFile ])
             else:
                 call([ regExec, template, source, '-dofout', dofRigid, '-parin', rregParamFile, '-mask', mask ])
@@ -45,7 +45,7 @@ def run( source, template, mask, dofFile, rregParamFile, aregParamFile, wapedImg
         print 'DOF out:  ' + dofFile
         print 'Param:    ' + aregParamFile
         
-        if mask in ['None', 'none']:
+        if mask in [None, 'None', 'none']:
             call([ regExec, template, source, '-dofin', dofRigid,  '-dofout', dofFile, '-parin', aregParamFile ])
         else:
             call([ regExec, template, source, '-dofin', dofRigid,  '-dofout', dofFile, '-parin', aregParamFile, '-mask', mask ])
@@ -59,7 +59,7 @@ def run( source, template, mask, dofFile, rregParamFile, aregParamFile, wapedImg
     #
     # Run transformation
     #
-    if not wapedImg in ['None', 'none']:
+    if not wapedImg in [None, 'None', 'none']:
         if os.path.exists( wapedImg ):
             print 'File ' + wapedImg + 'already exists'
         else:

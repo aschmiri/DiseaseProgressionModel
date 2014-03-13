@@ -20,13 +20,13 @@ def run( source, template, dofIn, dofOut, paramFile, wapedImg ):
     else:
         print '--------------------'
         print 'Starting: ireg'
-        print 'Template: ' + template
-        print 'Source:   ' + source
-        print 'DOF in:   ' + dofIn
-        print 'DOF out:  ' + dofOut
-        print 'Param:    ' + paramFile
+        print 'Template: ', template
+        print 'Source:   ', source
+        print 'DOF in:   ', dofIn
+        print 'DOF out:  ', dofOut
+        print 'Param:    ', paramFile
         
-        if dofIn in ['None', 'none']:
+        if dofIn in [None, 'None', 'none']:
             call([ iregExec, template, source, '-dofout', dofOut, '-parin', paramFile, '-v' ])
         else:
             call([ iregExec, template, source, '-dofin', dofIn, '-dofout', dofOut, '-parin', paramFile, '-v' ])
@@ -35,7 +35,7 @@ def run( source, template, dofIn, dofOut, paramFile, wapedImg ):
     #
     # Run transformation
     #
-    if not wapedImg in ['None', 'none']:
+    if not wapedImg in [None, 'None', 'none']:
         if os.path.exists( wapedImg ):
             print 'File ' + wapedImg + ' already exists'
         else:

@@ -14,9 +14,7 @@ a = parser.parse_args()
 
 execMask = 'padding'
 
-base_folder = '/vol/biomedic/users/aschmidt/ADNI'
-data_folder = os.path.join( base_folder, 'data', a.study )
-
+data_folder = os.path.join( adni.data_folder, a.study )
 mask_folder = os.path.join( data_folder, 'native/masks_brain' )
 
 baseline_folder = os.path.join( data_folder, 'native/images_unstripped' )
