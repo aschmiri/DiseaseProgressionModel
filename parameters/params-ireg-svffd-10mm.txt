@@ -1,0 +1,62 @@
+Version                          = 3.1
+Transformation model             = BSplineSVFFD
+Energy function                  = -0.995 NMI(I1, I2) + 0.005 BE
+Maximum streak of rejected steps = 2
+
+#
+# Non-rigid registration parameters
+#
+Lambda1                           = 0.001
+Lambda2                           = 0
+Lambda3                           = 0
+Control point spacing in X        = 10
+Control point spacing in Y        = 10
+Control point spacing in Z        = 10
+Subdivision                       = True
+
+#
+# Registration parameters
+#
+No. of resolution levels          = 3
+No. of bins                       = 64
+Epsilon                           = 0.0001
+Padding value                     = -1
+Source padding value              = -1
+Similarity measure                = NMI
+Interpolation mode                = Linear
+
+#
+# Registration parameters for resolution level 1
+#
+Resolution level                  = 1
+Target blurring (in mm)           = 1
+Target resolution (in mm)         = 2 2 2
+Source blurring (in mm)           = 1
+Source resolution (in mm)         = 2 2 2
+No. of iterations                 = 150
+Minimum length of steps           = 0.02
+Maximum length of steps           = 2
+
+#
+# Registration parameters for resolution level 2
+#
+Resolution level                  = 2
+Target blurring (in mm)           = 2
+Target resolution (in mm)         = 4 4 4
+Source blurring (in mm)           = 2
+Source resolution (in mm)         = 4 4 4
+No. of iterations                 = 150
+Minimum length of steps           = 0.04
+Maximum length of steps           = 4
+
+#
+# Registration parameters for resolution level 3
+#
+Resolution level                  = 3
+Target blurring (in mm)           = 4
+Target resolution (in mm)         = 8 8 8
+Source blurring (in mm)           = 4 
+Source resolution (in mm)         = 8 8 8
+No. of iterations                 = 150
+Minimum length of steps           = 0.08
+Maximum length of steps           = 8
