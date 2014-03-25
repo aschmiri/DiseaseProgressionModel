@@ -7,8 +7,9 @@ def run( source, template, mask, dofFile, rregParamFile, aregParamFile, wapedImg
     import os.path
     from subprocess import call
     
-    regExec = 'reg3'
+    regExec = 'ireg'
     transExec = 'transformation'
+    
     dofRigid = dofFile.replace( '.dof.gz', '_rigid.dof.gz' )
     
     if os.path.exists( dofFile ):

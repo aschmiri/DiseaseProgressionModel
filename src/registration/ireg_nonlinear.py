@@ -7,10 +7,8 @@ def run( source, template, dofIn, dofOut, paramFile, wapedImg ):
     import os.path
     from subprocess import call
     
-    iregExec = 'reg3'
+    iregExec = 'ireg'
     transExec = 'transformation'
-    #iregExec = '/vol/biomedic/users/as12312/local/linux-2.6/irtk-testing/bin/reg3'
-    #transExec = '/vol/biomedic/users/as12312/local/linux-2.6/irtk-testing/bin/transformation'
     
     #
     # Run nonlinear registration

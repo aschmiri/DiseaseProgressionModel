@@ -1,13 +1,8 @@
-Version                          = 3.1
 Transformation model             = Affine
 Energy function                  = -0.995 NMI(I1, I2) + 0.005 BE
 No. of resolution levels         = 2
 Maximum streak of rejected steps = 2
-Padding value                    = -2
-No. of bins                      = 64
-No. of iterations                = 100
+# Padding value                    = -2
 
-Target blurring (in mm)          = 1
-Target resolution (in mm)        = 1
-Source blurring (in mm)          = 1
-Source resolution (in mm)        = 0
+Blurring (in mm)                 = 0.5
+Resolution (in mm)               = 1
