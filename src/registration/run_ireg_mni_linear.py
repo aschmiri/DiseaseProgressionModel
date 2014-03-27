@@ -15,7 +15,6 @@ a = parser.parse_args()
 
 rreg_params = os.path.join( adni.param_folder, 'params-ireg-rigid.txt' )
 areg_params = os.path.join( adni.param_folder, 'params-ireg-affine.txt' )
-target_mni = os.path.join( adni.mni_folder, 'MNI152_T1_1mm_brain.nii' )
 
 data_folder = os.path.join( adni.data_folder, a.study )
 baseline_folder = os.path.join( data_folder, 'native/images' )
@@ -36,7 +35,7 @@ class RegistrationThread(threading.Thread):
         out_dof = os.path.join( output_folder_dof, source_base.replace('.nii.gz', '.dof.gz') )
         out_warped = os.path.join( output_folder_img, source_base )
         
-        ireg_linear.run( source, target_mni, 'none', out_dof, rreg_params, areg_params, out_warped )
+        ireg_linear.run( source, adni.mni_atlas, 'none', out_dof, rreg_params, areg_params, out_warped )
 
 print 'Found ' + str(len( baseline_files )) + ' images...'
 thread_ctr = 0

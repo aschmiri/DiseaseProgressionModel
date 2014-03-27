@@ -19,7 +19,7 @@ a = parser.parse_args()
                  
 execEstimate = 'stateestimation'
 
-mask_brain = os.path.join( adni.mni_folder, 'MNI152_T1_1mm_brain.nii' )
+mask_brain = os.path.join( adni.mni_folder, 'MNI152_T1_1mm_brainmask.nii' )
 
 atlas_folder = os.path.join( adni.project_folder, 'atlas/model_' + str(a.iteration) + a.postfix )
 

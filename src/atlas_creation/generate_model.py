@@ -19,18 +19,17 @@ a = parser.parse_args()
 exec_model = 'model_generation'
 
 atlas_folder = os.path.join( adni.project_folder, 'atlas/model_' + str(a.iteration) + a.postfix )
-mean_atlas = os.path.join( adni.mni_folder, 'MNI152_T1_1mm_brain.nii' )
 model_prefix = os.path.join( atlas_folder, 'model_' + a.viscode + '_' + a.diagnosis + '_s' )
 
 linear = True if a.iteration == 0 else False
 if linear:
     velo = os.path.join( atlas_folder, 'velo_' + a.viscode + '_' + a.diagnosis + '.dof.gz' )
-    call([ exec_model, mean_atlas, velo, 
+    call([ exec_model, adni.mni_atlas, velo, 
           '-min', str(a.state_min), '-max', str(a.state_max), '-stepsize', str(a.state_stepsize),
           '-saveimg', '-prefix', model_prefix, '-linear'])
 else:
     velo_file = os.path.join( atlas_folder, 'velo_' + a.viscode + '_' + a.diagnosis + '.txt' )
-    call([ exec_model, mean_atlas, velo_file, 
+    call([ exec_model, adni.mni_atlas, velo_file, 
           '-min', str(a.state_min), '-max', str(a.state_max), '-stepsize', str(a.state_stepsize),
           '-saveimg', '-prefix', model_prefix ])
     

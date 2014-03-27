@@ -16,8 +16,6 @@ parser.add_argument( '-n', '--nr_threads', dest = 'nr_threads', type=int, defaul
 parser.add_argument( '-s', '--spacing', dest = 'sx', type=str, default = '10' )
 a = parser.parse_args()
 
-target_mni = os.path.join( adni.mni_folder, 'MNI152_T1_1mm_brain.nii' )
-
 data_folder = os.path.join( adni.data_folder, a.study )
 baseline_folder = os.path.join( data_folder, 'native/images' )
 followup_folder = os.path.join( data_folder, 'baseline_linear/images' )
@@ -62,7 +60,7 @@ class RegistrationThread(threading.Thread):
             print 'In image:  ' + followup
             print 'Affine:    ' + aff
             print 'Out image: ' + out_image_affine
-            call([ 'transformation', followup, out_image_affine, '-dofin', aff, '-target', target_mni, '-cspline', '-matchInputType', '-Sp', '0' ])
+            call([ 'transformation', followup, out_image_affine, '-dofin', aff, '-target', adni.mni_atlas, '-cspline', '-matchInputType', '-Sp', '0' ])
         
         if os.path.isfile( out_image_nonlin ):
             print 'Image already exists: ' + out_image_nonlin
@@ -71,7 +69,7 @@ class RegistrationThread(threading.Thread):
             print 'In image:  ' + out_image_affine
             print 'Nonlinear: ' + dof
             print 'Out image: ' + out_image_nonlin
-            call([ 'transformation', out_image_affine, out_image_nonlin, '-dofin', dof, '-target', target_mni, '-cspline', '-matchInputType', '-Sp', '0' ])
+            call([ 'transformation', out_image_affine, out_image_nonlin, '-dofin', dof, '-target', adni.mni_atlas, '-cspline', '-matchInputType', '-Sp', '0' ])
                  
 print 'Found ' + str(len( followup_files )) + ' images...'
 thread_ctr = 0

@@ -9,11 +9,13 @@ import numpy as np
 # global paths and variables
 #
 ################################################################################
-#bin_folder     = '/vol/biomedic/users/aschmidt/ADNI/data'
-data_folder    = '/vol/biomedic/users/aschmidt/ADNI/data'
+data_folder    = '/vol/medic01/users/aschmidt/projects/Data/ADNI/data'
+#data_folder    = '/vol/biomedic/users/aschmidt/ADNI/data'
 project_folder = '/vol/medic01/users/aschmidt/projects/AgeingAtlas'
 param_folder   = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/parameters'
-mni_folder     = '/vol/medic01/users/aschmidt/projects/Data/MNI152-Template'
+mni_folder     = '/vol/medic01/users/aschmidt/projects/Data/mni_icbm152_nlin_asym_09a'
+mni_atlas      = os.path.join( mni_folder, 'mni_icbm152_t1_tal_nlin_asym_09a_brain_scaled.nii' )
+#mni_atlas     = '/vol/medic01/users/aschmidt/projects/Data/MNI152-Template/MNI152_T1_1mm_brain_float.nii'
 
 ################################################################################
 #
@@ -275,6 +277,7 @@ def find_images_with_dof( image_files, dof_folder ):
             
     return image_files_with_dof, dof_files
 
+
 ################################################################################
 #
 # main
@@ -283,15 +286,15 @@ def find_images_with_dof( image_files, dof_folder ):
 if __name__ == "__main__":
     baseline_folder = '/vol/vipdata/data/ADNI/data/ADNI1/native/images_unstripped/'
     followup_folder = '/vol/vipdata/data/ADNI/data/ADNI1/native/images_unstripped/'
-
+ 
     [baseline_files, followup_files] = get_baseline_and_followup( baseline_folder, followup_folder, 'ADNI1', '1.5' )
     print 'Found ' + str(len(baseline_files)) + ' image pairs in ADNI1 (1.5T)'
-
+ 
     #[baseline_files, followup_files] = get_baseline_and_followup( baseline_folder, followup_folder, 'ADNI1', '3' )
     #print 'Found ' + str(len(baseline_files)) + ' image pairs in ADNI1 (3T)'
-    
+     
     baseline_folder = '/vol/vipdata/data/ADNI/data/ADNI2/native/images_unstripped/'
     followup_folder = '/vol/vipdata/data/ADNI/data/ADNI2/native/images_unstripped/'
-
+ 
     [baseline_files, followup_files] = get_baseline_and_followup( baseline_folder, followup_folder, 'ADNI2', '3' )
     print 'Found ' + str(len(baseline_files)) + ' image pairs in ADNI2'
