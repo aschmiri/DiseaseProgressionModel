@@ -7,7 +7,7 @@ import matplotlib.mlab as mlab
 import numpy as np
 import common.atlas_tools as at
 
-datafile_bl  = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_1/data_m24_AD.csv'
+datafile_bl  = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_0/data_sym_m24_AD.csv'
 
 def read_data( datafile, diagnoses ):
     states = []
@@ -28,8 +28,8 @@ states_cn  = read_data( datafile_bl, ['CN'] )
 states_mci  = read_data( datafile_bl, ['EMCI', 'LMCI'] )
 states_ad  = read_data( datafile_bl, ['AD'] )
 
-x = np.arange(0, 10.5, 0.5)
-y = np.zeros(21)
+x = np.arange(0, 15.5, 0.5)
+y = np.zeros(31)
 for i in range(len(states_ad)):
     a = np.floor( states_ad[i] )
     b = states_ad[i] - a
@@ -55,10 +55,10 @@ for i in range(len(states_ad)):
 plt.bar( x, y, align='center', width=0.4, linewidth=0, color=(0,0.38,0.48), alpha=0.7 )
 plt.xlabel('Virtual disease state')
 plt.ylabel('Probability')
-plt.xlim([-0.5,10.5])
+plt.xlim([-0.5,15.5])
 # ocean green (0,0.29,0.35) // '#004B5A'
-prob_x = np.arange(-1, 11, 0.05)
-for i in range(11):
+prob_x = np.arange(-1, 16, 0.05)
+for i in range(16):
     sigma, _, _ = at.adaptive_kernel_regression( np.array( states_ad ), i, required_subjects=50 )
     prob_y = mlab.normpdf( prob_x, i, sigma )
     plt.plot( prob_x, 6*prob_y, linewidth=1.5, color='black' )

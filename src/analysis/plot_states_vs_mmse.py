@@ -5,7 +5,7 @@ import csv
 import matplotlib.pyplot as plt
 from scipy.stats.stats import pearsonr
 
-datafile_bl  = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_0/data_m24_AD.csv'
+datafile_bl  = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_0/data_sym_m24_AD.csv'
 
 def read_data( datafile, diagnoses ):
     ages = []
@@ -42,11 +42,11 @@ print 'AD:  ', pearsonr(ages_ad, states_ad)
 
 f, (ax1,ax2) = plt.subplots(1,2)
 #ax1.scatter( states_cn,  mmses_cn,  color='green' )
-ax1.scatter( states_mci, mmses_mci, color='yellow' )
-#ax1.scatter( states_ad,  mmses_ad,  color='red' )
+#ax1.scatter( states_mci, mmses_mci, color='yellow' )
+ax1.scatter( states_ad,  mmses_ad,  color='red' )
 
 #ax2.scatter( states_cn,  ages_cn,  color='green' )
-ax2.scatter( states_mci, ages_mci, color='yellow' )
-#ax2.scatter( states_ad,  ages_ad,  color='red' )
+#ax2.scatter( states_mci, ages_mci, color='yellow' )
+ax2.scatter( states_ad,  ages_ad,  color='red' )
 
 plt.show()

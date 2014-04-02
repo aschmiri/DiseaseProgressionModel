@@ -8,19 +8,20 @@ import common.adni_tools as adni
 
 parser = argparse.ArgumentParser()
 parser.add_argument( 'diagnosis', type=str, help='the diagnosis, e.g. AD, MCI, CN, ...' )
+parser.add_argument( '-t', '--trans', type=str, default='sym', help='the transformation model, e.g. ffd, svffd, sym, or ic' )
 a = parser.parse_args()
 
 execAverage = 'ffdaverage'
 
-dof_folder_adni1 = os.path.join( adni.data_folder, 'ADNI1', 'MNI152_svffd_10mm_followup_to_baseline/dof' )
-dof_folder_adni2 = os.path.join( adni.data_folder, 'ADNI2', 'MNI152_svffd_10mm_followup_to_baseline/dof' )
+dof_folder_adni1 = os.path.join( adni.data_folder, 'ADNI1', 'MNI152_' + a.trans +'_10mm_followup_to_baseline/dof' )
+dof_folder_adni2 = os.path.join( adni.data_folder, 'ADNI2', 'MNI152_' + a.trans +'_10mm_followup_to_baseline/dof' )
 
 velocities_m12, rids_m12 = adni.get_baseline_transformations_and_rids( dof_folder_adni1, dof_folder_adni2, 'm12', a.diagnosis )
 velocities_m24, rids_m24 = adni.get_baseline_transformations_and_rids( dof_folder_adni1, dof_folder_adni2, 'm24', a.diagnosis )
 
 atlas_folder = os.path.join( adni.project_folder, 'atlas/model_0_longit' )
-out_average_velo_m12 = os.path.join( atlas_folder, 'velo_m12_' + a.diagnosis + '.dof.gz' )  
-out_average_velo_m24 = os.path.join( atlas_folder, 'velo_m24_' + a.diagnosis + '.dof.gz' )
+out_average_velo_m12 = os.path.join( atlas_folder, 'velo_' + a.trans +'_m12_' + a.diagnosis + '.dof.gz' )  
+out_average_velo_m24 = os.path.join( atlas_folder, 'velo_' + a.trans +'_m24_' + a.diagnosis + '.dof.gz' )
 
 selected_velocities_m12 = []
 selected_velocities_m24 = []

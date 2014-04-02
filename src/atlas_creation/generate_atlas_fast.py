@@ -23,12 +23,12 @@ exec_atlas = 'atlas'
 exec_ffdaverage = 'ffdaverage'
 exec_transform = 'transformation'
 
-method_folder = 'MNI152_svffd_10mm_after_linear'
+method_folder = 'MNI152_' + a.trans + '_10mm_after_linear'
 type_folder_images = 'images_normalised'
 type_folder_dofs = 'dof'
 
 atlas_folder = os.path.join( adni.project_folder, 'atlas/model_' + str(a.iteration) )
-datafile = os.path.join( atlas_folder, 'data_' + a.viscode + '_' + a.diagnosis + '.csv' )
+datafile = os.path.join( atlas_folder, 'data_' + a.trans + '_' + a.viscode + '_' + a.diagnosis + '.csv' )
 
 _, _, _, states, images = at.read_datafile( datafile, a.diagnosis )
 
@@ -40,7 +40,7 @@ for state in np.linspace( a.state_min, a.state_max, a.state_steps ):
     selected_weights = weights[indices]
     
     # Define the base name of output files
-    atlas_base = 'atlas_fast_' + a.viscode + '_' + a.diagnosis + '_' + str(state)
+    atlas_base = 'atlas_fast_' + a.trans + '_' + a.viscode + '_' + a.diagnosis + '_' + str(state)
     
     # Print data file for IRTK ffd averaging
     data_file_dofs = os.path.join( atlas_folder, atlas_base + '_dofs.txt' )

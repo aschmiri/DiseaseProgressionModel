@@ -29,7 +29,7 @@ dof_folder = os.path.join(  adni.data_folder, 'ADNI', 'MNI152_intra_' + a.trans 
 
 atlas_folder = os.path.join( adni.project_folder, 'atlas/model_' + str(a.iteration) )
 atlas_folder_temp = adni.make_dir( atlas_folder, 'temp' ) 
-datafile = os.path.join( atlas_folder, 'data_' + a.viscode + '_' + a.diagnosis + '.csv' )
+datafile = os.path.join( atlas_folder, 'data_' + a.trans + '_' + a.viscode + '_' + a.diagnosis + '.csv' )
 
 rids, _, _, states, images = at.read_datafile( datafile, a.diagnosis )
 
@@ -41,7 +41,7 @@ selected_images = images[indices]
 selected_weights = weights[indices]
 
 # Print data file for IRTK image averaging
-atlas_base = 'atlas_' + a.viscode + '_' + a.diagnosis + '_' + str(a.state)
+atlas_base = 'atlas_' + a.trans + '_' + a.viscode + '_' + a.diagnosis + '_' + str(a.state)
 data_file_images = os.path.join( atlas_folder, atlas_base + '_images.txt' )
 
 with open( data_file_images, 'wb') as csvfile:
@@ -74,7 +74,7 @@ with open( data_file_images, 'wb') as csvfile:
             print 'Data:   ' + data_file_dofs
             print 'Output: ' + out_average_dof
             call( [exec_ffdaverage, out_average_dof, '-dofnames', data_file_dofs, 
-                   '-identity', str(selected_weights[i] ) ] )
+                   '-identity', str(selected_weights[i]) ] )
      
         # Transform average image
         out_image_transformed = os.path.join( atlas_folder_temp, temp_base + '_image_transformed.nii.gz' )

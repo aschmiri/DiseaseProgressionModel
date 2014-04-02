@@ -23,7 +23,7 @@ a = parser.parse_args()
 ireg_params = os.path.join( adni.param_folder, 'params-ireg-' + a.trans + '-' + a.spacing + 'mm.txt' )
 
 atlas_folder = os.path.join( adni.project_folder, 'atlas/model_' + str(a.iteration) )
-datafile = os.path.join( atlas_folder, 'data_' + a.viscode + '_' + a.diagnosis + '.csv' )
+datafile = os.path.join( atlas_folder, 'data_' + a.trans +'_' + a.viscode + '_' + a.diagnosis + '.csv' )
 
 rids, _, _, states, images = at.read_datafile( datafile, a.diagnosis )
 
