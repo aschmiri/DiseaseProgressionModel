@@ -1,8 +1,8 @@
 Transformation model             = BSplineSVFFD
-Control point spacing            = 5
+Control point spacing            = 20
 Energy function                  = -0.999 NMI(I1 o T^-0.5, I2 o T^0.5) + 0.001 BE
 Maximum streak of rejected steps = 2
 Padding value                    = 0
-No. of resolution levels         = 4
+No. of resolution levels         = 2
 Resolution [mm]                  = 2 2 2
 Maximum scaled velocity          = 0
