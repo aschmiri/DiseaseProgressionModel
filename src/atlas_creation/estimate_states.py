@@ -38,7 +38,7 @@ if os.path.exists( datafile ):
 else:
     with open( datafile, 'wb') as csvfile:
         csv_writer = csv.writer( csvfile, delimiter=',' )
-        csv_writer.writerow([ 'RID', 'DX.bl', 'AGE', 'MMSE', 'VIRT_NMI', 'FILE' ])
+        csv_writer.writerow([ 'RID', 'DX.bl', 'AGE', 'MMSE', 'DPI', 'FILE' ])
         for i in range(len( files )):
             print ' Analysing ' + files[i]
             

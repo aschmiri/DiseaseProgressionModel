@@ -20,7 +20,7 @@ def read_data( datafile ):
             dx = row[headers.index('DX.bl')]
             if dx == 'AD':
                 rids.append( int( row[headers.index('RID')] ) )
-                states.append( float( row[headers.index('VIRT_NMI')] ) )
+                states.append( float( row[headers.index('DPI')] ) )
             
     return (rids, states)
 

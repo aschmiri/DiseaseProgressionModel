@@ -17,7 +17,7 @@ def read_data( datafile, diagnoses ):
         for row in reader:
             dx = row[headers.index('DX.bl')]
             if dx in diagnoses:
-                states.append( float( row[headers.index('VIRT_NMI')] ) )
+                states.append( float( row[headers.index('DPI')] ) )
             
     return np.array( states )
 

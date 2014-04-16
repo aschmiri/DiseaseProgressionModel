@@ -5,7 +5,7 @@ import os.path
 import argparse
 import numpy as np
 import nibabel as nib
-import matplotlib.pyplot as pyplot
+import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import common.adni_tools as adni
 
@@ -59,12 +59,12 @@ for state in np.linspace( a.state_min, a.state_max, a.state_steps ):
 
 ###################################
 # Plot image and features
-fig = pyplot.figure()
+fig = plt.figure()
 subplot = fig.add_subplot(1,1,1)
 tracker = EventHandler( subplot, atlases )
 
 fig.canvas.mpl_connect('scroll_event', tracker.onscroll)
 fig.canvas.mpl_connect('key_press_event', tracker.onkeypress)
-pyplot.show()
+plt.show()
 
 
