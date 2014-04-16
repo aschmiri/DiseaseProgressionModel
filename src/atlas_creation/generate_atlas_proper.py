@@ -16,6 +16,7 @@ parser.add_argument( '-i', '--iteration', type=int, default=1 )
 parser.add_argument( '-r', '--required_subjects', type=int, default=20 )
 parser.add_argument( '-t', '--trans', type=str, default='svffd', help='the transformation model, e.g. ffd, svffd, sym, or ic' )
 parser.add_argument( '-s', '--spacing', type=str, default='10' )
+parser.add_argument( '-a', '--age_regression', action='store_true', default=False, help='use age regression' )
 a = parser.parse_args()
     
 exec_atlas = 'atlas'
@@ -31,7 +32,7 @@ atlas_folder = os.path.join( adni.project_folder, 'atlas/model_' + str(a.iterati
 atlas_folder_temp = adni.make_dir( atlas_folder, 'temp' ) 
 datafile = os.path.join( atlas_folder, 'data_' + a.trans + '_' + a.viscode + '_' + a.diagnosis + '.csv' )
 
-rids, _, _, states, images = at.read_datafile( datafile, a.diagnosis )
+rids, _, _, states, images = at.read_datafile( datafile, a.diagnosis, age_regression = a.age_regression )
 
 # Find sigma and corresponding images
 sigma, weights, indices = at.adaptive_kernel_regression( states, a.state, required_subjects = a.required_subjects )
@@ -41,7 +42,9 @@ selected_images = images[indices]
 selected_weights = weights[indices]
 
 # Print data file for IRTK image averaging
-atlas_base = 'atlas_' + a.trans + '_' + a.viscode + '_' + a.diagnosis + '_' + str(a.state)
+atlas_base = 'atlas_' + a.trans + '_' + a.viscode + '_' + a.diagnosis + '_' + str(a.state) 
+if a.age_regression:
+    atlas_base = atlas_base + '_agereg'
 data_file_images = os.path.join( atlas_folder, atlas_base + '_images.txt' )
 
 with open( data_file_images, 'wb') as csvfile:
@@ -53,7 +56,8 @@ with open( data_file_images, 'wb') as csvfile:
         # Define the base name of output files
         
         temp_base = str(target_rid) + '_' + str(a.state) + '_' + a.diagnosis
-        
+        if a.age_regression:
+            temp_base = temp_base + '_agereg'
         # Print data file for IRTK ffd averaging
         data_file_dofs = os.path.join( atlas_folder_temp, temp_base + '_dofs.txt' )
         with open( data_file_dofs, 'wb') as csvfile:

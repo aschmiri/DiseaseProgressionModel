@@ -17,6 +17,7 @@ parser.add_argument( '-n', '--nr_threads', type=int, default=1 )
 parser.add_argument( '-i', '--iteration', type=int, default=1 )
 parser.add_argument( '-r', '--required_subjects', type=int, default=20 )
 parser.add_argument( '-s', '--spacing', type=str, default='10' )
+parser.add_argument( '-a', '--age_regression', action='store_true', default=False, help='use age regression' )
 parser.add_argument( '--save_image', action='store_true', help='save the warped image' )
 a = parser.parse_args()
 
@@ -25,7 +26,7 @@ ireg_params = os.path.join( adni.param_folder, 'params-ireg-' + a.trans + '-' + 
 atlas_folder = os.path.join( adni.project_folder, 'atlas/model_' + str(a.iteration) )
 datafile = os.path.join( atlas_folder, 'data_' + a.trans +'_' + a.viscode + '_' + a.diagnosis + '.csv' )
 
-rids, _, _, states, images = at.read_datafile( datafile, a.diagnosis )
+rids, _, _, states, images = at.read_datafile( datafile, a.diagnosis, age_regression = a.age_regression )
 
 sigma, weights, indices = at.adaptive_kernel_regression( states, a.state, required_subjects = a.required_subjects )
 

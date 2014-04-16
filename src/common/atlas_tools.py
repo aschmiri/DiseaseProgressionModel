@@ -40,7 +40,7 @@ def find_file( filename, method_folder, type_folder ):
 # read_datafile
 #
 ################################################################################
-def read_datafile( datafile, diagnosis='ALL' ):
+def read_datafile( datafile, diagnosis='ALL', age_regression=False ):
     import csv
     import os.path
     
@@ -58,7 +58,7 @@ def read_datafile( datafile, diagnosis='ALL' ):
             dx = row[headers.index('DX.bl')]
             age = float( row[headers.index('AGE')] )
             mmse = int( row[headers.index('MMSE')] )
-            state = float( row[headers.index('VIRT_NMI')] )
+            state = float( row[headers.index('DPI')] )
             image = row[headers.index('FILE')]
             if os.path.exists( image ):
                 if diagnosis == 'ALL' or diagnosis in dx or dx in diagnosis:
@@ -67,8 +67,20 @@ def read_datafile( datafile, diagnosis='ALL' ):
                     mmses.append( mmse )
                     states.append( state )
                     images.append( image )
-                
-    return np.array( rids ), np.array( ages ), np.array( mmses ), np.array( states ), np.array( images )
+    # Cast to np arrays
+    states = np.array( states )
+    ages = np.array( ages )
+    
+    # Perform age regression
+    if age_regression:
+        import scipy.stats as stats
+        
+        mean_state = np.mean( states )
+        slope, intercept, _, _, _ = stats.linregress( ages , states )
+        states = states - (ages * slope + intercept) + mean_state
+      
+    # Return read data
+    return np.array( rids ), ages, np.array( mmses ), states, np.array( images )
 
 ################################################################################
 #
