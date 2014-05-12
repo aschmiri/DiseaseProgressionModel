@@ -11,7 +11,7 @@ parser.add_argument( 'study', type=str, help='the study, should be ADNI1, ADNI2,
 parser.add_argument( 'field_strength', type=str,  help='the field strength, usually 1.5 for ADNI1 and 3 otherwise' )
 parser.add_argument( 'trans', type=str, help='the transformation model, e.g. linear, ffd, svffd, sym, or ic' )
 parser.add_argument( '-d', '--dof', action='store_true', default=False, help='show the dof' )
-parser.add_argument( '-r', '--rid', type=int, default=None )
+parser.add_argument( '-r', '--rid', type=str, default=None )
 parser.add_argument( '-s', '--spacing', dest='sx', type=str, default='10' )
 a = parser.parse_args()
 
@@ -40,7 +40,7 @@ print 'Found ' + str(len( baseline_files )) + ' images:'
 for i in range( len( baseline_files ) ):
     source = baseline_files[i]
     dof = dof_files[i]
-    if a.rid == None or source.find( '_S_' + str( a.rid ) ) > 0:
+    if a.rid == None or source.find( '_S_' + a.rid ) > 0:
         print '--------------------'
         print 'Source: ' + source
         print 'DOF:    ' + dof
