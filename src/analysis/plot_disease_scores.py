@@ -3,7 +3,7 @@
 
 import matplotlib.pyplot as plt
 from scipy.stats.stats import pearsonr
-import common.adni_tools as adni
+import common.adni_db as adnidb
 
 def strip_lists( list1, list2 ):
     rlist1 = []
@@ -14,7 +14,7 @@ def strip_lists( list1, list2 ):
             rlist2.append( list2[i] )
     return rlist1, rlist2
 
-years, dpi, cdrsb, adas11, adas13, faq, mmse, moca = adni.get_years_after_symptoms()
+years, dpi, cdrsb, adas11, adas13, faq, mmse, moca = adnidb.get_years_after_symptoms()
 
 print 'Pearson Correlation Coefficients'
 print 'DPI:     ', pearsonr( *strip_lists(years, dpi) )
