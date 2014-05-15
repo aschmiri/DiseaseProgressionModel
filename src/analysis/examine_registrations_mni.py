@@ -8,7 +8,6 @@ import common.adni_tools as adni
 
 parser = argparse.ArgumentParser()
 parser.add_argument( 'study', type=str, help='the study, should be ADNI1, ADNI2, or ADNIGO' )
-parser.add_argument( 'field_strength', type=str,  help='the field strength, usually 1.5 for ADNI1 and 3 otherwise' )
 parser.add_argument( 'trans', type=str, help='the transformation model, e.g. linear, ffd, svffd, sym, or ic' )
 parser.add_argument( '-d', '--dof', action='store_true', default=False, help='show the dof' )
 parser.add_argument( '-r', '--rid', type=str, default=None )
@@ -33,7 +32,7 @@ else:
 
 print dof_folder
 print baseline_folder
-baseline_files = adni.get_baseline( baseline_folder, a.study, a.field_strength )
+baseline_files = adni.get_baseline( baseline_folder, a.study )
 baseline_files, dof_files = adni.find_images_with_dof( baseline_files, dof_folder )
 
 print 'Found ' + str(len( baseline_files )) + ' images:'

@@ -6,10 +6,10 @@ import os.path
 import threading
 import common.adni_tools as adni
 import ireg_nonlinear
+import re
 
 parser = argparse.ArgumentParser()
 parser.add_argument( 'study', type=str, help='the study, should be ADNI1, ADNI2, or ADNIGO' )
-parser.add_argument( 'field_strength', type=str,  help='the field strength, usually 1.5 for ADNI1 and 3 otherwise' )
 parser.add_argument( 'viscode', type=str, help='the visit code, e.g. bl, m12, m24, ...' )
 parser.add_argument( 'trans', type=str, help='the transformation model, e.g. ffd, svffd, sym, or ic' )
 parser.add_argument( '-n', '--nr_threads', dest = 'nr_threads', type=int, default = 1 )
@@ -20,12 +20,12 @@ ireg_params = os.path.join( adni.param_folder, 'params-ireg-' + a.trans + '-' + 
 
 data_folder = os.path.join( adni.data_folder, a.study )
 if a.viscode == 'bl':
-    baseline_folder = os.path.join( data_folder, 'MNI152_linear/images' )
-    baseline_files = adni.get_baseline( baseline_folder, a.study, a.field_strength, 'bl' )
+    image_folder = os.path.join( data_folder, 'MNI152_linear/images' )
+    image_files = adni.get_baseline( image_folder, a.study )
     output_folder = adni.make_dir( data_folder, 'MNI152_' + a.trans + '_' + a.sx + 'mm_after_linear' )
-elif a.viscode in ['m06', 'm12', 'm24']:
-    baseline_folder = os.path.join( data_folder, 'MNI152_linear_via_baseline/images' )
-    baseline_files = adni.get_baseline( baseline_folder, a.study, a.field_strength, 'm24' )
+elif a.viscode == 'fu' or re.match('m[0-9][0-9]', a.viscode):
+    image_folder = os.path.join( data_folder, 'MNI152_linear_via_baseline/images' )
+    image_files = adni.get_followup( image_folder, a.study, a.viscode )
     output_folder = adni.make_dir( data_folder, 'MNI152_' + a.trans + '_' + a.sx + 'mm_after_linear_via_baseline' )
 
 output_folder_img = adni.make_dir( output_folder, 'images' )
@@ -36,7 +36,7 @@ class RegistrationThread(threading.Thread):
         threading.Thread.__init__(self)
         self.index = index
     def run(self):
-        source = baseline_files[self.index] 
+        source = image_files[self.index] 
         source_base = os.path.basename( source )
         
         out_dof = os.path.join( output_folder_dof, source_base.replace('.nii.gz', '.dof.gz') )
@@ -44,10 +44,10 @@ class RegistrationThread(threading.Thread):
         
         ireg_nonlinear.run( source, adni.mni_atlas, 'none', out_dof, ireg_params, out_warped )
 
-print 'Found ' + str(len( baseline_files )) + ' images...'
+print 'Found ' + str(len( image_files )) + ' images...'
 thread_ctr = 0
 threads = []
-for i in range( len( baseline_files ) ):
+for i in range( len( image_files ) ):
     thread = RegistrationThread(i)
     thread.start()
     threads.append(thread)

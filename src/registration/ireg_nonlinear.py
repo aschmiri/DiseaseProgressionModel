@@ -14,7 +14,7 @@ def run( source, template, dofIn, dofOut, paramFile, wapedImg ):
     # Run nonlinear registration
     #
     if os.path.exists( dofOut ):
-        print 'File ' + dofOut + ' already exists'
+        print 'File', dofOut, 'already exists'
     else:
         print '--------------------'
         print 'Starting: ireg'
@@ -35,13 +35,13 @@ def run( source, template, dofIn, dofOut, paramFile, wapedImg ):
     #
     if not wapedImg in [None, 'None', 'none']:
         if os.path.exists( wapedImg ):
-            print 'File ' + wapedImg + ' already exists'
+            print 'File', wapedImg, 'already exists'
         else:
             print '--------------------'
             print 'Starting transformation'
-            print 'Source:   ' + source
-            print 'Template: ' + template
-            print 'DOF:      ' + dofOut
-            print 'Deformed: ' + wapedImg
+            print 'Source:  ', source
+            print 'Template:', template
+            print 'DOF:     ', dofOut
+            print 'Deformed:', wapedImg
             
             call([ transExec, source, wapedImg, '-target', template, '-dofin', dofOut, '-cspline', '-matchInputType', '-Sp', '0' ])

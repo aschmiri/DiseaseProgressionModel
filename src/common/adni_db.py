@@ -170,5 +170,5 @@ def print_data_for_rid( rid = 43 ):
 ################################################################################
 if __name__ == "__main__":
     #get_years_after_symptoms()
-    print_data_for_rid()
+    print_data_for_rid( 1226 )
 

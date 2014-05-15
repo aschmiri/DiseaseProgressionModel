@@ -9,7 +9,6 @@ import common.adni_tools as adni
 
 parser = argparse.ArgumentParser()
 parser.add_argument( 'study', type=str, help='the study, should be ADNI1, ADNI2, or ADNIGO' )
-parser.add_argument( 'field_strength', type=str,  help='the field strength, usually 1.5 for ADNI1 and 3 otherwise' )
 parser.add_argument( 'viscode', type=str, help='the visit code, e.g. bl, m12, m24, ...' )
 parser.add_argument( 'trans', type=str, help='the transformation model, e.g. ffd, svffd, sym, or ic' )
 parser.add_argument( '-n', '--nr_threads', dest = 'nr_threads', type=int, default = 1 )
@@ -30,7 +29,7 @@ out_folder_linear = adni.make_dir( data_folder, 'MNI152_linear_via_baseline' )
 out_folder_linear_img = adni.make_dir( out_folder_linear, 'images' )
 out_folder_nonlin_img = adni.make_dir( mni_nonlin_folder, 'images_' + a.viscode )
 
-baseline_files, followup_files = adni.get_baseline_and_followup( baseline_folder, followup_folder, a.study, a.field_strength, a.viscode )
+baseline_files, followup_files = adni.get_baseline_and_followup( baseline_folder, followup_folder, a.study, a.viscode )
 
 
 class RegistrationThread(threading.Thread):

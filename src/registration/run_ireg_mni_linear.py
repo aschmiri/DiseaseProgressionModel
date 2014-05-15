@@ -9,7 +9,6 @@ import ireg_linear
 
 parser = argparse.ArgumentParser()
 parser.add_argument( 'study', type=str, help='the study, should be ADNI1, ADNI2, or ADNIGO' )
-parser.add_argument( 'field_strength', type=str,  help='the field strength, usually 1.5 for ADNI1 and 3 otherwise' )
 parser.add_argument( '-n', '--nr_threads', dest = 'nr_threads', type=int, default = 1 )
 a = parser.parse_args()
 
@@ -18,7 +17,7 @@ areg_params = os.path.join( adni.param_folder, 'params-ireg-affine.txt' )
 
 data_folder = os.path.join( adni.data_folder, a.study )
 baseline_folder = os.path.join( data_folder, 'native/images' )
-baseline_files = adni.get_baseline( baseline_folder, a.study, a.field_strength )
+baseline_files = adni.get_baseline( baseline_folder, a.study )
 
 output_folder = adni.make_dir( data_folder, 'MNI152_linear' )
 output_folder_img = adni.make_dir( output_folder, 'images' )

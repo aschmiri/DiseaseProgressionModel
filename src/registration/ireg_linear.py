@@ -13,21 +13,21 @@ def run( source, template, mask, dofFile, rregParamFile, aregParamFile, wapedImg
     dofRigid = dofFile.replace( '.dof.gz', '_rigid.dof.gz' )
     
     if os.path.exists( dofFile ):
-        print 'File ' + dofFile + ' already exists'
+        print 'File', dofFile, 'already exists'
     else:
         if os.path.exists( dofRigid ):
-            print 'File ' + dofFile + ' already exists'
+            print 'File', dofFile, 'already exists'
         else:
             #
             # Run rigid registration
             #
             print '--------------------'
             print 'Starting: ireg'
-            print 'Template: ' + template
-            print 'Source:   ' + source
-            print 'Mask:     ' + mask
-            print 'DOF out:  ' + dofRigid
-            print 'Param:    ' + rregParamFile
+            print 'Template:', template
+            print 'Source:  ', source
+            print 'Mask:    ', mask
+            print 'DOF out: ', dofRigid
+            print 'Param:   ', rregParamFile
             
             if mask in [None, 'None', 'none']:
                 call([ regExec, template, source, '-dofout', dofRigid, '-parin', rregParamFile ])
@@ -39,12 +39,12 @@ def run( source, template, mask, dofFile, rregParamFile, aregParamFile, wapedImg
         #
         print '--------------------'
         print 'Starting: ireg'
-        print 'Template: ' + template
-        print 'Source:   ' + source
-        print 'Mask:     ' + mask
-        print 'DOF in:   ' + dofRigid
-        print 'DOF out:  ' + dofFile
-        print 'Param:    ' + aregParamFile
+        print 'Template:', template
+        print 'Source:  ', source
+        print 'Mask:    ', mask
+        print 'DOF in:  ', dofRigid
+        print 'DOF out: ', dofFile
+        print 'Param:   ', aregParamFile
         
         if mask in [None, 'None', 'none']:
             call([ regExec, template, source, '-dofin', dofRigid,  '-dofout', dofFile, '-parin', aregParamFile ])
@@ -62,14 +62,14 @@ def run( source, template, mask, dofFile, rregParamFile, aregParamFile, wapedImg
     #
     if not wapedImg in [None, 'None', 'none']:
         if os.path.exists( wapedImg ):
-            print 'File ' + wapedImg + 'already exists'
+            print 'File', wapedImg, 'already exists'
         else:
             print '--------------------'
             print 'Starting: transformation'
-            print 'Source:   ' + source
-            print 'Template: ' + template
-            print 'DOF:      ' + dofFile
-            print 'Deformed: ' + wapedImg
+            print 'Source:  ', source
+            print 'Template:', template
+            print 'DOF:     ', dofFile
+            print 'Deformed:', wapedImg
           
             call([ transExec, source, wapedImg, '-target', template, '-dofin', dofFile, '-cspline', '-matchInputType', '-Sp', '0' ])
         
