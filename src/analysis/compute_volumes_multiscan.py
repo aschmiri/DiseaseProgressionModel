@@ -16,7 +16,7 @@ exec_volumes = '/vol/biomedic/users/cl6311/irtk_svn_workspace/irtk/build/bin/cl_
 exec_factors = '/vol/medic01/users/aschmidt/development/build_helvellyn/irtk-as12312/bin/affineScaling'
 
 data_file = os.path.join( adni.project_folder, 'lists/query_ADNI.csv' )
-out_file = os.path.join( adni.project_folder, 'lists/volumes_mutliscan.csv' )
+out_file = os.path.join( adni.project_folder, 'lists/volumes_multiscan.csv' )
 folder = adni.data_folder + '/ALL/native/images_unstripped'
 
 folder_lin_mni = adni.data_folder + '/ALL/MNI152_linear/dof'
