@@ -3,6 +3,72 @@
 
 import os.path
 import adni_tools as adni
+import csv
+import sqlite3
+
+################################################################################
+#
+# create_adni_db
+#
+################################################################################
+def create_adni_db():
+    # Open database conenction
+    con = sqlite3.connect( os.path.join( adni.project_folder, 'lists', 'adni.db' ) )
+    cur = con.cursor()
+    
+    # Create table
+    cur.execute( 'DROP TABLE IF EXISTS adnimerge' )
+    cur.execute( 'CREATE TABLE adnimerge (iid INTEGER PRIMARY KEY, \
+                                          rid INTEGER, \
+                                          viscode TEXT, \
+                                          study_bl TEXT, \
+                                          study TEXT, \
+                                          filename TEXT, \
+                                          diagnosis_bl TEXT, \
+                                          diagnosis TEXT, \
+                                          scandate TEXT, \
+                                          fieldstrength TEXT, \
+                                          age REAL, \
+                                          apoe4 INTEGER, \
+                                          cdrsb REAL, \
+                                          adas11 REAL, \
+                                          adas13 REAL, \
+                                          faq INTEGER, \
+                                          mmse INTEGER, \
+                                          moca INTEGER)' )
+    
+    # Read database from query file 
+    query_file = os.path.join( adni.project_folder, 'lists', 'query_ADNI.csv' )
+    with open( query_file, 'rb' ) as csvfile:
+        entries = csv.DictReader( csvfile )
+        for entry in entries:
+            iid      = entry['ImageUID']
+            rid      = entry['RID']
+            viscode      = entry['VISCODE']
+            study_bl = entry['ORIGPROT']
+            study    = entry['COLPROT']
+            filename = os.path.basename( entry['Files'] )
+            dx_bl    = entry['DX.bl']
+            dx       = entry['DX.scan']
+            scandate = entry['ScanDate']
+            fs       = entry['MagStrength']
+            age      = entry['AGE.scan']
+            apoe4    = 0#entry['APOE4']
+            cdrsb    = 0#entry['CDRSB']
+            adas11   = 0#entry['ADAS11']
+            adas13   = 0#entry['ADAS13']
+            faq      = 0#entry['FAQ']
+            mmse     = entry['MMSE']
+            moca     = 0#entry['MOCA']
+            if (study == 'ADNI1' and float(fs) < 2.0) or (study != 'ADNI1' and float(fs) > 2.0):
+                cur.execute( "INSERT INTO adnimerge VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                             (iid, rid, viscode, study_bl, study, filename, dx_bl, dx, scandate, fs, age, 
+                              apoe4, cdrsb, adas11, adas13, faq, mmse, moca) )
+            
+    # Commit and close database connection
+    con.commit()
+    con.close()
+    
 
 ################################################################################
 #
@@ -10,9 +76,6 @@ import adni_tools as adni
 #
 ################################################################################
 def get_years_after_symptoms():
-    import csv
-    import sqlite3
-    
     con = sqlite3.connect(":memory:")
     cur = con.cursor()
     
@@ -170,5 +233,15 @@ def print_data_for_rid( rid = 43 ):
 ################################################################################
 if __name__ == "__main__":
     #get_years_after_symptoms()
-    print_data_for_rid( 1226 )
+    print_data_for_rid( 1225 )
+    create_adni_db()
+    
+    # Test DB
+    con = sqlite3.connect( os.path.join( adni.project_folder, 'lists', 'adni.db' ) )
+    cur = con.cursor()
+    cur.execute( "SELECT iid, rid, viscode, study, fieldstrength, mmse FROM adnimerge WHERE rid = 1225" )
+    
+    rows = cur.fetchall()
+    for row in rows:
+        print row
 
