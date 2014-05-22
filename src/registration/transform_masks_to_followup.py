@@ -45,27 +45,31 @@ class RegistrationThread(threading.Thread):
         target_seg = os.path.join( seg_folder_in, 'EM-' + target_base )
         out_seg    = os.path.join( seg_folder_out, source_base )
         
-        if os.path.isfile( target_seg ):
-            if os.path.isfile( out_seg ):
-                print 'File ' + out_seg + ' already exists!'
-            else:
-                #
-                # Run transform masks
-                #
-                print '--------------------'
-                print 'Starting: transformation'
-                print 'Target:     ' + target
-                print 'Source:     ' + source
-                print 'DOF lin:    ' + dof_lin
-                print 'DOF nonlin: ' + dof_nonlin
-                print 'Seg in:     ' + target_seg
-                print 'Seg out:    ' + out_seg
-                
-                call([ 'transformation', target_seg, out_seg, '-dofin', dof_nonlin, '-target', target, '-nn', '-matchInputType', '-invert' ])
-                call([ 'transformation', out_seg, out_seg, '-dofin', dof_lin, '-target', source, '-nn', '-matchInputType', '-invert' ])
+        if not os.path.isfile( target_seg ):
+            print 'Segmentation ' + target_seg + ' does not exists!'
+        if not os.path.isfile( dof_nonlin ):
+            print 'DOF file ' + dof_nonlin + ' does not exists!'
+        elif os.path.isfile( out_seg ):
+            print 'File ' + out_seg + ' already exists!'
+        else:
+            #
+            # Run transform masks
+            #
+            print '--------------------'
+            print 'Starting: transformation'
+            print 'Target:     ' + target
+            print 'Source:     ' + source
+            print 'DOF lin:    ' + dof_lin
+            print 'DOF nonlin: ' + dof_nonlin
+            print 'Seg in:     ' + target_seg
+            print 'Seg out:    ' + out_seg
+            
+            call([ 'transformation', target_seg, out_seg, '-dofin', dof_nonlin, '-target', target, '-nn', '-matchInputType', '-invert' ])
+            call([ 'transformation', out_seg, out_seg, '-dofin', dof_lin, '-target', source, '-nn', '-matchInputType', '-invert' ])
+            print '--------------------'
         
 
-print 'Found ' + str(len( baseline_files )) + ' image pairs...'
+print 'Found', str(len( baseline_files )), 'image pairs...'
 thread_ctr = 0
 threads = []
 for i in range( len( baseline_files ) ):
