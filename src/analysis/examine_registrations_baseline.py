@@ -17,12 +17,13 @@ a = parser.parse_args()
 rview = '/vol/medic01/users/aschmidt/development/build_helvellyn/irtk-as12312/bin/rview'
 
 data_folder = os.path.join( adni.data_folder, a.study )
-baseline_folder = os.path.join( data_folder, 'native/images' )
 if a.trans == 'lin':
-    followup_folder = os.path.join( data_folder, 'native/images' )
+    baseline_folder = os.path.join( data_folder, 'native/images_unstripped' )
+    followup_folder = os.path.join( data_folder, 'native/images_unstripped' )
     dof_folder = os.path.join( data_folder, 'baseline_linear/dof' )
 else:
-    followup_folder = os.path.join( data_folder, 'baseline_linear/images' )
+    baseline_folder = os.path.join( data_folder, 'native/images_unstripped' )
+    followup_folder = os.path.join( data_folder, 'baseline_linear/images_unstripped' )
     dof_folder = os.path.join( data_folder, 'baseline_' + a.trans + '_' + a.sx + 'mm_after_linear/dof' )
 
 baseline_files, followup_files = adni.get_baseline_and_followup( baseline_folder, followup_folder, a.study, a.viscode )
@@ -34,10 +35,11 @@ for i in range( len( baseline_files ) ):
     source_base = os.path.basename( source )
     dof = os.path.join( dof_folder, source_base ).replace('.nii.gz', '.dof.gz')
 
-    if a.rid == None or source.find( '_S_' + a.rid ) > 0:
-        print '--------------------'
-        print 'Target: ' + target
-        print 'Source: ' + source
-        print 'DOF:    ' + dof
-        
-        call([ rview, target, source, dof, '-res', '1.5', '-mix' ])
+    if os.path.isfile( dof ):
+        if a.rid == None or source.find( '_S_' + a.rid ) > 0:
+            print '--------------------'
+            print 'Target: ' + target
+            print 'Source: ' + source
+            print 'DOF:    ' + dof
+            
+            call([ rview, target, source, dof, '-res', '1.5', '-mix' ])

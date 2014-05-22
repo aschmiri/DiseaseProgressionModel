@@ -18,12 +18,12 @@ a = parser.parse_args()
 ireg_params = os.path.join( adni.param_folder, 'params-ireg-' + a.trans + '-' + a.sx + 'mm.txt' )
 
 data_folder = os.path.join( adni.data_folder, a.study )
-baseline_folder = os.path.join( data_folder, 'native/images' )
-followup_folder = os.path.join( data_folder, 'baseline_linear/images' )
+baseline_folder = os.path.join( data_folder, 'native/images_unstripped' )
+followup_folder = os.path.join( data_folder, 'baseline_linear/images_unstripped' )
 baseline_files, followup_files = adni.get_baseline_and_followup( baseline_folder, followup_folder, a.study, a.viscode )
 
 output_folder = adni.make_dir( data_folder, 'baseline_' + a.trans + '_' + a.sx + 'mm_after_linear' )
-output_folder_img = adni.make_dir( output_folder, 'images' )
+output_folder_img = adni.make_dir( output_folder, 'images_unstripped' )
 output_folder_dof = adni.make_dir( output_folder, 'dof' )
 
 class RegistrationThread(threading.Thread):
@@ -38,7 +38,7 @@ class RegistrationThread(threading.Thread):
         out_dof = os.path.join( output_folder_dof, source_base.replace('.nii.gz', '.dof.gz') )
         out_warped = os.path.join( output_folder_img, source_base )
         
-        ireg_nonlinear.run( source, target, 'none', out_dof, ireg_params, out_warped )
+        ireg_nonlinear.run( source, target, None, out_dof, ireg_params, out_warped )
 
 print 'Found', len( baseline_files ), 'image pairs...'
 thread_ctr = 0
