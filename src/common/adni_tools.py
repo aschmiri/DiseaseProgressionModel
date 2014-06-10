@@ -343,6 +343,11 @@ def get_followup( baseline_folder, study, viscode = 'fu' ):
 #
 ################################################################################
 def get_baseline_and_followup( baseline_folder, followup_folder, study, viscode ):
+    # Followup scans shouldn't be baseline
+    if viscode == 'ALL':
+        viscode = 'fu'
+
+    # Get followup scans
     followup_files_unsorted, followup_rids_unsorted = read_list( followup_folder, study=study, viscode=viscode )
     baseline_files = []
     followup_files = []
