@@ -38,12 +38,12 @@ volume_names   = [
     'Right Cerebral White Matter',    # 15
     'Left Cerebral White Matter',
     'CSF',
-    'Right Hippocampus',
-    'Left Hippocampus',
+    'Right Hippocampus',              # 18
+    'Left Hippocampus',               # 19
     'Right Inf Lat Vent',             # 20
-    'Left Inf Lat Vent',
-    'Right Lateral Ventricle',
-    'Left Lateral Ventricle',
+    'Left Inf Lat Vent',              # 21 
+    'Right Lateral Ventricle',        # 22
+    'Left Lateral Ventricle',         # 23
     'Right Pallidum',
     'Left Pallidum',
     'Right Putamen',
@@ -280,6 +280,22 @@ def find_file( filename ):
 
 ################################################################################
 #
+# find_file
+#
+################################################################################
+def detect_study( filename ):
+    if filename.find( 'ADNI1' ) != -1:
+        return 'ADNI1'
+    elif filename.find( 'ADNI2' ) != -1:
+        return 'ADNI2'
+    elif filename.find( 'ADNIGO' ) != -1:
+        return 'ADNIGO'
+    else:
+        print 'Study could not be determined from file', filename
+        return None
+
+################################################################################
+#
 # check_mask
 #
 ################################################################################
@@ -354,19 +370,20 @@ def get_baseline_and_followup( baseline_folder, followup_folder, study, viscode 
     
     import sqlite3
     con = sqlite3.connect( os.path.join( project_folder, 'lists', 'adni.db' ) )
+    con.row_factory = sqlite3.Row
     cur = con.cursor()
     
     for followup_file, followup_rid in zip( followup_files_unsorted, followup_rids_unsorted ):
-        cur.execute( "SELECT rid, viscode, study, filename FROM adnimerge WHERE rid = " + str(followup_rid) + " AND viscode = 'bl'" )
+        cur.execute( "SELECT study, filename FROM adnimerge WHERE rid = " + str(followup_rid) + " AND viscode = 'bl'" )
         rows = cur.fetchall()
         if len(rows) == 0:
             print 'WARNING: no baseline file found for', followup_file
         elif len(rows) > 1:
             print 'WARNING: multiple baseline files found for', followup_file
         else:
-            baseline_file = os.path.join( baseline_folder.replace( study, rows[0][2] ), rows[0][3] )
+            baseline_file = os.path.join( baseline_folder.replace( study, rows[0]['study'] ), rows[0]['filename'] )
             if not os.path.isfile( baseline_file ):
-                print 'WARNING: baseline file not found', followup_file
+                print 'WARNING: baseline file not found:', followup_file
             else:
                 baseline_files.append( baseline_file )
                 followup_files.append( followup_file )
