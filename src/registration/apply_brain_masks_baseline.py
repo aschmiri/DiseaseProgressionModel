@@ -24,7 +24,7 @@ for i in range( len( baseline_files ) ):
     image_base = os.path.basename( image )
 
     mask = os.path.join( mask_folder, image_base )
-    mask = adni.check_mask( mask )
+    mask = adni.find_file( mask )
     if mask != None:
         mask_base = os.path.basename( mask )
     

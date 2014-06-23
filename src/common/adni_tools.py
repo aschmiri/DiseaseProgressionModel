@@ -270,12 +270,16 @@ def find_file( filename ):
         # Check if other image with same image ID exists
         import glob
         folder = os.path.dirname( filename )
-        files = glob.glob( folder + '/*' + filename[filename.rfind( '_' ):] )
-        if len( files ) == 0:
-            print 'ERROR: File not found:', filename
+        filenames = glob.glob( folder + '/*' + filename[filename.rfind( '_I' ):] )
+        if len( filenames ) == 0:
+            print 'ERROR: No alternative file found for', filename
             return None
-            
-        filename = files[0]
+        
+        if len( filenames ) > 1:
+            print 'WARNING: Multiple alternative files found! Selecting fist one...'
+
+        filename = filenames[0]
+        print 'Alternative file found: ', filename
         return filename
 
 ################################################################################
@@ -293,35 +297,6 @@ def detect_study( filename ):
     else:
         print 'Study could not be determined from file', filename
         return None
-
-################################################################################
-#
-# check_mask
-#
-################################################################################
-def check_mask( mask ):
-    if os.path.isfile( mask ):
-        return mask 
-    else:
-        # Check if ADNIGO mask exists
-        mask_GO = mask.replace( 'ADNI2', 'ADNIGO' )
-        if os.path.isfile( mask_GO ):
-            return mask_GO
-        
-        # Check if other image with same image ID exists
-        import glob
-        mask_folder = os.path.dirname( mask )
-        masks = glob.glob( mask_folder + '/*' + mask[mask.rfind( '_' ):] )
-        if len( masks ) == 0:
-            print 'No alternative mask found!'
-            return None
-        
-        if len( masks ) > 1:
-            print 'WARNING: Multiple alternative mask found! Selecting fist one...'
-
-        mask = masks[0]
-        print 'Alternative mask found: ' + mask
-        return mask
 
 ################################################################################
 #

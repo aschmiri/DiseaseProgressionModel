@@ -30,7 +30,7 @@ for i in range( len( baseline_files ) ):
     followup_base = os.path.basename( followup )
     
     mask = os.path.join( mask_folder, baseline_base )
-    mask = adni.check_mask( mask )
+    mask = adni.find_file( mask )
     if mask != None:
         mask_base = os.path.basename( mask )
         
