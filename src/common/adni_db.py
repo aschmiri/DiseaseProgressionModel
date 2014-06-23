@@ -233,13 +233,13 @@ def print_data_for_rid( rid = 43 ):
 ################################################################################
 if __name__ == "__main__":
     #get_years_after_symptoms()
-    print_data_for_rid( 1225 )
-    create_adni_db()
+    print_data_for_rid( 54 )
+    #create_adni_db()
     
     # Test DB
     con = sqlite3.connect( os.path.join( adni.project_folder, 'lists', 'adni.db' ) )
     cur = con.cursor()
-    cur.execute( "SELECT iid, rid, viscode, study, fieldstrength, mmse FROM adnimerge WHERE rid = 1225" )
+    cur.execute( "SELECT iid, rid, viscode, study, study_bl, fieldstrength, mmse FROM adnimerge WHERE rid = 54" )
     
     rows = cur.fetchall()
     for row in rows:
