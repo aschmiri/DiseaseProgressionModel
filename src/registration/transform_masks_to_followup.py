@@ -23,7 +23,7 @@ dof_folder_nonlin = os.path.join( data_folder, 'baseline_' + a.trans + '_' + a.s
 
 seg_folder     = os.path.join( '/vol/medic01/users/aschmidt/projects/Data/ADNI/data', a.study, 'native' )
 seg_folder_in  = os.path.join( seg_folder, 'seg_138regions_baseline' )
-seg_folder_out = adni.make_dir( seg_folder, 'seg_138regions_followup_warped')
+seg_folder_out = adni.make_dir( seg_folder, 'seg_138regions_followup_' + a.trans + '_' + a.sx + 'mm' )
 
 baseline_folder = os.path.join( data_folder, 'native/images_unstripped' )
 followup_folder = os.path.join( data_folder, 'native/images_unstripped' )
@@ -36,15 +36,16 @@ class RegistrationThread(threading.Thread):
     def run(self):
         target = baseline_files[self.index]
         target_base = os.path.basename( target )
+        study_bl = adni.detect_study( target )
         source = followup_files[self.index]
         source_base = os.path.basename( source )
         
         dof_lin    = os.path.join( dof_folder_lin, source_base.replace('.nii.gz', '.dof.gz') )
         dof_nonlin = os.path.join( dof_folder_nonlin, source_base.replace('.nii.gz', '.dof.gz') )
-        
-        target_seg = os.path.join( seg_folder_in, 'EM-' + target_base )
+         
+        target_seg = os.path.join( seg_folder_in.replace(a.study, study_bl), 'EM-' + target_base )
         out_seg    = os.path.join( seg_folder_out, source_base )
-        
+         
         if not os.path.isfile( target_seg ):
             print 'Segmentation ' + target_seg + ' does not exists!'
         if not os.path.isfile( dof_nonlin ):
@@ -64,8 +65,19 @@ class RegistrationThread(threading.Thread):
             print 'Seg in:     ' + target_seg
             print 'Seg out:    ' + out_seg
             
-            call([ 'transformation', target_seg, out_seg, '-dofin', dof_nonlin, '-target', target, '-nn', '-matchInputType', '-invert' ])
-            call([ 'transformation', out_seg, out_seg, '-dofin', dof_lin, '-target', source, '-nn', '-matchInputType', '-invert' ])
+            dof_lin_ffd = out_seg.replace( '.nii.gz', '_lin.dof.gz' )
+            dof_combined = out_seg.replace( '.nii.gz', '_combined.dof.gz' )
+            
+            call([ 'ffdcreate', dof_lin_ffd, '-dofin', dof_lin ])
+            call([ 'ffdcompose', dof_nonlin, dof_lin_ffd, dof_combined ])
+            call([ 'transformation', target_seg, out_seg, '-dofin', dof_combined, '-target', target, '-nn', '-matchInputType', '-invert' ])
+            
+#             call([ 'transformation', target_seg, out_seg_nonlin, '-dofin', dof_nonlin, '-target', target, '-nn', '-matchInputType', '-invert' ])
+#             call([ 'transformation', out_seg_nonlin, out_seg, '-dofin', dof_lin, '-target', source, '-nn', '-matchInputType', '-invert' ])
+            
+            call([ 'rm', dof_lin_ffd ])
+            call([ 'rm', dof_combined ])
+            
             print '--------------------'
         
 
