@@ -3,7 +3,7 @@
 
 import argparse
 import os.path
-import threading
+import joblib as jl
 from subprocess import call
 import common.adni_tools as adni
 
@@ -31,56 +31,39 @@ out_folder_nonlin_img = adni.make_dir( mni_nonlin_folder, 'images_' + a.viscode 
 
 baseline_files, followup_files = adni.get_baseline_and_followup( baseline_folder, followup_folder, a.study, a.viscode )
 
+def run( index ):
+    baseline = baseline_files[index]
+    followup = followup_files[index]
+    baseline_base = os.path.basename( baseline )
+    followup_base = os.path.basename( followup )
+    aff = os.path.join( mni_linear_folder_dof, baseline_base.replace('.nii.gz', '.dof.gz') )
+    dof = os.path.join( mni_nonlin_folder_dof, baseline_base.replace('.nii.gz', '.dof.gz') )
+    
+    # Rename files if baseline scan is found in ADNIGO cohort.
+    if a.study == 'ADNI2' and baseline.find( 'ADNIGO' ) > -1:
+        aff = aff.replace( 'ADNI2', 'ADNIGO' )
+        dof = dof.replace( 'ADNI2', 'ADNIGO' )
 
-class RegistrationThread(threading.Thread):
-    def __init__(self, index):
-        threading.Thread.__init__(self)
-        self.index = index
-    def run(self):
-        baseline = baseline_files[self.index]
-        followup = followup_files[self.index]
-        baseline_base = os.path.basename( baseline )
-        followup_base = os.path.basename( followup )
-        aff = os.path.join( mni_linear_folder_dof, baseline_base.replace('.nii.gz', '.dof.gz') )
-        dof = os.path.join( mni_nonlin_folder_dof, baseline_base.replace('.nii.gz', '.dof.gz') )
-        
-        # Rename files if baseline scan is found in ADNIGO cohort.
-        if a.study == 'ADNI2' and baseline.find( 'ADNIGO' ) > -1:
-            aff = aff.replace( 'ADNI2', 'ADNIGO' )
-            dof = dof.replace( 'ADNI2', 'ADNIGO' )
-
-        out_image_affine = os.path.join( out_folder_linear_img, followup_base )
-        out_image_nonlin = os.path.join( out_folder_nonlin_img, followup_base )
-        
-        if os.path.isfile( out_image_affine ):
-            print 'Image already exists: ' + out_image_nonlin
-        else:
-            print '--------------------'
-            print 'In image:  ' + followup
-            print 'Affine:    ' + aff
-            print 'Out image: ' + out_image_affine
-            call([ 'transformation', followup, out_image_affine, '-dofin', aff, '-target', adni.mni_atlas, '-cspline', '-matchInputType', '-Sp', '0' ])
-        
-        if os.path.isfile( out_image_nonlin ):
-            print 'Image already exists: ' + out_image_nonlin
-        else:     
-            print '--------------------'
-            print 'In image:  ' + out_image_affine
-            print 'Nonlinear: ' + dof
-            print 'Out image: ' + out_image_nonlin
-            call([ 'transformation', out_image_affine, out_image_nonlin, '-dofin', dof, '-target', adni.mni_atlas, '-cspline', '-matchInputType', '-Sp', '0' ])
+    out_image_affine = os.path.join( out_folder_linear_img, followup_base )
+    out_image_nonlin = os.path.join( out_folder_nonlin_img, followup_base )
+    
+    if os.path.isfile( out_image_affine ):
+        print 'Image already exists: ' + out_image_nonlin
+    else:
+        print '--------------------'
+        print 'In image: ', followup
+        print 'Affine:   ', aff
+        print 'Out image:', out_image_affine
+        call([ 'transformation', followup, out_image_affine, '-dofin', aff, '-target', adni.mni_atlas, '-cspline', '-matchInputType', '-Sp', '0' ])
+    
+    if os.path.isfile( out_image_nonlin ):
+        print 'Image already exists: ' + out_image_nonlin
+    else:     
+        print '--------------------'
+        print 'In image: ', out_image_affine
+        print 'Nonlinear:', dof
+        print 'Out image:', out_image_nonlin
+        call([ 'transformation', out_image_affine, out_image_nonlin, '-dofin', dof, '-target', adni.mni_atlas, '-cspline', '-matchInputType', '-Sp', '0' ])
                  
-print 'Found ' + str(len( followup_files )) + ' images...'
-thread_ctr = 0
-threads = []
-for i in range( len( followup_files ) ):
-    thread = RegistrationThread(i)
-    thread.start()
-    threads.append(thread)
-    thread_ctr += 1
-     
-    if thread_ctr == a.nr_threads:
-        for t in threads:
-            t.join()
-        threads = []
-        thread_ctr = 0
+print 'Found', len( followup_files ), 'images...'
+jl.Parallel( n_jobs=a.nr_threads )( jl.delayed(run)(i) for i in range(len(followup_files)) )

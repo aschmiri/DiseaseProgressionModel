@@ -3,7 +3,7 @@
 
 import argparse
 import os.path
-import threading
+import joblib as jl
 import common.adni_tools as adni
 import ireg_linear
 
@@ -23,30 +23,14 @@ output_folder = adni.make_dir( data_folder, 'MNI152_linear' )
 output_folder_img = adni.make_dir( output_folder, 'images' )
 output_folder_dof = adni.make_dir( output_folder, 'dof' )
 
-class RegistrationThread(threading.Thread):
-    def __init__(self, index):
-        threading.Thread.__init__(self)
-        self.index = index
-    def run(self):
-        source = baseline_files[self.index] 
-        source_base = os.path.basename( source )
-        
-        out_dof = os.path.join( output_folder_dof, source_base.replace('.nii.gz', '.dof.gz') )
-        out_warped = os.path.join( output_folder_img, source_base )
-        
-        ireg_linear.run( source, adni.mni_atlas, 'none', out_dof, rreg_params, areg_params, out_warped )
+def run( index ):
+    source = baseline_files[index] 
+    source_base = os.path.basename( source )
+    
+    out_dof = os.path.join( output_folder_dof, source_base.replace('.nii.gz', '.dof.gz') )
+    out_warped = os.path.join( output_folder_img, source_base )
+    
+    ireg_linear.run( source, adni.mni_atlas, None, out_dof, rreg_params, areg_params, out_warped )
 
-print 'Found ' + str(len( baseline_files )) + ' images...'
-thread_ctr = 0
-threads = []
-for i in range( len( baseline_files ) ):
-    thread = RegistrationThread(i)
-    thread.start()
-    threads.append(thread)
-    thread_ctr += 1
-     
-    if thread_ctr == a.nr_threads:
-        for t in threads:
-            t.join()
-        threads = []
-        thread_ctr = 0
+print 'Found', len( baseline_files ), 'images...'
+jl.Parallel( n_jobs=a.nr_threads )( jl.delayed(run)(i) for i in range(len(baseline_files)) )

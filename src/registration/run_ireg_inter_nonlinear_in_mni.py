@@ -3,7 +3,7 @@
 
 import argparse
 import os.path
-import threading
+import joblib as jl
 import common.adni_tools as adni
 import common.atlas_tools as at
 import ireg_nonlinear
@@ -39,39 +39,22 @@ output_folder_dof = adni.make_dir( output_folder, 'dof' )
 if a.save_image:
     output_folder_img = adni.make_dir( output_folder, 'images' )
     
-class RegistrationThread(threading.Thread):
-    def __init__(self, index_targ, index_srce):
-        threading.Thread.__init__(self)
-        self.index_targ = index_targ
-        self.index_srce = index_srce
-    def run(self):
-        target = selected_images[self.index_targ]
-        source = selected_images[self.index_srce]
-        target_rid = selected_rids[self.index_targ]
-        source_rid = selected_rids[self.index_srce]
-        out_basename = str(source_rid) + '_to_' + str(target_rid)
+def run( index_targ, index_srce ):
+    target = selected_images[index_targ]
+    source = selected_images[index_srce]
+    target_rid = selected_rids[index_targ]
+    source_rid = selected_rids[index_srce]
+    out_basename = str(source_rid) + '_to_' + str(target_rid)
 
-        out_dof = os.path.join( output_folder_dof, out_basename + '.dof.gz' )
-        if a.save_image:
-            out_warped = os.path.join( output_folder_img, out_basename + '.nii.gz' )
-        else:
-            out_warped = None
-                
-        ireg_nonlinear.run( source, target, None, out_dof, ireg_params, out_warped )
+    out_dof = os.path.join( output_folder_dof, out_basename + '.dof.gz' )
+    if a.save_image:
+        out_warped = os.path.join( output_folder_img, out_basename + '.nii.gz' )
+    else:
+        out_warped = None
+            
+    ireg_nonlinear.run( source, target, None, out_dof, ireg_params, out_warped )
 
-print 'Found ' + str(len( selected_images )) + ' relevant images for state ' + str(a.state) + '...'
-thread_ctr = 0
-threads = []
-for i in range( len( selected_images ) ):
-    for j in range( len( selected_images ) ):
-        if i != j:
-            thread = RegistrationThread( i, j )
-            thread.start()
-            threads.append(thread)
-            thread_ctr += 1
-             
-            if thread_ctr == a.nr_threads:
-                for t in threads:
-                    t.join()
-                threads = []
-                thread_ctr = 0
+print 'Found', len( selected_images ), 'relevant images for state', a.state, '...'
+for j in range(len(selected_images)):
+    jl.Parallel( n_jobs=a.nr_threads )( 
+        jl.delayed(run)(i,j) for i in range(len(selected_images)) )

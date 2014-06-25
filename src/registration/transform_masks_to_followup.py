@@ -3,7 +3,7 @@
 
 import argparse
 import os.path
-import threading
+import joblib as jl
 from subprocess import call
 import common.adni_tools as adni
 
@@ -11,8 +11,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument( 'study', type=str, help='the study, should be ADNI1, ADNI2, or ADNIGO' )
 parser.add_argument( 'viscode', type=str, help='the visit code, e.g. bl, m12, m24, ...' )
 parser.add_argument( 'trans', type=str, help='the transformation model, e.g. ffd, svffd, sym, or ic' )
-parser.add_argument( '-n', '--nr_threads', dest = 'nr_threads', type=int, default = 1 )
-parser.add_argument( '-s', '--spacing', dest = 'sx', type=str, default = '10' )
+parser.add_argument( '-s', '--spacing', dest='sx', type=str, default='10' )
+parser.add_argument( '-n', '--nr_threads', dest='nr_threads', type=int, default=1 )
 a = parser.parse_args()
 
 data_folder = os.path.join( adni.data_folder, a.study )
@@ -29,25 +29,21 @@ baseline_folder = os.path.join( data_folder, 'native/images_unstripped' )
 followup_folder = os.path.join( data_folder, 'native/images_unstripped' )
 baseline_files, followup_files = adni.get_baseline_and_followup( baseline_folder, followup_folder, a.study, a.viscode )
 
-class RegistrationThread(threading.Thread):
-    def __init__(self, index):
-        threading.Thread.__init__(self)
-        self.index = index
-    def run(self):
-        target = baseline_files[self.index]
-        target_base = os.path.basename( target )
-        study_bl = adni.detect_study( target )
-        source = followup_files[self.index]
-        source_base = os.path.basename( source )
-        
-        dof_lin    = os.path.join( dof_folder_lin, source_base.replace('.nii.gz', '.dof.gz') )
-        dof_nonlin = os.path.join( dof_folder_nonlin, source_base.replace('.nii.gz', '.dof.gz') )
-         
-        target_seg = os.path.join( seg_folder_in.replace(a.study, study_bl), 'EM-' + target_base )
-        out_seg    = os.path.join( seg_folder_out, source_base )
-         
-        if not os.path.isfile( target_seg ):
-            print 'Segmentation ' + target_seg + ' does not exists!'
+def run( index ):
+    target = baseline_files[index]
+    target_base = os.path.basename( target )
+    study_bl = adni.detect_study( target )
+    source = followup_files[index]
+    source_base = os.path.basename( source )
+    
+    dof_lin    = os.path.join( dof_folder_lin, source_base.replace('.nii.gz', '.dof.gz') )
+    dof_nonlin = os.path.join( dof_folder_nonlin, source_base.replace('.nii.gz', '.dof.gz') )
+     
+    target_seg = os.path.join( seg_folder_in.replace(a.study, study_bl), 'EM-' + target_base )
+    target_seg = adni.find_file( target_seg )
+    out_seg    = os.path.join( seg_folder_out, source_base )
+     
+    if target_seg != None:
         if not os.path.isfile( dof_nonlin ):
             print 'DOF file ' + dof_nonlin + ' does not exists!'
         elif os.path.isfile( out_seg ):
@@ -81,17 +77,5 @@ class RegistrationThread(threading.Thread):
             print '--------------------'
         
 
-print 'Found', str(len( baseline_files )), 'image pairs...'
-thread_ctr = 0
-threads = []
-for i in range( len( baseline_files ) ):
-    thread = RegistrationThread(i)
-    thread.start()
-    threads.append(thread)
-    thread_ctr += 1
-     
-    if thread_ctr == a.nr_threads:
-        for t in threads:
-            t.join()
-        threads = []
-        thread_ctr = 0
+print 'Found', len( baseline_files ), 'image pairs...'
+jl.Parallel( n_jobs=a.nr_threads )( jl.delayed(run)(i) for i in range(len(baseline_files)) )
