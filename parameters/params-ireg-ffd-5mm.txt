@@ -1,4 +1,4 @@
-Transformation model             = BSplineSVFFD
+Transformation model             = BSplineFFD
 Control point spacing            = 5
 Energy function                  = -0.995 NMI(I1, I2) + 0.005 BE
 Maximum streak of rejected steps = 2
