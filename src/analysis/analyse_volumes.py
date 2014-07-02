@@ -11,15 +11,12 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 import matplotlib
 
-cdict = {
-  'red'  :  ((0.0, 0.0, 0.0), (0.5, 0.8, 0.8), (1.0, 1.0, 1.0)),
-  'green':  ((0.0, 0.5, 0.5), (0.5, 0.8, 0.8), (1.0, 0.0, 0.0)),
-  'blue' :  ((0.0, 0.0, 0.0), (0.5, 0.0, 0.0), (1.0, 0.0, 0.0))
-}
-my_cmap = matplotlib.colors.LinearSegmentedColormap('my_colormap', cdict)
-
 def sigmoid( t, t0, r, lower, upper ):
     y = lower + (upper - lower) * ( 1 / (1 + np.exp(-r*(t-t0))) )
+    return y
+
+def exponential( t, t0, r, r2, lower ):
+    y = lower + r * np.exp( r2 * t - t0 ) 
     return y
 
 def make_segments(x, y):
@@ -36,7 +33,7 @@ def make_segments(x, y):
 
 # Interface to LineCollection:
 
-def colorline(x, y, z=None, cmap=my_cmap, norm=plt.Normalize(0.0, 1.0), linewidth=2, alpha=1.0):
+def colorline(x, y, z=None, cmap=adni.adni_cmap, norm=plt.Normalize(0.0, 1.0), linewidth=2, alpha=1.0):
     '''
     Plot a colored line with coordinates x and y
     Optionally specify colors in the array z
@@ -54,7 +51,7 @@ def colorline(x, y, z=None, cmap=my_cmap, norm=plt.Normalize(0.0, 1.0), linewidt
     z = np.asarray(z)
     
     segments = make_segments(x, y)
-    lc = LineCollection(segments, array=z, cmap=my_cmap, norm=norm, linewidth=linewidth, alpha=alpha)
+    lc = LineCollection(segments, array=z, cmap=adni.adni_cmap, norm=norm, linewidth=linewidth, alpha=alpha)
     
     ax = plt.gca()
     ax.add_collection(lc)
@@ -101,23 +98,25 @@ def plot_trajectories( traj_x, traj_y, traj_d, rid=0, plot_steps=100 ):
         try:
             # Fit curve
             popt, _ = curve_fit( sigmoid, xdata, ydata, p0 = (25, 1, min(ydata), max(ydata)) )
-            ydata = ydata/popt[2]
+            #popt, _ = curve_fit( exponential, xdata, ydata, p0 = (5, 0, 0.01, np.mean(ydata)) )
+            ydata = ydata #/popt[2]
             
-            if popt[0] > 0 and popt[0] < 100 and popt[3] / popt[2] < 2:
-                print 'Fitting result:', popt
-                
-                # Plot curve
-                x = np.linspace( 0, plot_max, plot_steps )
-                y = sigmoid( x, *popt) / popt[2]
-                z = interpolate_color_scale( xdata, ddata, plot_max, plot_steps )
-    
-                colorline( x, y, z )
-                
-                list_r.append( np.sign( popt[1] ) * np.log( np.abs ( popt[1] ) ) )
-                #list_r.append( popt[1] )
-                list_t0.append( popt[0] )
-                list_up.append( popt[3] / popt[2] )
-                list_dx.append( ddata[-1] )
+            #if popt[0] > 0 and popt[0] < 100 and popt[3] / popt[2] < 2:
+            print 'Fitting result:', popt
+            
+            # Plot curve
+            x = np.linspace( 0, plot_max, plot_steps )
+            y = sigmoid( x, *popt )#/ popt[2]
+            #y = exponential( x, *popt )
+            z = interpolate_color_scale( xdata, ddata, plot_max, plot_steps )
+
+            colorline( x, y, z )
+            
+            list_r.append( np.sign( popt[1] ) * np.log( np.abs ( popt[1] ) ) )
+            #list_r.append( popt[1] )
+            list_t0.append( popt[0] )
+            list_up.append( popt[3] )#/ popt[2] )
+            list_dx.append( ddata[-1] )
             
         except RuntimeError:
             print 'Optimal parameters not found'
@@ -125,14 +124,15 @@ def plot_trajectories( traj_x, traj_y, traj_d, rid=0, plot_steps=100 ):
         # Plot data
         plt.title( adni.volume_names[vol_index] + ' of subject ' + str(rid) )
         plt.xlabel( 'Months after baseline' )
-        plt.ylabel( 'Volume growth' )
+        plt.ylabel( 'Volume ' )
+        #plt.axis( [-5, 65,  18500, 25000] )
         plt.legend( [matplotlib.patches.Rectangle((0,0), 1, 1, fc=(0.0, 0.5, 0.0)),
                      matplotlib.patches.Rectangle((0,0), 1, 1, fc=(0.8, 0.8, 0.0)), 
                      matplotlib.patches.Rectangle((0,0), 1, 1, fc=(1.0, 0.0, 0.0))],
                     ['CN','MCI','AD'],
                     bbox_to_anchor=(0.25,0.95) )
         ax = plt.gca()
-        ax.scatter( xdata,  ydata, c=ddata, cmap=my_cmap, vmin=0.0, vmax=1.0, s=40, linewidths=0 )
+        ax.scatter( xdata,  ydata, c=ddata, cmap=adni.adni_cmap, vmin=0.0, vmax=1.0, s=40, linewidths=0 )
         plt.show()
         
     
@@ -142,12 +142,12 @@ list_t0 = []
 list_up = []
 list_dx = []
 plot_steps = 100
-plot_max = 84
+plot_max = 60
 
 #data_file = os.path.join( adni.project_folder, 'lists/volumes_probabilistic.csv' )
-data_file = os.path.join( adni.project_folder, 'lists/volumes_segbased.csv' )
+data_file = os.path.join( adni.project_folder, 'lists/volumes_segbased_sym_5mm.csv' )
 
-vol_index = 18
+vol_index = 23
 print 'Analysing', adni.volume_names[vol_index]
 
 baseline_rid = None

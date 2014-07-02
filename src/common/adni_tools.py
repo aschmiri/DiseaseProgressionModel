@@ -20,32 +20,32 @@ mni_atlas      = os.path.join( mni_folder, 'mni_icbm152_t1_tal_nlin_asym_09a_bra
 query_list     = os.path.join( project_folder, 'lists/query_ADNI.csv' )
 
 volume_names   = [
-    '3rd Ventricle',                  # 0
-    '4th Ventricle',                  # 1
-    'Right Accumbens Area',           # 2 
-    'Left Accumbens Area',            # 3
-    'Right Amygdala',                 # 4
-    'Left Amygdala',                  # 5
-    'Brain Stem',
-    'Right Caudate',
-    'Left Caudate',
-    'Right Cerebellum Exterior',
-    'Left Cerebellum Exterior',       #10
-    'Right Cerebellum White Matter',
-    'Left Cerebellum White Matter',
-    'Right Cerebral Exterior',
-    'Left Cerebral Exterior',
+    '3rd Ventricle',                  #  0
+    '4th Ventricle',                  #  1
+    'Right Accumbens Area',           #  2 
+    'Left Accumbens Area',            #  3
+    'Right Amygdala',                 #  4
+    'Left Amygdala',                  #  5
+    'Brain Stem',                     #  6
+    'Right Caudate',                  #  7
+    'Left Caudate',                   #  8
+    'Right Cerebellum Exterior',      #  9
+    'Left Cerebellum Exterior',       # 10
+    'Right Cerebellum White Matter',  # 11
+    'Left Cerebellum White Matter',   # 12
+    'Right Cerebral Exterior',        # 13
+    'Left Cerebral Exterior',         # 14
     'Right Cerebral White Matter',    # 15
-    'Left Cerebral White Matter',
-    'CSF',
+    'Left Cerebral White Matter',     # 16
+    'CSF',                            # 17
     'Right Hippocampus',              # 18
     'Left Hippocampus',               # 19
     'Right Inf Lat Vent',             # 20
     'Left Inf Lat Vent',              # 21 
     'Right Lateral Ventricle',        # 22
     'Left Lateral Ventricle',         # 23
-    'Right Pallidum',
-    'Left Pallidum',
+    'Right Pallidum',                 # 24
+    'Left Pallidum',                  # 25
     'Right Putamen',
     'Left Putamen',
     'Right Thalamus Proper',
@@ -158,6 +158,33 @@ volume_names   = [
     'Left TrIFG triangular part of the inferior frontal gyrus',
     'Right TTG transverse temporal gyrus',
     'Left TTG transverse temporal gyrus']
+
+rids_converters = [241, 21, 23, 546, 324, 141, 273, 276, 337, 159, 424, 256,    \
+                   307, 403, 644, 259, 260, 394, 291, 352, 551, 626, 314, 464,  \
+                   861, 1080, 835, 125, 112, 51, 656, 673, 869, 945, 408, 839,  \
+                   605, 680, 708, 865, 434, 156, 204, 292, 557, 563, 658, 679,  \
+                   1070, 1155, 169, 906, 922, 668, 722, 800, 973, 33, 158, 301, \
+                   972, 994, 443, 481, 631, 1045, 1007, 1034, 384, 441, 1187,   \
+                   921, 1118, 1182, 1299, 1130, 96, 130, 961, 1351, 752, 1271,  \
+                   649, 382, 361, 834, 1280, 1224, 1318, 1346, 1352, 1261,      \
+                   1282, 1186, 997, 1131, 746, 1032, 1140, 123, 1194, 1195,     \
+                   1202, 1268, 878, 1073, 1023, 150, 303, 1010, 1260, 269, 351, \
+                   160, 171, 1188, 925, 867, 1066, 1394, 1425, 1418, 1414, 830, \
+                   454, 539, 566, 588, 1078, 1389, 294, 326, 362, 667, 778,     \
+                   378, 1121, 782, 295, 41, 413, 68, 685, 101, 729, 128, 249,   \
+                   293, 634, 344, 419, 30, 450, 406, 155, 142, 58, 31, 42, 388, \
+                   81, 604, 1046, 126, 217, 331, 376, 887, 422, 625, 698, 61,   \
+                   74, 116, 118, 120, 179, 214, 513, 514, 567, 723, 671, 952,   \
+                   389, 507, 621, 919, 89, 311, 386, 108, 298, 1300, 200, 86,   \
+                   107, 186, 429, 914, 262, 127, 210, 473]
+
+import matplotlib as mpl
+cdict = {
+  'red'  :  ((0.0, 0.0, 0.0), (0.5, 0.8, 0.8), (1.0, 1.0, 1.0)),
+  'green':  ((0.0, 0.5, 0.5), (0.5, 0.8, 0.8), (1.0, 0.0, 0.0)),
+  'blue' :  ((0.0, 0.0, 0.0), (0.5, 0.0, 0.0), (1.0, 0.0, 0.0))
+}
+adni_cmap = mpl.colors.LinearSegmentedColormap('my_colormap', cdict)
 
 ################################################################################
 #

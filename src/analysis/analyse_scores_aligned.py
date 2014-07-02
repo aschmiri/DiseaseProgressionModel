@@ -4,6 +4,7 @@
 import os.path
 import csv
 import re
+import sqlite3
 import numpy as np
 from scipy.optimize import curve_fit
 import matplotlib as mpl
@@ -18,7 +19,10 @@ def exponential( t, t0, r, r2, lower ):
     y = lower + r * np.exp( r2 * t - t0 ) 
     return y
 
-def normalise_and_append( traj_x, traj_y, traj_d ):
+def normalise_and_append( traj_x, traj_y, traj_d ):   
+    ret_x = []
+    ret_y = []
+    ret_d = []
     if len( traj_x ) > 5:
         
         # Convert and sort data        
@@ -30,37 +34,44 @@ def normalise_and_append( traj_x, traj_y, traj_d ):
         xdata = xdata[args]
         ydata = ydata[args]
         ddata = ddata[args]
-
+        
+#         dydata = []
+#         for i in range(len(xdata)-1):
+#             dydata.append( float(ydata[i+1] - ydata[i]) / float(xdata[i+1] - xdata[i]) )
+            
         if ddata[-1] == 1.0 and ddata[0] == 0.5:
             x_prev = xdata[0];
-            y_prev = ydata[0];
             for d, x, y in zip(ddata, xdata, ydata):
                 if d == 1.0:
                     t_convert = x_prev + (x-x_prev) / 2
-                    y_convert = y_prev + (y-y_prev) / 2
                     break
                 else:
                     x_prev = x
-        
+            
             for x, y, d in zip(xdata, ydata, ddata):
-                list_x.append( x-t_convert )
-                list_y.append( y /y_convert )
-                list_d.append( d )
+                ret_x.append( x-t_convert )
+                ret_y.append( y )
+                ret_d.append( d )
+#             plt.plot( xdata[1:], dydata, alpha=0.3 )
+    return ret_x, ret_y, ret_d
+
 
          
 #data_file = os.path.join( adni.project_folder, 'lists/volumes_probabilistic.csv' )
 data_file = os.path.join( adni.project_folder, 'lists/volumes_segbased_sym_5mm.csv' )
 
-for vol_index in range(len(adni.volume_names)): # 18
-    print 'Analysing', adni.volume_names[vol_index]
+con = sqlite3.connect( os.path.join( adni.project_folder, 'lists', 'adni.db' ) )
+con.row_factory = sqlite3.Row
+cur = con.cursor()
+
+def analyse_score( name_db, name_hr, est_lower, est_r  ):
+    print 'Analysing', name_hr
     list_x = []
     list_y = []
     list_d = []
-        
     traj_x = []
     traj_y = []
     traj_d = []
-    baseline_rid = None
     previous_rid = None
     with open( data_file, 'rb' ) as csvfile:
         rows = csv.DictReader( csvfile )
@@ -72,7 +83,6 @@ for vol_index in range(len(adni.volume_names)): # 18
             viscode = row['VISCODE']
             if viscode == 'bl':
                 scan_time = 0
-                baseline_rid = rid
             elif re.match('m[0-9][0-9]', viscode):
                 scan_time = int( viscode[1:] )
             else:
@@ -91,29 +101,39 @@ for vol_index in range(len(adni.volume_names)): # 18
                 print 'ERROR: Invalid diagnosis:', viscode
                 break
             
-            # Get factor
-            factor = 1 / float( row['FactorMNI'] )
-            
-            # Get and normalise volumes
-            volume = float( row[adni.volume_names[vol_index]] )
+            # Get and normalise MMSE
+            #cur.execute( "SELECT mmse FROM adnimerge WHERE rid = " + str(rid) + " AND viscode = '" + viscode + "'" )
+            cur.execute( "SELECT " + name_db + " FROM adnimerge JOIN adnimerge_cog USING (rid, viscode) WHERE rid = " + str(rid) + " AND viscode = '" + viscode + "'" )
+            scans = cur.fetchall()
+            if len(scans) == 1:
+                try:
+                    score = float( scans[0][name_db] )
+                except:
+                    score = None
     
             if rid != previous_rid and previous_rid != None:
                 # Plot previous subject
-                print 'Plotting subject', previous_rid
-                normalise_and_append( traj_x, traj_y, traj_d )
+                traj_x, traj_y, traj_d = normalise_and_append( traj_x, traj_y, traj_d )
+                list_x = list_x + traj_x
+                list_y = list_y + traj_y
+                list_d = list_d + traj_d
                 traj_x = []
                 traj_y = []
                 traj_d = []
-            traj_x.append( scan_time )
-            traj_y.append( volume * factor )
-            traj_d.append( dx )
+            if score != None:
+                traj_x.append( scan_time )
+                traj_y.append( score )
+                traj_d.append( dx )
     
             # Store previous rid for next row
             previous_rid = rid
     
-    plt.title( adni.volume_names[vol_index] + ' mean model' )
+    plt.title( name_hr + ' mean model (' + str(len(list_x)) + ' values)' )
+    #plt.title( 'MMSE change' )
     plt.xlabel( 'Months relative to point of convergence' )
-    plt.ylabel( 'Normalised volume' )
+    #plt.xlabel( 'Months after baseline' )
+    plt.ylabel( name_hr )
+    #plt.ylabel( 'MMSE change per month' )
     plt.legend( [mpl.patches.Rectangle((0,0), 1, 1, fc=(0.0, 0.5, 0.0)),
                  mpl.patches.Rectangle((0,0), 1, 1, fc=(0.8, 0.8, 0.0)), 
                  mpl.patches.Rectangle((0,0), 1, 1, fc=(1.0, 0.0, 0.0))],
@@ -128,17 +148,12 @@ for vol_index in range(len(adni.volume_names)): # 18
         # Estimate parameters
         list_x = np.array( list_x )
         list_y = np.array( list_y )
-    
-        mci_mean = np.mean( list_y[np.where(list_x<0)] )
-        ad_mean  = np.mean( list_y[np.where(list_x>0)] )
-        
-        print mci_mean, ad_mean
         
         # Fit curve
-        popt, _ = curve_fit( exponential, list_x, list_y, p0=(5, ad_mean - mci_mean, 0.01, 1) )
+        popt, _ = curve_fit( exponential, list_x, list_y, p0=(0, est_r, 0.01, est_lower) )
         #popt, _ = curve_fit( sigmoid, list_x, list_y, p0=(0, 1, np.min(list_y), np.max(list_y)) )
-        print 'Fitted parameters:', popt  
-
+        print 'Fitted parameters:', popt
+         
         # Plot curve
         x = np.linspace( -50, 50, 200 )
         y = exponential( x, *popt)
@@ -149,3 +164,10 @@ for vol_index in range(len(adni.volume_names)): # 18
         print 'Optimal parameters not found'             
     
     plt.show()
+
+analyse_score( 'moca', 'MOCA', 30, -20 )
+analyse_score( 'mmse', 'MMSE', 30, -20 )
+analyse_score( 'cdrsb', 'CDR-SB', 0, 20 )
+analyse_score( 'adas11', 'ADAS 11', 0, 20 )
+analyse_score( 'adas13', 'ADAS 13', 0, 30 )
+analyse_score( 'faq', 'FAQ', 0, 30 )
