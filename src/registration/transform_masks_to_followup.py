@@ -13,6 +13,7 @@ parser.add_argument( 'viscode', type=str, help='the visit code, e.g. bl, m12, m2
 parser.add_argument( 'trans', type=str, help='the transformation model, e.g. ffd, svffd, sym, or ic' )
 parser.add_argument( '-s', '--spacing', dest='sx', type=str, default='10' )
 parser.add_argument( '-n', '--nr_threads', dest='nr_threads', type=int, default=1 )
+parser.add_argument( '-f', '--forward', action='store_true', default=False, help='use forward registration from bl to fu' )
 a = parser.parse_args()
 
 data_folder = os.path.join( adni.data_folder, a.study )
@@ -20,6 +21,7 @@ mask_folder = os.path.join( data_folder, 'native/masks_brain' )
 
 dof_folder_lin    = os.path.join( data_folder, 'baseline_linear', 'dof' )
 dof_folder_nonlin = os.path.join( data_folder, 'baseline_' + a.trans + '_' + a.sx + 'mm_after_linear', 'dof' )
+dof_folder_followup = os.path.join( data_folder, 'followup_' + a.trans + '_' + a.sx + 'mm_after_linear', 'dof' )
 
 seg_folder     = os.path.join( '/vol/medic01/users/aschmidt/projects/Data/ADNI/data', a.study, 'native' )
 seg_folder_in  = os.path.join( seg_folder, 'seg_138regions_baseline' )
@@ -29,7 +31,7 @@ baseline_folder = os.path.join( data_folder, 'native/images_unstripped' )
 followup_folder = os.path.join( data_folder, 'native/images_unstripped' )
 baseline_files, followup_files = adni.get_baseline_and_followup( baseline_folder, followup_folder, a.study, a.viscode )
 
-def run( index ):
+def run_backward( index ):
     target = baseline_files[index]
     target_base = os.path.basename( target )
     study_bl = adni.detect_study( target )
@@ -45,21 +47,21 @@ def run( index ):
      
     if target_seg != None:
         if not os.path.isfile( dof_nonlin ):
-            print 'DOF file ' + dof_nonlin + ' does not exists!'
+            print 'DOF file', dof_nonlin, 'does not exists!'
         elif os.path.isfile( out_seg ):
-            print 'File ' + out_seg + ' already exists!'
+            print 'File', out_seg, 'already exists!'
         else:
             #
             # Run transform masks
             #
             print '--------------------'
             print 'Starting: transformation'
-            print 'Target:     ' + target
-            print 'Source:     ' + source
-            print 'DOF lin:    ' + dof_lin
-            print 'DOF nonlin: ' + dof_nonlin
-            print 'Seg in:     ' + target_seg
-            print 'Seg out:    ' + out_seg
+            print 'Target:    ', target
+            print 'Source:    ', source
+            print 'DOF lin:   ', dof_lin
+            print 'DOF nonlin:', dof_nonlin
+            print 'Seg in:    ', target_seg
+            print 'Seg out:   ', out_seg
             
             dof_lin_ffd = out_seg.replace( '.nii.gz', '_lin.dof.gz' )
             dof_combined = out_seg.replace( '.nii.gz', '_combined.dof.gz' )
@@ -68,14 +70,49 @@ def run( index ):
             call([ 'ffdcompose', dof_nonlin, dof_lin_ffd, dof_combined ])
             call([ 'transformation', target_seg, out_seg, '-dofin', dof_combined, '-target', target, '-nn', '-matchInputType', '-invert' ])
             
-#             call([ 'transformation', target_seg, out_seg_nonlin, '-dofin', dof_nonlin, '-target', target, '-nn', '-matchInputType', '-invert' ])
-#             call([ 'transformation', out_seg_nonlin, out_seg, '-dofin', dof_lin, '-target', source, '-nn', '-matchInputType', '-invert' ])
-            
             call([ 'rm', dof_lin_ffd ])
             call([ 'rm', dof_combined ])
-            
+                        
+#             call([ 'transformation', target_seg, out_seg_nonlin, '-dofin', dof_nonlin, '-target', target, '-nn', '-matchInputType', '-invert' ])
+#             call([ 'transformation', out_seg_nonlin, out_seg, '-dofin', dof_lin, '-target', source, '-nn', '-matchInputType', '-invert' ])
+           
             print '--------------------'
         
+def run_forward( index ):
+    target = followup_files[index]
+    target_base = os.path.basename( target )
+    source = baseline_files[index]
+    source_base = os.path.basename( source )
+    study_bl = adni.detect_study( source )
+    
+    dof = os.path.join( dof_folder_followup, 'baseline_to_' + target_base.replace('.nii.gz', '.dof.gz') )
+        
+    source_seg = os.path.join( seg_folder_in.replace(a.study, study_bl), 'EM-' + source_base )
+    source_seg = adni.find_file( source_seg )
+    out_seg    = os.path.join( seg_folder_out, target_base )
+     
+    if source_seg != None:
+        if not os.path.isfile( dof ):
+            print 'DOF file', dof, 'does not exists!'
+        elif os.path.isfile( out_seg ):
+            print 'File', out_seg, 'already exists!'
+        else:
+            #
+            # Run transform masks
+            #
+            print '--------------------'
+            print 'Starting: transformation'
+            print 'Target:    ', target
+            print 'Source:    ', source
+            print 'DOF:       ', dof
+            print 'Seg in:    ', source_seg
+            print 'Seg out:   ', out_seg
+            
+            call([ 'transformation', source_seg, out_seg, '-dofin', dof, '-target', target, '-nn', '-matchInputType' ])
 
+            print '--------------------'
 print 'Found', len( baseline_files ), 'image pairs...'
-jl.Parallel( n_jobs=a.nr_threads )( jl.delayed(run)(i) for i in range(len(baseline_files)) )
+if a.forward:
+    jl.Parallel( n_jobs=a.nr_threads )( jl.delayed(run_forward)(i) for i in range(len(baseline_files)) )
+else:
+    jl.Parallel( n_jobs=a.nr_threads )( jl.delayed(run_backward)(i) for i in range(len(baseline_files)) )
