@@ -9,14 +9,16 @@ from subprocess import check_output
 import common.adni_tools as adni
 
 parser = argparse.ArgumentParser()
-parser.add_argument( '-m', '--min_scans', dest = 'min_scans', type=int, default=6, help='the minimal number of scans per subject' )
+parser.add_argument( '-m', '--min_scans', dest='min_scans', type=int, default=6, help='the minimal number of scans per subject' )
+parser.add_argument( '-t', '--trans', dest='trans', type=str, default='ffd', help='the transformation model, e.g. ffd, svffd, sym, or ic' )
+parser.add_argument( '-s', '--spacing', dest='sx', type=str, default='5' )
 a = parser.parse_args()
 
 exec_volumes = '/vol/biomedic/users/cl6311/irtk_svn_workspace/irtk/build/bin/cl_compute_volume'
 exec_factors = '/vol/medic01/users/aschmidt/development/build_helvellyn/irtk-as12312/bin/asr_affineScaling'
 
 data_file = os.path.join( adni.project_folder, 'lists/query_ADNI.csv' )
-out_file = os.path.join( adni.project_folder, 'lists/volumes_segbased.csv' )
+out_file = os.path.join( adni.project_folder, 'lists/volumes_segbased_' + a.trans + '_' + a.sx + 'mm.csv' )
 folder = adni.data_folder + '/ALL/native/images_unstripped'
 
 folder_lin_mni = adni.data_folder + '/ALL/MNI152_linear/dof'
@@ -68,7 +70,7 @@ with open( out_file, 'wb' ) as csvfile:
                         bl_study = bl_scans[0]['study']
                         bl_base = bl_scans[0]['filename']
 
-                    seg = adni.find_file( os.path.join( adni.data_folder, study, 'native/seg_138regions_followup_warped', filename ) )
+                    seg = adni.find_file( os.path.join( adni.data_folder, study, 'native/seg_138regions_followup_' + a.trans + '_' + a.sx + 'mm', filename ) )
                     mni_dof = os.path.join( folder_lin_mni.replace( 'ALL', bl_study ), bl_base.replace( '.nii.gz', '.dof.gz' ) )
                     bl_dof = os.path.join( folder_lin_bl.replace( 'ALL', study ), filename.replace( '.nii.gz', '.dof.gz' ) )
                     if not os.path.isfile( mni_dof ): 
@@ -84,17 +86,16 @@ with open( out_file, 'wb' ) as csvfile:
                         bl_factor = float( check_output([exec_factors, bl_dof]) )
                         
                 # Get volumes of 138 objects
-                if seg == None or not os.path.isfile( seg ):
-                    print 'ERROR: File not found:', seg
-                elif bl_factor == -1: # or mni_factor == -1:
-                    print 'ERROR: Factors were not computed correctly'
-                else:
-                    volumes = check_output([exec_volumes, seg])
-                    volumes = [float(vol) for vol in volumes.split(',')]
-                    volumes.pop(0)
-                    if len(volumes) != 138:
-                        print 'ERROR:', len(volumes), 'volumes read for', os.path.basename( seg )
+                if seg != None:
+                    if bl_factor == -1: # or mni_factor == -1:
+                        print 'ERROR: Factors were not computed correctly'
                     else:
-                        writer.writerow( [str(rid), viscode, diagnosis, mni_factor, bl_factor] + volumes )
-                        csvfile.flush()
-                        #print rid, viscode, diagnosis, mni_factor, bl_factor, ':', volumes
+                        volumes = check_output([exec_volumes, seg])
+                        volumes = [float(vol) for vol in volumes.split(',')]
+                        volumes.pop(0)
+                        if len(volumes) != 138:
+                            print 'ERROR:', len(volumes), 'volumes read for', os.path.basename( seg )
+                        else:
+                            writer.writerow( [str(rid), viscode, diagnosis, mni_factor, bl_factor] + volumes )
+                            csvfile.flush()
+                            #print rid, viscode, diagnosis, mni_factor, bl_factor, ':', volumes
