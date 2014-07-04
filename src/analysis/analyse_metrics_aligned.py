@@ -103,7 +103,7 @@ def collect_data( name_csv, normalise ):
                 break
             
             # Get and normalise volumes
-            value = adni.safe_cast_to_float( row[name_csv] )
+            value = adni.safe_cast( row[name_csv] )
             if normalise:
                 value = value / float( row['FactorMNI'] )
             
