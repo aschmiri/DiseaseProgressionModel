@@ -188,6 +188,19 @@ adni_cmap = mpl.colors.LinearSegmentedColormap('my_colormap', cdict)
 
 ################################################################################
 #
+# safe_cast
+#
+################################################################################
+def safe_cast( in_value, cast_type=float ):
+    try:
+        return cast_type( in_value )
+    except ValueError:
+        return None
+    except TypeError:
+        return None
+    
+################################################################################
+#
 # make_dir
 #
 ################################################################################
