@@ -13,10 +13,13 @@ import common.adni_tools as adni
 
 parser = argparse.ArgumentParser()
 parser.add_argument( '-s', '--sigmoid', action='store_true', default=False, help='use sigmoid function for fitting' )
+parser.add_argument( '-c', '--csv_filename', dest='csv_filename', type=str, default=None, help='the CSV file to save the model parameters to' )
 a = parser.parse_args()
 
-def sigmoid( t, t0, r, lower, upper ):
-    y = lower + (upper - lower) * r * ( 1 / (1 + np.exp(-(t-t0))) )
+#def sigmoid( t, t0, r, lower, upper ):
+    #y = lower + (upper - lower) * r / (1 + np.exp(-(t-t0)))
+def sigmoid( t, r, r2, lower, upper ):
+    y = lower + (upper - lower) / ( 1 + (t/r) ** r2 )
     return y
 
 def exponential( t, r, r2, lower ):
@@ -242,7 +245,7 @@ def evaluate_group_separation( data_x, data_y, popt, model=exponential ):
         err_ad  = len( np.where( y_ad  > y_conv )[0] )
     return float(err_mci + err_ad) / float(len(data_y)) 
         
-def analyse_metric( name_csv, name_hr, normalise, plot=False ):
+def analyse_metric( name_csv, name_hr, normalise, plot=False, csv_writer=None ):
     print 'Analysing', name_hr
     collect_data( name_csv, normalise )
     age_regress_data()
@@ -279,7 +282,7 @@ def analyse_metric( name_csv, name_hr, normalise, plot=False ):
                       linewidth=0, elinewidth=1, marker='x', c='k', ecolor='0.5' )
 
     # Scale bins with number of samples
-    bins_weight =  [ bins_s[i] / np.sqrt( bins_n[i] ) for i in range(len(bins_s)) ]
+    bins_weight = [ bins_s[i] / np.sqrt( bins_n[i] ) for i in range(len(bins_s)) ]
     
     # Fit bin data
     popt = fit_data( bins_x, bins_y, data_sigma=bins_weight, model=model )
@@ -289,6 +292,9 @@ def analyse_metric( name_csv, name_hr, normalise, plot=False ):
             x = np.linspace( -50, 50, 200 )
             y = model( x, *popt)
             ax1.plot( x, y, color='k' )
+        
+        if csv_writer != None:
+            csv_writer.writerow( [name_csv, popt[0], popt[1], popt[2]] )
         
         # Estimate and plot robustness
         bins_e = compute_bin_error( list_x, list_y, popt, model=model, bin_size=3 )
@@ -319,12 +325,7 @@ def analyse_metric( name_csv, name_hr, normalise, plot=False ):
             metric_group_seperation.append( group_sep )
 
     if plot:
-#         ymin = 1 + 1.1 * ( min(list_y) - 1 )
-#         ymax = 1 + 1.1 * ( max(list_y) - 1 )
-#         ax1.set_ylim( ymin=ymin, ymax=ymax )
-    
         plt.show()
-
 
 #
 # Determine fitting model
@@ -343,6 +344,14 @@ metric_robustness_max   = []
 metric_robustness_mean  = []
 metric_group_seperation = []
 
+# Estimate volumes
+if a.csv_filename != None:
+    csv_file = open( a.csv_filename, 'wb' )
+    csv_writer = csv.writer( csv_file, delimiter=',' )
+    csv_writer.writerow( ['BIOMARKER', 'PAR_R1', 'PAR_R2', 'PAR_LOWER'] )
+else:
+    csv_writer = None
+
 analyse_metric( 'MMSE', 'MMSE', False )
 analyse_metric( 'CDRSB', 'CDR-SB', False )
 analyse_metric( 'ADAS11', 'ADAS 11', False )
@@ -351,20 +360,16 @@ analyse_metric( 'FAQ', 'FAQ', False )
 for vol_index in range(len(adni.volume_names)):
     analyse_metric( adni.volume_names[vol_index], adni.volume_names[vol_index], True )
 
-metric_name             = np.array( metric_name )
-metric_robustness_min   = np.array( metric_robustness_min )
-metric_robustness_max   = np.array( metric_robustness_max )
-metric_robustness_mean  = np.array( metric_robustness_mean )
-metric_group_seperation = np.array( metric_group_seperation )
+args = np.argsort( np.array( metric_robustness_min ) )[::-1]
+sorted_metric_names = np.array( metric_name )[args]
 
-args = np.argsort( metric_robustness_min )[::-1]
-sorted_metric_names = metric_name[args]
 print sorted_metric_names
+
 for name in sorted_metric_names:
-    if name in ['MMSE', 'CDRSB', 'ADAS11', 'ADAS13', 'FAQ' ]:
+    if name in adni.cog_score_names:
         normalise = False
     else:
         normalise = True
-    analyse_metric( name, name, normalise, plot=True )
+    analyse_metric( name, name, normalise, plot=True, csv_writer=csv_writer )
 
 
