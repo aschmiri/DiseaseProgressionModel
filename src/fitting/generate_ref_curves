@@ -1,0 +1,4 @@
+#!/bin/bash 
+root=/media/Data/source/repositoriesBitBucket/bigr-reference-curves
+
+/media/Data/source/repositoriesBitBucket/bigr-reference-curves/generate_ref_curves.py --measurements-path $root/RefDatVolumeFiles --output-file $root/RefDatOutput/ref.csv --output-curve-dir $root/RefDatRCurves --info-file $root/refsubs_5001_info --generate-total-report --degrees-of-freedom 2

@@ -161,6 +161,8 @@ volume_names   = [
     'Right TTG transverse temporal gyrus',
     'Left TTG transverse temporal gyrus']
 
+biomarker_names = cog_score_names + volume_names
+
 rids_converters = [241, 21, 23, 546, 324, 141, 273, 276, 337, 159, 424, 256,    \
                    307, 403, 644, 259, 260, 394, 291, 352, 551, 626, 314, 464,  \
                    861, 1080, 835, 125, 112, 51, 656, 673, 869, 945, 408, 839,  \
