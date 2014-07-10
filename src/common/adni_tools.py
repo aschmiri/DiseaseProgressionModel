@@ -19,6 +19,8 @@ mni_atlas      = os.path.join( mni_folder, 'mni_icbm152_t1_tal_nlin_asym_09a_bra
 
 query_list     = os.path.join( project_folder, 'lists/query_ADNI.csv' )
 
+cog_score_names = ['MMSE', 'CDRSB', 'ADAS11', 'ADAS13', 'FAQ' ]
+
 volume_names   = [
     '3rd Ventricle',                  #  0
     '4th Ventricle',                  #  1
