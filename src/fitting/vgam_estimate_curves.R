@@ -22,7 +22,8 @@ bv <- read.csv(file=input_file,head=TRUE,sep=",")
 bv_mod <- bv[c(2,3)];
 
 # Perform the fit. The degrees of freedom are given by the third argument.
-fit = vgam(volume ~ s(scan_age, df=as.integer(degrees_of_freedom)), lms.yjn2(percentiles=c(5,25,50,75,95),lsigma='identity'), bv_mod, trace=TRUE)
+#fit = vgam(volume ~ s(scan_age, df=as.integer(degrees_of_freedom)), lms.yjn2(percentiles=c(5,25,50,75,95),lsigma='identity'), bv_mod, trace=TRUE)
+fit = vgam(volume ~ s(scan_age, df=as.integer(degrees_of_freedom)), lms.yjn2(percentiles=c(5,25,50,75,95)), bv_mod, trace=TRUE)
 #fit = vgam(volume ~ s(scan_age, df=c(as.integer(degrees_of_freedom),1)), lms.yjn2(percentiles=c(5,25,50,75,95),lsigma='identity',dfmu.init=2), bv_mod, trace=TRUE)
 #fit = vgam(volume ~ s(scan_age, df=2), lms.bcn(percentiles=c(5,25,50,75,95),dfmu.init=2,lmu='identity',zero=c(1,3)), bv_mod, trace=TRUE)
 #fit = vgam(volume ~ s(scan_age, df=c(as.integer(degrees_of_freedom),2)), lms.bcn(percentiles=c(5,25,50,75,95), dfmu.init = 2), bv_mod, trace=TRUE)
@@ -42,7 +43,7 @@ if(save_plot==0) {
 } else {
     pdf(plot_filename,width=w,height=h)
 }
-qtplot(fit, percentiles = c(5, 25, 50, 75, 95), main = "Quantiles",xlim = c(43, 100), las = 1, ylab = "volume", lwd = 2, lcol = 4)
+qtplot(fit, percentiles = c(5, 25, 50, 75, 95), main = "Quantiles",xlim = c(-40, 40), las = 1, ylab = "volume", lwd = 2, lcol = 4)
 if(save_plot==0) {
     z <- locator()
 } else {

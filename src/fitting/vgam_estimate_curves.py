@@ -7,6 +7,7 @@ import re
 import numpy as np
 import common.adni_tools as adni
 import subprocess
+import joblib as jl
 
 def collect_measurements():    
     measurements = {}
@@ -102,7 +103,7 @@ def collect_measurements():
     
     return measurements
 
-def generate_csv():
+def generate_csv_files():
     measurements = collect_measurements()
     for score_name in adni.biomarker_names:
         print 'Generating output CSV for', score_name
@@ -113,45 +114,38 @@ def generate_csv():
 
         for rid, rid_data in measurements.items():
             for _, scan_data in rid_data.items():
-                writer.writerow( [rid, scan_data['time'], scan_data[score_name]] )
+                time = adni.safe_cast( scan_data['time'], int )
+                value = adni.safe_cast( scan_data[score_name], int )
+                if time != None and value != None:
+                    writer.writerow( [rid, time, value] )
 
 
-def generate_reference_data( args ):
-    commands = []
+def fit_data( args ):
+    jl.Parallel( n_jobs=args.nr_threads )( jl.delayed(fit_score)(args, score_name) for score_name in adni.biomarker_names )
     
-    for score_name in adni.biomarker_names:
-        print 'Fitting curve to', score_name
+def fit_score( args, score_name ):
+    print 'Fitting curve to', score_name
+    r_file = os.path.join( adni.project_folder, 'src/fitting/vgam_estimate_curves.R' )
+    csv_file = os.path.join( adni.project_folder, 'data', score_name.replace( ' ', '_' ) + '.csv' )
+    output_file = csv_file.replace( '.csv', '_curves.csv' )
+    image_file = csv_file.replace( '.csv', '_curves.pdf' )
+    stdout_file = csv_file.replace( '.csv', '_stdout.Rout' )
+
+    command = "R CMD BATCH \"--args input_file='%s' output_file='%s' degrees_of_freedom=%i save_plot=1 plot_filename='%s'\" %s %s" \
+              % (csv_file, output_file, int(args.degrees_of_freedom), image_file, r_file, stdout_file)
         
-        csv_file = os.path.join( adni.project_folder, 'data', score_name.replace( ' ', '_' ) + '.csv' )
-        output_file = csv_file.replace( '.csv', '_curves.csv' )
-        image_file = csv_file.replace( '.csv', '_curves.pdf' )
-        stdout_file = csv_file.replace( '.csv', '_stdout.Rout' )
-
-        commands += ["R CMD BATCH \"--args input_file='%s' output_file='%s' degrees_of_freedom=%i save_plot=1 plot_filename='%s'\" ref_curve_generator.R %s" 
-                     % (csv_file, output_file, int(args.degrees_of_freedom), image_file, stdout_file)]
-
-    for command in commands:
-        print command
-        return subprocess.call(command, shell=True)
+    subprocess.call(command, shell=True)
     
-
 def main():
     # parse command line options
     parser = argparse.ArgumentParser(description='Generate reference curves and reports for BAMBI.')
-    parser.add_argument('--measurements-path', action='store', dest='measurements_path', help='Path to where the measurements files are collected.')
-    parser.add_argument('--output-file', action='store', dest='output_file', help='Pattern of the outputfile.')
-    parser.add_argument('--output-curve-dir', action='store', dest='output_curve_dir', help='Directory where the R curves are saved')
-    parser.add_argument('--info-file', action='store', dest='info_file', help='Path to the file containing the age and gender information of the subjects.')
-    parser.add_argument('--generate-total-report', action='store_true', dest='generate_total_report', default=False, help='Create a single file with all information.')
-    parser.add_argument('--degrees-of-freedom', action='store', dest='degrees_of_freedom', type=int, default=2, help='Degrees of freedom for the LMS method.')
-    parser.add_argument('--no-separate-csv', action='store_true', dest='no_separate_csv', default=False, help='Do not generate separate csv files.')
-    parser.add_argument('--no-percentile-curves', action='store_true', dest='no_percentile_curves', default=False, help='Do not generate percentile curves.')
-    parser.add_argument('--generate-single-curve-id', action='store', dest='generate_single_curve_id', help='generate percentile curves for a single output file. Input in the form (abs|picv|ptbv)_(female|male)_Region(x)_(tissue) i.e. abs_male_Region5_wm')
-    parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+    parser.add_argument( '-n', '--nr_threads', dest = 'nr_threads', type=int, default=4, help='number of threads' )
+    parser.add_argument( '-d', '--degrees-of-freedom', action='store', dest='degrees_of_freedom', type=int, default=2, help='degrees of freedom for the LMS method')
+    parser.add_argument( '--version', action='version', version='%(prog)s 1.0')
     args = parser.parse_args()
 
-    #generate_csv()
-    generate_reference_data( args )
+    generate_csv_files()
+    fit_data( args )
 
 if __name__ == "__main__":
     main()

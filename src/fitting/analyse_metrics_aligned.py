@@ -117,7 +117,7 @@ def collect_data( name_csv, normalise ):
             
             if rid != previous_rid and previous_rid != None:
                 # Handle data of previous subject
-                if traj_d[-1] == 1.0 and traj_d[0] == 0.5:
+                if traj_d[-1] == 1.0 and traj_d[0] == 0.5: # TODO BUG condition after sort
                     normalise_and_append( traj_x, traj_y, traj_d, traj_a, normalise )
                 traj_x = []
                 traj_y = []
