@@ -95,7 +95,7 @@ def collect_measurements():
     
             for viscode,scantime in zip( data_viscode, data_scantime ):
                 measurements[rid][viscode].update( {'scantime' : scantime} )
-                measurements[rid][viscode].update( {'time' : scantime - time_convert} )
+                measurements[rid][viscode].update( {'progress' : scantime - time_convert} )
 
     #
     # Remove non-valid rids        
@@ -110,14 +110,14 @@ def generate_csv_files():
         
         csv_file = os.path.join( adni.project_folder, 'data', score_name.replace( ' ', '_' ) + '.csv' )
         writer = csv.writer( open( csv_file, 'wb' ), delimiter=',' )
-        writer.writerow(['rid', 'scan_age', 'volume'])
+        writer.writerow(['rid', 'progress', 'value'])
 
         for rid, rid_data in measurements.items():
             for _, scan_data in rid_data.items():
-                time = adni.safe_cast( scan_data['time'], int )
-                value = adni.safe_cast( scan_data[score_name], int )
-                if time != None and value != None:
-                    writer.writerow( [rid, time, value] )
+                progress = adni.safe_cast( scan_data['progress'], int )
+                value    = adni.safe_cast( scan_data[score_name], int )
+                if progress != None and value != None:
+                    writer.writerow( [rid, progress, value] )
 
 
 def fit_data( args ):
@@ -128,11 +128,12 @@ def fit_score( args, score_name ):
     r_file = os.path.join( adni.project_folder, 'src/fitting/vgam_estimate_curves.R' )
     csv_file = os.path.join( adni.project_folder, 'data', score_name.replace( ' ', '_' ) + '.csv' )
     output_file = csv_file.replace( '.csv', '_curves.csv' )
+    densities_file = csv_file.replace( '.csv', '_densities.csv' )
     image_file = csv_file.replace( '.csv', '_curves.pdf' )
     stdout_file = csv_file.replace( '.csv', '_stdout.Rout' )
 
-    command = "R CMD BATCH \"--args input_file='%s' output_file='%s' degrees_of_freedom=%i save_plot=1 plot_filename='%s'\" %s %s" \
-              % (csv_file, output_file, int(args.degrees_of_freedom), image_file, r_file, stdout_file)
+    command = "R CMD BATCH \"--args input_file='%s' output_file='%s' degrees_of_freedom=%i save_plot=1 plot_file='%s' densities_file='%s'\" %s %s" \
+              % (csv_file, output_file, int(args.degrees_of_freedom), image_file, densities_file, r_file, stdout_file)
         
     subprocess.call(command, shell=True)
     
@@ -140,11 +141,11 @@ def main():
     # parse command line options
     parser = argparse.ArgumentParser(description='Generate reference curves and reports for BAMBI.')
     parser.add_argument( '-n', '--nr_threads', dest = 'nr_threads', type=int, default=4, help='number of threads' )
-    parser.add_argument( '-d', '--degrees-of-freedom', action='store', dest='degrees_of_freedom', type=int, default=2, help='degrees of freedom for the LMS method')
+    parser.add_argument( '-d', '--degrees-of-freedom', dest='degrees_of_freedom', type=int, default=2, help='degrees of freedom for the LMS method')
     parser.add_argument( '--version', action='version', version='%(prog)s 1.0')
     args = parser.parse_args()
 
-    generate_csv_files()
+    #generate_csv_files()
     fit_data( args )
 
 if __name__ == "__main__":
