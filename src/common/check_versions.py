@@ -1,3 +1,6 @@
+#! /usr/bin/env python
+# print __doc__
+
 import sys
 print 'Python:       ', sys.version
 
@@ -36,3 +39,9 @@ try:
     print 'RPy2:         ', rpy2.__version__
 except:
     print 'RPy2:          NOT INSTALLED'
+
+try:
+    import joblib
+    print 'joblib:       ', joblib.__version__
+except:
+    print 'joblib:        NOT INSTALLED'
