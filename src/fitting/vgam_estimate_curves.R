@@ -17,7 +17,7 @@ print(degrees_of_freedom)
 print(plot_file)
 print(densities_file)
 
-library( VGAM )
+library(VGAM)
 
 #
 # Read the data from the csv file given as first argument.
