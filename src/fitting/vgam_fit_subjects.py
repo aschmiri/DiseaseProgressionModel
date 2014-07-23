@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 # print __doc__
-
 import os.path
 import math
 import numpy as np

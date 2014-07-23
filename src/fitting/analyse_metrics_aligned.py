@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 # print __doc__
-
 import os.path
 import argparse
 import csv
@@ -390,6 +389,7 @@ def analyse_metric(name_csv, name_hr, normalise, plot=False, csv_writer=None, mo
 
     if plot:
         plt.show()
+
 
 if __name__ == '__main__':
     main()

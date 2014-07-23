@@ -1,19 +1,20 @@
 #! /usr/bin/env python
 
-def run( source, template, dofIn, dofOut, paramFile, wapedImg, verbose=True ):
+EXEC_REG = 'ireg'
+EXEC_TRANS = 'transformation'
+
+
+def run(source, template, dofIn, dofOut, paramFile, wapedImg, verbose=True):
     """
     Performs a nonlinear registration using the IRTK ireg program (currently called reg3).
     """
     import os.path
     from subprocess import call
-    
-    iregExec = 'ireg'
-    transExec = 'transformation'
-    
+
     #
     # Run nonlinear registration
     #
-    if os.path.exists( dofOut ):
+    if os.path.exists(dofOut):
         if verbose:
             print 'File', dofOut, 'already exists'
     else:
@@ -25,18 +26,17 @@ def run( source, template, dofIn, dofOut, paramFile, wapedImg, verbose=True ):
             print 'DOF in:   ', dofIn
             print 'DOF out:  ', dofOut
             print 'Param:    ', paramFile
-        
-        if dofIn in [None, 'None', 'none']:
-            call([ iregExec, template, source, '-dofout', dofOut, '-parin', paramFile, '-v' ])
-        else:
-            call([ iregExec, template, source, '-dofin', dofIn, '-dofout', dofOut, '-parin', paramFile, '-v' ])
 
-    
+        if dofIn in [None, 'None', 'none']:
+            call([EXEC_REG, template, source, '-dofout', dofOut, '-parin', paramFile, '-v'])
+        else:
+            call([EXEC_REG, template, source, '-dofin', dofIn, '-dofout', dofOut, '-parin', paramFile, '-v'])
+
     #
     # Run transformation
     #
     if not wapedImg in [None, 'None', 'none']:
-        if os.path.exists( wapedImg ):
+        if os.path.exists(wapedImg):
             if verbose:
                 print 'File', wapedImg, 'already exists'
         else:
@@ -47,5 +47,5 @@ def run( source, template, dofIn, dofOut, paramFile, wapedImg, verbose=True ):
                 print 'Template:', template
                 print 'DOF:     ', dofOut
                 print 'Deformed:', wapedImg
-            
-            call([ transExec, source, wapedImg, '-target', template, '-dofin', dofOut, '-cspline', '-matchInputType', '-Sp', '0' ])
+
+            call([EXEC_TRANS, source, wapedImg, '-target', template, '-dofin', dofOut, '-cspline', '-matchInputType', '-Sp', '0'])

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-
-import argparse
+# print __doc__
 import os.path
+import argparse
 import csv
 import subprocess
 import joblib as jl
@@ -56,6 +56,7 @@ def estimate_model(args, biomarker):
               % (csv_file, output_file, int(args.degrees_of_freedom), image_file, densities_file, r_file, stdout_file)
 
     subprocess.call(command, shell=True)
+
 
 if __name__ == '__main__':
     main()

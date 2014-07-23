@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 # print __doc__
-
 import os.path
 import csv
 import re
@@ -236,6 +235,7 @@ def plot_trajectories(traj_x, traj_y, traj_d, rid=0, plot_steps=100, biomarker='
         ax = plt.gca()
         ax.scatter(xdata, ydata, c=ddata, cmap=adni.adni_cmap, vmin=0.0, vmax=1.0, s=40, linewidths=0)
         plt.show()
+
 
 if __name__ == '__main__':
     main()

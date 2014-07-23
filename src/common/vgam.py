@@ -10,6 +10,11 @@ MIN_PROGRESS = -42
 MAX_PROGRESS = 51
 
 
+################################################################################
+#
+# get_measurements_as_collection()
+#
+################################################################################
 def get_measurements_as_collection(data_file):
     '''Return all measurements as a collection.
 
@@ -119,6 +124,11 @@ def get_measurements_as_collection(data_file):
     return measurements
 
 
+################################################################################
+#
+# _read_dens_file()
+#
+################################################################################
 def _read_dens_file(dens_file):
     densities = []
     progress_points = []
@@ -141,6 +151,11 @@ def _read_dens_file(dens_file):
         return None, None, None
 
 
+################################################################################
+#
+# get_densities_as_collection()
+#
+################################################################################
 def get_densities_as_collection(folder=os.path.join(adni.project_folder, 'data'),
                                 biomarkers=adni.biomarker_names):
     '''Return all density distributions as a collection.

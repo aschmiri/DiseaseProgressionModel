@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# print __doc__
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -102,6 +103,7 @@ def plot_model(biomarker, points_file, curves_file, plot_points, save_file=False
         plt.savefig(plot_filename, dpi=100)
     else:
         plt.show()
+
 
 if __name__ == '__main__':
     main()
