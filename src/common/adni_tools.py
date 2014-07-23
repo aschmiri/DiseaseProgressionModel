@@ -3,20 +3,25 @@
 
 import os.path
 import numpy as np
+import socket
 
 ################################################################################
 #
 # global paths and variables
 #
 ################################################################################
-adni_folder    = '/vol/medic01/users/aschmidt/projects/Data/ADNI'
-data_folder    = os.path.join( adni_folder, 'data' )
-merge_folder   = os.path.join( adni_folder, 'ADNIMERGE' )
-project_folder = '/vol/medic01/users/aschmidt/projects/AgeingAtlas'
-param_folder   = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/parameters'
-mni_folder     = '/vol/medic01/users/aschmidt/projects/Data/mni_icbm152_nlin_asym_09a'
-mni_atlas      = os.path.join( mni_folder, 'mni_icbm152_t1_tal_nlin_asym_09a_brain_scaled.nii' )
 
+if socket.gethostname() == 'Schmiris-MacBook-Pro.local':
+    project_folder = '/Development/ageingatlas'
+else:
+    project_folder = '/vol/medic01/users/aschmidt/projects/AgeingAtlas'
+    adni_folder    = '/vol/medic01/users/aschmidt/projects/Data/ADNI'
+    mni_folder     = '/vol/medic01/users/aschmidt/projects/Data/mni_icbm152_nlin_asym_09a'
+    mni_atlas      = os.path.join( mni_folder, 'mni_icbm152_t1_tal_nlin_asym_09a_brain_scaled.nii' )
+    data_folder    = os.path.join( adni_folder, 'data' )
+    merge_folder   = os.path.join( adni_folder, 'ADNIMERGE' )
+
+param_folder   = os.path.join( project_folder, 'parameters' )
 query_list     = os.path.join( project_folder, 'lists/query_ADNI.csv' )
 
 cog_score_names = ['MMSE', 'CDRSB', 'ADAS11', 'ADAS13', 'FAQ' ]
