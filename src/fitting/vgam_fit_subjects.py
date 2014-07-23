@@ -10,45 +10,42 @@ from src.common import vgam as vgam
 
 
 def main():
+    # Define parameters for test
     biomarkers = ['MMSE', 'CDRSB', 'Right Amygdala', 'Left Amygdala', 'Right Lateral Ventricle', 'Left Lateral Ventricle']
-    #biomarkers = ['MMSE', 'CDRSB']
-    #biomarkers = ['Right Amygdala', 'Left Amygdala', 'Right Lateral Ventricle', 'Left Lateral Ventricle', 'Right Hippocampus', 'Left Hippocampus']
-    #biomarkers = adni.volume_names
-    #biomarkers = adni.cog_score_names
+    # biomarkers = ['MMSE', 'CDRSB']
+    # biomarkers = ['Right Amygdala', 'Left Amygdala', 'Right Lateral Ventricle', 'Left Lateral Ventricle', 'Right Hippocampus', 'Left Hippocampus']
+    # biomarkers = adni.volume_names
+    # biomarkers = adni.cog_score_names
+    # viscodes = ['bl']
+    viscodes = ['bl', 'm12', 'm24']
 
+    # Collect data for test
     data_file = os.path.join(adni.project_folder, 'lists/volumes_segbased_sym_5mm.csv')
     measurements = vgam.get_measurements_as_collection(data_file)
     densities = vgam.get_densities_as_collection(biomarkers=biomarkers)
 
+    # Test all available subjects
     dpis = []
     progresses = []
-    rms = 0
+    mean_error = 0
     for rid in measurements:
         print 'Estimating DPI for subject', rid
         progress = measurements[rid]['bl']['progress']
 
-        #sample = measurements[rid]['bl']
-        #dpi = evaluate_sample(densities, sample, biomarkers=biomarkers)
-
         samples = {}
-        samples.update({'bl': measurements[rid]['bl']})
-        samples.update({'m12': measurements[rid]['m12']})
+        for viscode in viscodes:
+            samples.update({viscode: measurements[rid][viscode]})
         dpi = evaluate_samples(densities, samples, biomarkers=biomarkers)
 
         print 'Estimated DPI', dpi, '; Progress:', progress
         dpis.append(dpi)
         progresses.append(progress)
-        rms += np.square(dpi - progress)
-    rms = math.sqrt(rms)
-    print 'RMS:', rms
+        mean_error += np.abs(dpi - progress)
+
+    mean_error /= len(measurements)
+    print 'Mean error:', mean_error
+
     plot_correlation(dpis, progresses)
-
-
-def plot_correlation(dpis, progresses):
-    plt.xlim(vgam.MIN_PROGRESS, 20)
-    plt.plot([vgam.MIN_PROGRESS, vgam.MAX_PROGRESS], [vgam.MIN_PROGRESS, vgam.MAX_PROGRESS], color='0.5', linestyle='--')
-    plt.scatter(dpis, progresses, alpha=0.5)
-    plt.show()
 
 
 def evaluate_sample_at_progress(densities, sample, progress, biomarkers=adni.biomarker_names):
@@ -86,7 +83,6 @@ def evaluate_sample_at_progress(densities, sample, progress, biomarkers=adni.bio
                 if prog_offset == 0.0:
                     prob_sample *= prob_sample_prev
                 else:
-                    print biomarker, prog_next, i_prev
                     prob_prev = densities[biomarker][prog_next][i_prev]
                     prob_next = densities[biomarker][prog_next][i_next]
                     prob_sample_next = factor * prob_next + (1 - factor) * prob_prev
@@ -97,22 +93,9 @@ def evaluate_sample_at_progress(densities, sample, progress, biomarkers=adni.bio
     return prob_sample
 
 
-def evaluate_sample(densities, sample, biomarkers=adni.biomarker_names):
-    progress_steps = np.arange(vgam.MIN_PROGRESS, vgam.MAX_PROGRESS, 0.5)
-    probs = []
-    for progress in progress_steps:
-        prob = evaluate_sample_at_progress(densities, sample, progress, biomarkers=biomarkers)
-        probs.append(prob)
-
-    #plt.plot(progress_steps, probs)
-    #plt.show()
-
-    dpi = progress_steps[np.argmax(probs)]
-    return dpi
-
-
 def evaluate_samples(densities, samples, biomarkers=adni.biomarker_names):
-    progress_steps = np.arange(vgam.MIN_PROGRESS, vgam.MAX_PROGRESS - 12, 0.5)
+    max_scantime = np.max([samples[viscode]['scantime'] for viscode in samples])
+    progress_steps = np.arange(vgam.MIN_PROGRESS, vgam.MAX_PROGRESS - max_scantime, 0.5)
     probs = []
     for progress in progress_steps:
         prob = 1.0
@@ -122,6 +105,20 @@ def evaluate_samples(densities, samples, biomarkers=adni.biomarker_names):
         probs.append(prob)
     dpi = progress_steps[np.argmax(probs)]
     return dpi
+
+
+def plot_correlation(dpis, progresses):
+    plt.title('Correlation between progress and estimated DPI')
+    plt.xlabel('Disease progression relative to point of conversion')
+    plt.ylabel('Estimated DPI')
+    plt.xlim(vgam.MIN_PROGRESS, 20)
+    plt.ylim(vgam.MIN_PROGRESS, 5)
+    plt.plot([vgam.MIN_PROGRESS, vgam.MAX_PROGRESS],
+             [vgam.MIN_PROGRESS, vgam.MAX_PROGRESS],
+             color='0.5', linestyle='--')
+    plt.scatter(dpis, progresses, alpha=0.5)
+    plt.show()
+
 
 if __name__ == '__main__':
     main()

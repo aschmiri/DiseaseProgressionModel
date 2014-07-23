@@ -80,7 +80,7 @@ def plot_model(biomarker, points_file, curves_file, plot_points, save_file=False
     #
     labels = ['1%', '5%', '25%', '50%', '75%', '95%', '99%']
     greyvals = ['0.45', '0.3', '0.15', '0', '0.15', '0.3', '0.45']
-    #styles   = ['g-', 'g-', 'g-', 'b-', 'g-', 'g-', 'g-']
+    # styles   = ['g-', 'g-', 'g-', 'b-', 'g-', 'g-', 'g-']
 
     for (curve, greyval, label) in zip(curves, greyvals, labels):
         ax1.plot(progrs, curve, color=greyval)

@@ -121,6 +121,7 @@ def get_measurements_as_collection(data_file):
 
 def _read_dens_file(dens_file):
     densities = []
+    progress_points = []
     try:
         with open(dens_file, 'rb') as csvfile:
             rows = csv.reader(csvfile)
@@ -131,15 +132,17 @@ def _read_dens_file(dens_file):
                 if name == 'values':
                     y = data
                 else:
+                    progress_points.append(int(name))
                     densities.append(data)
-        return np.asarray(y), np.asarray(densities)
-    except:
-        print 'WARNING: file not found', dens_file
-        return None, None
+        return np.asarray(y), np.asarray(progress_points), np.asarray(densities)
+    except Exception as e:
+        print 'WARNING: failed to read', dens_file
+        print e
+        return None, None, None
 
 
-def get_densities_as_collection(biomarkers=adni.biomarker_names,
-                                folder=os.path.join(adni.project_folder, 'data')):
+def get_densities_as_collection(folder=os.path.join(adni.project_folder, 'data'),
+                                biomarkers=adni.biomarker_names):
     '''Return all density distributions as a collection.
 
     Keyword arguments:
@@ -155,18 +158,17 @@ def get_densities_as_collection(biomarkers=adni.biomarker_names,
       <biomarker> : ... }
     '''
     densities = {}
-
     for biomarker in biomarkers:
         print 'Reading densities for', biomarker
 
         dens_file = os.path.join(folder, biomarker.replace(' ', '_') + '_densities.csv')
-        values, densities_matrix = _read_dens_file(dens_file)
+        values, progress_points, density_curves = _read_dens_file(dens_file)
 
-        if values != None and densities_matrix != None:
+        if values != None and progress_points != None and density_curves != None:
             densities.update({biomarker: {}})
             densities[biomarker].update({'values': values})
 
-            for i in range(len(densities_matrix)):
-                densities[biomarker].update({i + MIN_PROGRESS: densities_matrix[i]})
+            for i in range(len(density_curves)):
+                densities[biomarker].update({progress_points[i]: density_curves[i]})
 
     return densities
