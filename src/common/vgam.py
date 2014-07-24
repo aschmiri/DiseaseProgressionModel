@@ -126,64 +126,64 @@ def get_measurements_as_collection(data_file):
 
 ################################################################################
 #
-# _read_dens_file()
+# _read_pdf_file()
 #
 ################################################################################
-def _read_dens_file(dens_file):
-    densities = []
-    progress_points = []
+def _read_pdf_file(pdf_file):
+    function_values = []
+    progress_grid = []
     try:
-        with open(dens_file, 'rb') as csvfile:
+        with open(pdf_file, 'rb') as csvfile:
             rows = csv.reader(csvfile)
             rows.next()
             for row in rows:
                 name = row[0]
                 data = [float(row[i]) for i in range(1, len(row))]
                 if name == 'values':
-                    y = data
+                    metric_grid = data
                 else:
-                    progress_points.append(int(name))
-                    densities.append(data)
-        return np.asarray(y), np.asarray(progress_points), np.asarray(densities)
+                    progress_grid.append(int(name))
+                    function_values.append(data)
+        return np.asarray(metric_grid), np.asarray(progress_grid), np.asarray(function_values)
     except Exception as e:
-        print 'WARNING: failed to read', dens_file
+        print 'WARNING: failed to read', pdf_file
         print e
         return None, None, None
 
 
 ################################################################################
 #
-# get_densities_as_collection()
+# get_pdfs_as_collection()
 #
 ################################################################################
-def get_densities_as_collection(folder=os.path.join(adni.project_folder, 'data'),
+def get_pfds_as_collection(folder=os.path.join(adni.project_folder, 'data'),
                                 biomarkers=adni.biomarker_names):
-    '''Return all density distributions as a collection.
+    '''Return all density distribution functions (PDFs) as a collection.
 
     Keyword arguments:
     biomarkers -- the names of the biomarkers that are to be included
-    folder -- the folder where the csv files describung the biomarkers are found
+    folder -- the folder where the csv files describing the biomarkers are found
 
     Returns:
     A collection with the following structure:
     { <biomarker> : { values : [sample points of value] }
-                    { MIN_PROGRESS : [probabilities at progress MIN_PROGRESS] }
+                    { MIN_PROGRESS : [PDF at progress MIN_PROGRESS] }
                     ...
-                    { MAX_PROGRESS : [probabilities at progress MAX_PROGRESS] }
+                    { MAX_PROGRESS : [PDF at progress MAX_PROGRESS] }
       <biomarker> : ... }
     '''
-    densities = {}
+    pdfs = {}
     for biomarker in biomarkers:
-        print 'Reading densities for', biomarker
+        print 'Reading pdfs for', biomarker
 
-        dens_file = os.path.join(folder, biomarker.replace(' ', '_') + '_densities.csv')
-        values, progress_points, density_curves = _read_dens_file(dens_file)
+        pdf_file = os.path.join(folder, biomarker.replace(' ', '_') + '_densities.csv')
+        metric_grid, progress_grid, function_values = _read_pdf_file(pdf_file)
 
-        if values != None and progress_points != None and density_curves != None:
-            densities.update({biomarker: {}})
-            densities[biomarker].update({'values': values})
+        if metric_grid != None and progress_grid != None and function_values != None:
+            pdfs.update({biomarker: {}})
+            pdfs[biomarker].update({'values': metric_grid})
 
-            for i in range(len(density_curves)):
-                densities[biomarker].update({progress_points[i]: density_curves[i]})
+            for i in range(len(function_values)):
+                pdfs[biomarker].update({progress_grid[i]: function_values[i]})
 
-    return densities
+    return pdfs

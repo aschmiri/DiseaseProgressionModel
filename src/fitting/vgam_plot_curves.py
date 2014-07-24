@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # print __doc__
-import os
+import os.path
+import argparse
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 import matplotlib.colors as colors
@@ -11,15 +13,23 @@ from src.common import vgam as vgam
 
 
 def main():
-    plot_points = True
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-n', '--biomarker_name', default=None, help='Name of the biomarker to be plotted')
+    parser.add_argument('-p', '--no_points', action='store_true', default=False, help='Indicate that no points are to be plotted.')
+    a = parser.parse_args()
 
-    for biomarker in adni.biomarker_names:
+    if a.biomarker_name != None:
+        biomarker_names = [a.biomarker_name]
+    else:
+        biomarker_names = adni.biomarker_names
+
+    for biomarker in biomarker_names:
         print 'Generating plot for', biomarker
 
         points_file = os.path.join(adni.project_folder, 'data', biomarker.replace(' ', '_') + '.csv')
         curves_file = points_file.replace('.csv', '_curves.csv')
         if os.path.isfile(points_file) and os.path.isfile(curves_file):
-            plot_model(biomarker, points_file, curves_file, plot_points)
+            plot_model(biomarker, points_file, curves_file, not a.no_points)
 
 
 def plot_model(biomarker, points_file, curves_file, plot_points, save_file=False, plot_densities=True):
@@ -35,16 +45,16 @@ def plot_model(biomarker, points_file, curves_file, plot_points, save_file=False
               r_sorted['x75'], r_sorted['x95'], r_sorted['x99']]
 
     #
-    # Plot densities
+    # Plot PDFs
     #
     if plot_densities != None:
-        densities = vgam.get_densities_as_collection(biomarkers=[biomarker])
-        y = densities[biomarker]['values']
+        pfds = vgam.get_pfds_as_collection(biomarkers=[biomarker])
+        y = pfds[biomarker]['values']
 
         ax1 = plt.subplot(1, 2, 1)
         ax2 = plt.subplot(1, 2, 2)
-        ax2.set_title('Probability density distributions for %s' % biomarker)
-        ax2.set_xlabel('Metric value')
+        ax2.set_title('Probability density function for %s' % biomarker)
+        ax2.set_xlabel('Volume' if biomarker in adni.volume_names else 'Score')
         ax2.set_ylabel('Probability')
 
         min_val = np.min(curves)
@@ -59,7 +69,7 @@ def plot_model(biomarker, points_file, curves_file, plot_points, save_file=False
             sample_color = sample_cmap.to_rgba(progr_samples.index(progr))
             ax1.axvline(progr, color=sample_color, linestyle='--', alpha=0.8)
             ax2.set_xlim(min_val, max_val)
-            ax2.plot(y, densities[biomarker][progr], label=str(progr), color=sample_color)
+            ax2.plot(y, pfds[biomarker][progr], label=str(progr), color=sample_color)
 
         handles2, labels2 = ax2.get_legend_handles_labels()
         ax2.legend(handles2, labels2, fontsize=10)
@@ -89,9 +99,12 @@ def plot_model(biomarker, points_file, curves_file, plot_points, save_file=False
 
     ax1.set_title('Percentile curves for %s' % biomarker)
     ax1.set_xlabel('Disease progression relative to point of conversion')
-    ax1.set_ylabel('Metric value')
+    ax1.set_ylabel('Volume' if biomarker in adni.volume_names else 'Score')
     progress_offset = (vgam.MAX_PROGRESS - vgam.MIN_PROGRESS) * 0.1
     ax1.set_xlim(vgam.MIN_PROGRESS - progress_offset, vgam.MAX_PROGRESS + 2 * progress_offset)
+    ax1.legend([mpl.patches.Rectangle((0, 0), 1, 1, fc=(0.8, 0.8, 0.0), linewidth=0),
+                mpl.patches.Rectangle((0, 0), 1, 1, fc=(1.0, 0.0, 0.0), linewidth=0)],
+               ['MCI', 'AD'], fontsize=10)
 
     plt.tight_layout()
 
