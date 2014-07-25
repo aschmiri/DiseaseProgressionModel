@@ -41,7 +41,7 @@ def main():
     metric_group_seperation = []
 
     # Estimate volumes
-    if a.csv_filename != None:
+    if a.csv_filename is not None:
         csv_file = open(a.csv_filename, 'wb')
         csv_writer = csv.writer(csv_file, delimiter=',')
         csv_writer.writerow(['BIOMARKER', 'PAR_R1', 'PAR_R2', 'PAR_LOWER'])
@@ -171,7 +171,7 @@ def collect_data(name_csv, normalise):
             if normalise:
                 value = value / float(row['FactorMNI'])
 
-            if rid != previous_rid and previous_rid != None:
+            if rid != previous_rid and previous_rid is not None:
                 # Handle data of previous subject
                 if traj_d[-1] == 1.0 and traj_d[0] == 0.5:  # TODO BUG condition after sort
                     normalise_and_append(traj_x, traj_y, traj_d, traj_a, normalise)
@@ -179,7 +179,7 @@ def collect_data(name_csv, normalise):
                 traj_y = []
                 traj_d = []
                 traj_a = []
-            if value != None:
+            if value is not None:
                 traj_x.append(scan_time)
                 traj_y.append(value)
                 traj_d.append(dx)
@@ -203,7 +203,7 @@ def age_regress_data():
 
 
 def compute_binned_data(data_x, data_y, bin_size=6, min_bin_size=10,
-                            return_sample_number=True, remove_outliers=True):
+                        return_sample_number=True, remove_outliers=True):
     bins_x = []
     bins_y = []
     bins_s = []
@@ -242,7 +242,7 @@ def compute_binned_data(data_x, data_y, bin_size=6, min_bin_size=10,
 
 
 def compute_bin_error(data_x, data_y, popt, model=exponential,
-                         bin_size=6, min_bin_size=10):
+                      bin_size=6, min_bin_size=10):
     bins_e = []
 
     for curr_x in range(-72, 72, bin_size):
@@ -265,7 +265,7 @@ def fit_data(data_x, data_y, data_sigma=None, model=exponential):
         data_y = np.array(data_y)
 
         # Fit curve
-        if data_sigma == None:
+        if data_sigma is None:
             popt, _ = curve_fit(model, data_x, data_y)
         else:
             popt, _ = curve_fit(model, data_x, data_y, sigma=data_sigma)
@@ -338,25 +338,25 @@ def analyse_metric(name_csv, name_hr, normalise, plot=False, csv_writer=None, mo
     # Compute and plot binned fit
     # -----------------------
     bins_x, bins_y, bins_s, bins_n = compute_binned_data(list_x, list_y, bin_size=3,
-                                                          return_sample_number=True,
-                                                          remove_outliers=True)
+                                                         return_sample_number=True,
+                                                         remove_outliers=True)
     if plot:
         ax1.errorbar(bins_x, bins_y, yerr=bins_s,
-                      linewidth=0, elinewidth=1, marker='x', c='k', ecolor='0.5')
+                     linewidth=0, elinewidth=1, marker='x', c='k', ecolor='0.5')
 
     # Scale bins with number of samples
     bins_weight = [bins_s[i] / np.sqrt(bins_n[i]) for i in range(len(bins_s))]
 
     # Fit bin data
     popt = fit_data(bins_x, bins_y, data_sigma=bins_weight, model=model)
-    if popt != None:
+    if popt is not None:
         if plot:
             # Plot fitted curve
             x = np.linspace(-50, 50, 200)
             y = model(x, *popt)
             ax1.plot(x, y, color='k')
 
-        if csv_writer != None:
+        if csv_writer is not None:
             csv_writer.writerow([name_csv, popt[0], popt[1], popt[2]])
 
         # Estimate and plot robustness
@@ -370,11 +370,6 @@ def analyse_metric(name_csv, name_hr, normalise, plot=False, csv_writer=None, mo
         print 'Group separation:', group_sep
 
         if plot:
-            # Plot mean squared error
-#             bins_y_model = [model(x, *popt) for x in bins_x ]
-#             ax1.errorbar(bins_x, bins_y_model, yerr=bins_e,
-#                           linewidth=0, elinewidth=1, marker='x', c='r', ecolor='r')
-
             # Plot robustness
             ax2 = plt.twinx()
             ax2.set_ylim(ymin=0, ymax=0.2)

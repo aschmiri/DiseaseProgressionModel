@@ -58,7 +58,7 @@ def run_backward(index, study):
     target_seg = adni.find_file(target_seg)
     out_seg = os.path.join(seg_folder_out, source_base)
 
-    if target_seg != None:
+    if target_seg is not None:
         if not os.path.isfile(dof_nonlin):
             print 'DOF file', dof_nonlin, 'does not exists!'
         elif os.path.isfile(out_seg):
@@ -102,7 +102,7 @@ def run_forward(index, study):
     source_seg = adni.find_file(source_seg)
     out_seg = os.path.join(seg_folder_out, target_base)
 
-    if source_seg != None:
+    if source_seg is not None:
         if not os.path.isfile(dof):
             print 'DOF file', dof, 'does not exists!'
         elif os.path.isfile(out_seg):

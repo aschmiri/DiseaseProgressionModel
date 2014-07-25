@@ -17,7 +17,7 @@ def find_file(filename, method_folder, type_folder):
     folder_ADNIGO = os.path.join(adni.data_folder, 'ADNIGO', method_folder, type_folder)
 
     basename = os.path.basename(filename)
-    if 'dof' in  type_folder:
+    if 'dof' in type_folder:
         basename = basename.replace('.nii.gz', '.dof.gz')
     elif 'images' in type_folder:
         basename = basename.replace('.dof.gz', '.nii.gz')
@@ -90,8 +90,8 @@ def read_datafile(datafile, diagnosis='ALL', age_regression=False):
 #
 ################################################################################
 def adaptive_kernel_regression(states, state,
-                           sigma_min=0.05, sigma_max=3.0, sigma_delta=0.05,
-                           min_weight=0.01, required_subjects=100):
+                               sigma_min=0.05, sigma_max=3.0, sigma_delta=0.05,
+                               min_weight=0.01, required_subjects=100):
 
     for sigma in np.arange(sigma_min, sigma_max + sigma_delta, sigma_delta):
         weights = np.exp(-0.5 * np.square((states - state) / sigma))

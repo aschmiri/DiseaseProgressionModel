@@ -38,7 +38,8 @@ def main():
     image_folder_adniG = os.path.join(data_folder, 'data/ADNIGO/MNI152_linear/images_normalised')
 
     images, rids, _, ages, _ = adni.get_all_data(
-            image_folder_adni1, image_folder_adni2, image_folder_adniG, a.viscode, diagnosis=a.diagnosis)
+        image_folder_adni1, image_folder_adni2, image_folder_adniG,
+        a.viscode, diagnosis=a.diagnosis)
 
     # Find sigma and corresponding images
     _, weights, indices = at.adaptive_kernel_regression(ages, a.age, required_subjects=a.required_subjects)
@@ -79,7 +80,7 @@ def main():
                 print 'Data:   ' + data_file_dofs
                 print 'Output: ' + out_average_dof
                 call([EXEC_FFDAVERAGE, out_average_dof, '-dofnames', data_file_dofs,
-                       '-identity', str(selected_weights[i])])
+                      '-identity', str(selected_weights[i])])
 
             # Transform average image
             out_image_transformed = os.path.join(atlas_folder_temp, temp_base + '_image_transformed.nii.gz')
@@ -90,7 +91,7 @@ def main():
                 print 'DOF:    ' + out_average_dof
                 print 'Output: ' + out_image_transformed
                 call([EXEC_TRANSFORM, target, out_image_transformed,
-                       '-dofin', out_average_dof, '-invert'])  # , '-cspline'
+                      '-dofin', out_average_dof, '-invert'])  # , '-cspline'
 
             # Write transformed image to image file
             image_writer.writerow([out_image_transformed, selected_weights[i]])

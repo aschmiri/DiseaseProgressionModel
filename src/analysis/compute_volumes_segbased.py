@@ -37,8 +37,8 @@ def main():
     with open(out_file, 'wb') as csvfile:
         writer = csv.writer(csvfile, delimiter=',')
         writer.writerow(['RID', 'VISCODE', 'DX.scan', 'AGE.scan', 'ScanDate',
-                          'MMSE', 'CDRSB', 'ADAS11', 'ADAS13', 'FAQ', 'MOCA',
-                          'FactorMNI', 'FactorBL'] + adni.volume_names)
+                         'MMSE', 'CDRSB', 'ADAS11', 'ADAS13', 'FAQ', 'MOCA',
+                         'FactorMNI', 'FactorBL'] + adni.volume_names)
 
         for rid in rids:
             cur.execute("SELECT iid, viscode, study, diagnosis, filename, age, scandate \
@@ -106,7 +106,7 @@ def main():
                             bl_factor = float(check_output([exec_factors, bl_dof]))
 
                     # Get volumes of 138 objects
-                    if seg != None:
+                    if seg is not None:
                         if bl_factor == -1:  # or mni_factor == -1:
                             print 'ERROR: Factors were not computed correctly'
                         else:
@@ -117,8 +117,8 @@ def main():
                                 print 'ERROR:', len(volumes), 'volumes read for', os.path.basename(seg)
                             else:
                                 writer.writerow([str(rid), viscode, diagnosis, age, scandate,
-                                                  mmse, cdrsb, adas11, adas13, faq, moca,
-                                                  mni_factor, bl_factor] + volumes)
+                                                 mmse, cdrsb, adas11, adas13, faq, moca,
+                                                 mni_factor, bl_factor] + volumes)
                                 csvfile.flush()
                                 # print rid, viscode, diagnosis, mni_factor, bl_factor, ':', volumes
 

@@ -40,7 +40,7 @@ def main():
     for i in range(len(baseline_files)):
         source = baseline_files[i]
         dof = dof_files[i]
-        if a.rid == None or source.find('_S_' + a.rid) > 0:
+        if a.rid is None or source.find('_S_' + a.rid) > 0:
             print '--------------------'
             print 'Source: ' + source
             print 'DOF:    ' + dof

@@ -86,7 +86,7 @@ def main():
             print 'DOF:    ' + out_average_dof
             print 'Output: ' + out_average_image_transformed
             call([EXEC_TRANSFORM, out_average_image, out_average_image_transformed,
-                   '-dofin', out_average_dof, '-invert', '-cspline'])
+                  '-dofin', out_average_dof, '-invert', '-cspline'])
 
 
 if __name__ == '__main__':

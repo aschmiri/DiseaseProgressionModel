@@ -35,7 +35,7 @@ def run(source, template, dofIn, dofOut, paramFile, wapedImg, verbose=True):
     #
     # Run transformation
     #
-    if not wapedImg in [None, 'None', 'none']:
+    if wapedImg not in [None, 'None', 'none']:
         if os.path.exists(wapedImg):
             if verbose:
                 print 'File', wapedImg, 'already exists'

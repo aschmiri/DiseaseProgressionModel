@@ -35,7 +35,8 @@ def main():
     image_folder_adniG = os.path.join(data_folder, 'data/ADNIGO/MNI152_linear/images')
 
     images, rids, _, ages, _ = adni.get_all_data(
-            image_folder_adni1, image_folder_adni2, image_folder_adniG, a.viscode, diagnosis=a.diagnosis)
+        image_folder_adni1, image_folder_adni2, image_folder_adniG,
+        a.viscode, diagnosis=a.diagnosis)
 
     _, _, indices = at.adaptive_kernel_regression(ages, a.age, required_subjects=a.required_subjects)
 

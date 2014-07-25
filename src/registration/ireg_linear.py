@@ -64,7 +64,7 @@ def run(source, template, mask, dofFile, rregParamFile, aregParamFile, wapedImg,
     #
     # Run transformation
     #
-    if not wapedImg in [None, 'None', 'none']:
+    if wapedImg not in [None, 'None', 'none']:
         if os.path.exists(wapedImg):
             if verbose:
                 print 'File', wapedImg, 'already exists'

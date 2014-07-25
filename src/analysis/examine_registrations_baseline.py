@@ -37,7 +37,7 @@ def main():
         dof = os.path.join(dof_folder, source_base).replace('.nii.gz', '.dof.gz')
 
         if os.path.isfile(dof):
-            if a.rid == None or source.find('_S_' + a.rid) > 0:
+            if a.rid is None or source.find('_S_' + a.rid) > 0:
                 print '--------------------'
                 print 'Target: ' + target
                 print 'Source: ' + source

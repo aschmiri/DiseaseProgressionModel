@@ -18,7 +18,7 @@ def main():
     parser.add_argument('-p', '--no_points', action='store_true', default=False, help='Indicate that no points are to be plotted.')
     a = parser.parse_args()
 
-    if a.biomarker_name != None:
+    if a.biomarker_name is not None:
         biomarker_names = [a.biomarker_name]
     else:
         biomarker_names = adni.biomarker_names
@@ -47,7 +47,7 @@ def plot_model(biomarker, points_file, curves_file, plot_points, save_file=False
     #
     # Plot PDFs
     #
-    if plot_densities != None:
+    if plot_densities is not None:
         pfds = vgam.get_pfds_as_collection(biomarkers=[biomarker])
         y = pfds[biomarker]['values']
 

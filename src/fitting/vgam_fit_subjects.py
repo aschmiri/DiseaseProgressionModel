@@ -99,7 +99,7 @@ def evaluate_sample_at_progress(densities, sample, progress, biomarkers=adni.bio
             values = densities[biomarker]['values']
             value_sample = sample[biomarker]
 
-            if value_sample == None:
+            if value_sample is None:
                 print 'WARNING: sample has no value for', biomarker
             else:
                 # Find value in probability list

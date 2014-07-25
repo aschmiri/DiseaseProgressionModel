@@ -39,7 +39,7 @@ def get_measurements_as_collection(data_file):
         for row in rows:
             # Get rid
             rid = int(row['RID'])
-            if not rid in measurements:
+            if rid not in measurements:
                 measurements.update({rid: {}})
 
             # Get scan time
@@ -157,7 +157,7 @@ def _read_pdf_file(pdf_file):
 #
 ################################################################################
 def get_pfds_as_collection(folder=os.path.join(adni.project_folder, 'data'),
-                                biomarkers=adni.biomarker_names):
+                           biomarkers=adni.biomarker_names):
     '''Return all density distribution functions (PDFs) as a collection.
 
     Keyword arguments:
@@ -179,7 +179,7 @@ def get_pfds_as_collection(folder=os.path.join(adni.project_folder, 'data'),
         pdf_file = os.path.join(folder, biomarker.replace(' ', '_') + '_densities.csv')
         metric_grid, progress_grid, function_values = _read_pdf_file(pdf_file)
 
-        if metric_grid != None and progress_grid != None and function_values != None:
+        if metric_grid is not None and progress_grid is not None and function_values is not None:
             pdfs.update({biomarker: {}})
             pdfs[biomarker].update({'values': metric_grid})
 

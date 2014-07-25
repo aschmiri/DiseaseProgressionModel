@@ -75,7 +75,7 @@ def main():
                         scandate = entry['ScanDate']
 
                         cur.execute("INSERT INTO summary VALUES (?,?,?,?,?,?,?,?)",
-                                     (iid, rid, factor, study, viscode, scandate, dx, seg))
+                                    (iid, rid, factor, study, viscode, scandate, dx, seg))
 
     #
     # Get database cursor

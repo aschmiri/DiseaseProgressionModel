@@ -69,7 +69,7 @@ def main():
                     # Get folder with the binary probablistic segmentations
                     if a.binary:
                         seg = adni.find_file(os.path.join(adni.data_folder, study, 'native/seg_138regions_baseline', 'EM-' + bl_base))
-                        if seg == None or not os.path.isfile(seg):
+                        if seg is None or not os.path.isfile(seg):
                             print 'ERROR: File not found:', seg
                             break
                     else:

@@ -35,7 +35,7 @@ def generate_csv_files():
             for _, scan_data in rid_data.items():
                 progress = adni.safe_cast(scan_data['progress'], int)
                 value = adni.safe_cast(scan_data[biomarker], int)
-                if progress != None and value != None:
+                if progress is not None and value is not None:
                     writer.writerow([rid, progress, value])
 
 

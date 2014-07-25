@@ -36,13 +36,11 @@ def main():
     atlas_folder_out = os.path.join(atlas_folder, 'model_' + str(a.iteration) + a.postfix)
     input_datafile = os.path.join(atlas_folder_in, 'data_' + a.trans + '_' + a.viscode + '_' + a.diagnosis + '.csv')
 
-    #-------------------------------------------------------------------------------
-    # get data
+    # Get data
     rids_bl, _, _, states_bl, _ = at.read_datafile(input_datafile, a.diagnosis)
     velocities_fu, rids_fu = adni.get_baseline_transformations_and_rids(dof_folder_adni1, dof_folder_adni2, a.viscode, a.diagnosis)
 
-    #-------------------------------------------------------------------------------
-    # sort data to match velocities with templates
+    # Sort data to match velocities with templates
     dofs = []
     states = []
 
@@ -58,8 +56,7 @@ def main():
     states = np.array(states)
     print 'Found ' + str(len(dofs)) + ' velocities with corresponding disease state...'
 
-    #-------------------------------------------------------------------------------
-    # sort data
+    # Sort data
     for state in np.linspace(a.state_min, a.state_max, a.state_steps):
         # Find sigma and corresponding images
         sigma, _, indices = at.adaptive_kernel_regression(states, state, required_subjects=a.required_subjects)

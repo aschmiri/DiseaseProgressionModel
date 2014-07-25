@@ -48,7 +48,7 @@ def crate_adnimerge_db():
             moca = adnimerge[adnimerge.colnames.index('MOCA')][i]
             try:
                 cur.execute("INSERT INTO adnimerge_cog VALUES (?,?,?,?,?,?,?,?)",
-                             (rid, viscode, apoe4, cdrsb, adas11, adas13, faq, moca))
+                            (rid, viscode, apoe4, cdrsb, adas11, adas13, faq, moca))
             except:
                 print 'WARNING: ignoring double entry for', rid, viscode
 
@@ -109,7 +109,7 @@ def create_adniquery_db():
 
             if (study == 'ADNI1' and float(fs) < 2.0) or (study != 'ADNI1' and float(fs) > 2.0):
                 cur.execute("INSERT INTO adnimerge VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-                             (iid, rid, viscode, study_bl, study, filename, dx_bl, dx, scandate, fs, age, mmse))
+                            (iid, rid, viscode, study_bl, study, filename, dx_bl, dx, scandate, fs, age, mmse))
 
     # Commit and close database connection
     con.commit()
@@ -148,7 +148,7 @@ def crate_years_after_diag_db():
             year_ad = entry['Year AD diagnosed']
             if viscode == 'sc' or viscode == 'v01':
                 cur.execute("INSERT INTO diagdates VALUES (?,?,?,?,?)",
-                             (rid, viscode, year_symptom, year_mci, year_ad))
+                            (rid, viscode, year_symptom, year_mci, year_ad))
 
     cur.execute("UPDATE diagdates SET year_symptom=NULL WHERE year_symptom=''")
     cur.execute("UPDATE diagdates SET year_mci=NULL WHERE year_mci=''")

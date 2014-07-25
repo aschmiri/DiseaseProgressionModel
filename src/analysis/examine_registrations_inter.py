@@ -40,7 +40,7 @@ def main():
             dof = os.path.join(dof_folder, dof_basename + '.dof.gz')
 
             if os.path.exists(dof):
-                if a.target_rid == None or a.target_rid == target_rid:
+                if a.target_rid is None or a.target_rid == target_rid:
                     print '--------------------'
                     print 'Target: ' + target
                     print 'Source: ' + source

@@ -32,12 +32,12 @@ def main():
 
         mask = os.path.join(mask_folder, baseline_base)
         mask = adni.find_file(mask)
-        if mask != None:
+        if mask is not None:
             out = os.path.join(output_folder, followup_base)
 
             if os.path.isfile(out):
                 print 'Image already exists: ' + out
-            elif mask == None or not os.path.isfile(mask):
+            elif mask is None or not os.path.isfile(mask):
                 print 'No mask found for: ' + out
             else:
                 print '--------------------'

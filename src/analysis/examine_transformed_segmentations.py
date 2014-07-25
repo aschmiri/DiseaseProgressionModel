@@ -36,7 +36,7 @@ def main():
         if not os.path.isfile(seg):
             seg = os.path.join(seg_folder_fu, image_base)
 
-        if a.rid == None or image.find('_S_' + a.rid) > 0:
+        if a.rid is None or image.find('_S_' + a.rid) > 0:
             if not os.path.isfile(seg):
                 print 'No segmentation found for', image
             else:

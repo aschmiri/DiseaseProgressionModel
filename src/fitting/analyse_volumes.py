@@ -67,7 +67,7 @@ def main():
             volume = float(row[adni.volume_names[vol_index]])
             # volumes = [float(vol) * factor for vol in row]
 
-            if rid != previous_rid and previous_rid != None:
+            if rid != previous_rid and previous_rid is not None:
                 # Plot previous subject
                 print 'Plotting subject', previous_rid
                 plot_trajectories(traj_x, traj_y, traj_d, previous_rid,

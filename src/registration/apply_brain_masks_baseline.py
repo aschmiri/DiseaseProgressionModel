@@ -27,7 +27,7 @@ def main():
 
         mask = os.path.join(mask_folder, image_base)
         mask = adni.find_file(mask)
-        if mask != None:
+        if mask is not None:
             out = os.path.join(output_folder, image_base)
 
             if os.path.isfile(out):

@@ -27,8 +27,8 @@ def load_model_data():
             # Get rid and age
             name = row['BIOMARKER']
             popt = np.array(float(row['PAR_R1']),
-                             float(row['PAR_R2']),
-                             float(row['PAR_LOWER']))
+                            float(row['PAR_R2']),
+                            float(row['PAR_LOWER']))
 
             model_names.append(name)
             model_params.append(popt)
@@ -74,7 +74,7 @@ def get_trajectory(biomarker_name, subject_rid):
                 if biomarker_name not in adni.cog_score_names:
                     value = value / float(row['FactorMNI'])
 
-                if value != None:
+                if value is not None:
                     traj_x.append(scan_time)
                     traj_y.append(value)
                     traj_d.append(dx)
