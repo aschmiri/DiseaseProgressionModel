@@ -13,21 +13,26 @@ def main():
     # parse command line options
     parser = argparse.ArgumentParser(description='Generate reference curves and reports for BAMBI.')
     parser.add_argument('-n', '--nr_threads', dest='nr_threads', type=int, default=4, help='number of threads')
-    parser.add_argument('-d', '--degrees-of-freedom', dest='degrees_of_freedom', type=int, default=2, help='degrees of freedom for the LMS method')
+    parser.add_argument('-d', '--degrees_of_freedom', dest='degrees_of_freedom', type=int, default=2, help='degrees of freedom for the LMS method')
+    parser.add_argument('-s', '--scale_measurements', dest='scale_measurements', action='store_true', default=False, help='scale the measurements by fitting to an initial model')
+    parser.add_argument('-f', '--folder', dest='folder', type=str, default='data', help='folder to store the data in')
     parser.add_argument('--version', action='version', version='%(prog)s 1.0')
     args = parser.parse_args()
 
-    generate_csv_files()
+    generate_csv_files(args)
     estimate_model_all_biomarkers(args)
 
 
-def generate_csv_files():
+def generate_csv_files(args):
     data_file = os.path.join(adni.project_folder, 'lists/volumes_segbased_sym_5mm.csv')
     measurements = vgam.get_measurements_as_collection(data_file)
+    if args.scale_measurements:
+        measurements = vgam.get_scaled_measurements(measurements, biomarkers=['CDRSB'])
+
     for biomarker in adni.biomarker_names:
         print 'Generating output CSV for', biomarker
 
-        csv_file = os.path.join(adni.project_folder, 'data', biomarker.replace(' ', '_') + '.csv')
+        csv_file = os.path.join(adni.project_folder, args.folder, biomarker.replace(' ', '_') + '.csv')
         writer = csv.writer(open(csv_file, 'wb'), delimiter=',')
         writer.writerow(['rid', 'progress', 'value'])
 
@@ -46,7 +51,7 @@ def estimate_model_all_biomarkers(args):
 def estimate_model(args, biomarker):
     print 'Fitting curve to', biomarker
     r_file = os.path.join(adni.project_folder, 'src/fitting/vgam_estimate_curves.R')
-    csv_file = os.path.join(adni.project_folder, 'data', biomarker.replace(' ', '_') + '.csv')
+    csv_file = os.path.join(adni.project_folder, args.folder, biomarker.replace(' ', '_') + '.csv')
     output_file = csv_file.replace('.csv', '_curves.csv')
     densities_file = csv_file.replace('.csv', '_densities.csv')
     image_file = csv_file.replace('.csv', '_curves.pdf')

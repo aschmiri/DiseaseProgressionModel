@@ -2,12 +2,16 @@
 # print __doc__
 import os.path
 import csv
+import math
 import re
 import numpy as np
 from src.common import adni_tools as adni
 
 MIN_PROGRESS = -42
 MAX_PROGRESS = 51
+
+MIN_DPR = 0.1
+MAX_DPR = 3.0
 
 
 ################################################################################
@@ -126,6 +130,35 @@ def get_measurements_as_collection(data_file):
 
 ################################################################################
 #
+# get_rcd_as_collection()
+#
+################################################################################
+def get_rcd_as_collection(measurements):
+    '''Return all a collection that indicates for each RID if the subject
+    is classified as RCD (rapid cognitive decline.
+
+    Arguments:
+    measurements -- the measurements as a collection
+
+    Returns:
+    A collection with the following structure:
+    { RID : [True|False]
+      ... }
+    '''
+    rcds = {}
+
+    for rid in measurements:
+        mmse_bl = measurements[rid]['bl']['MMSE']
+        mmse_24 = measurements[rid]['m24']['MMSE']
+        # rcd = True if (mmse_24 - mmse_bl) < -7 else False
+        decline = mmse_bl - mmse_24
+        rcds.update({rid: decline})
+
+    return rcds
+
+
+################################################################################
+#
 # _read_pdf_file()
 #
 ################################################################################
@@ -187,3 +220,240 @@ def get_pfds_as_collection(folder=os.path.join(adni.project_folder, 'data'),
                 pdfs[biomarker].update({progress_grid[i]: function_values[i]})
 
     return pdfs
+
+
+################################################################################
+#
+# get_scaled_measurements()
+#
+################################################################################
+def get_scaled_measurements(measurements, biomarkers=adni.biomarker_names):
+    densities = get_pfds_as_collection(folder=os.path.join(adni.project_folder, 'data/init'),
+                                       biomarkers=biomarkers)
+    for rid in measurements:
+        print 'Estimating optimal scaling for subject {0}...'.format(rid)
+
+        # Collect samples
+        samples = {}
+        for viscode in measurements[rid]:
+            samples.update({viscode: measurements[rid][viscode]})
+
+        # Get and save scaling
+        scaling = get_scaling_for_samples(densities, samples, biomarkers)
+        measurements[rid].update({'scaling': scaling})
+
+        # Update all progresses
+        for viscode in measurements[rid]:
+            progress = measurements[rid][viscode]['progress']
+            measurements[rid][viscode].update({'progress': progress * scaling})
+
+    return measurements
+
+
+################################################################################
+#
+# get_dpi_for_samples()
+#
+################################################################################
+def get_dpi_for_samples(densities, samples, biomarkers=adni.biomarker_names):
+    '''Return the estimated DPI of a subject given a number of samples and
+    a set of biomarkers.
+
+    Arguments:
+    densities --
+    samples --
+    biomarkers --
+
+    Returns:
+    The estimated DPI
+    '''
+    max_scantime = np.max([samples[viscode]['scantime'] for viscode in samples])
+    dpis = np.arange(MIN_PROGRESS, MAX_PROGRESS - max_scantime, 0.5)
+    probs = []
+    for dpi in dpis:
+        prob = 1.0
+        for viscode in samples:
+            offset = samples[viscode]['scantime']
+            prob *= _get_probability_for_dpi(dpi + offset, densities, samples[viscode], biomarkers=biomarkers)
+        probs.append(prob)
+
+    return dpis[np.argmax(probs)]
+
+
+################################################################################
+#
+# get_dpi_dpr_for_samples()
+#
+################################################################################
+def get_dpi_dpr_for_samples(densities, samples, biomarkers=adni.biomarker_names):
+    '''Return the estimated DPI and DPR of a subject given a number of samples
+    and a set of biomarkers.
+
+    Arguments:
+    densities --
+    samples --
+    biomarkers --
+
+    Returns:
+    The estimated DPI and DPR
+    '''
+    max_scantime = np.max([samples[viscode]['scantime'] for viscode in samples])
+    dprs = np.arange(MIN_DPR, MAX_DPR, 0.1)
+    prob_max = []
+    dpi_max = []
+    for dpr in dprs:
+        dist = max_scantime * dpr
+        dpis = np.arange(MIN_PROGRESS, MAX_PROGRESS - dist, 0.5)
+        probs = []
+        for dpi in dpis:
+            prob = 1.0
+            for viscode in samples:
+                offset = samples[viscode]['scantime'] * dpr
+                prob *= _get_probability_for_dpi(dpi + offset, densities, samples[viscode], biomarkers=biomarkers)
+            probs.append(prob)
+
+        arg_max = np.argmax(probs)
+        prob_max.append(probs[arg_max])
+        dpi_max.append(dpis[arg_max])
+
+    # Find the DPR with the highest probability of the corresponding DPI
+    arg_max = np.argmax(prob_max)
+    return dpi_max[arg_max], dprs[arg_max]
+
+
+################################################################################
+#
+# get_scaling_for_samples()
+#
+################################################################################
+def get_scaling_for_samples(densities, samples, biomarkers=adni.biomarker_names):
+    '''Return the estimated DPI and DPR of a subject given a number of samples
+    and a set of biomarkers.
+
+    Arguments:
+    densities --
+    samples --
+    biomarkers --
+
+    Returns:
+    The estimated DPI and DPR
+    '''
+    scalings = np.arange(0.2, 3, 0.05)
+    probs = []
+    for scaling in scalings:
+        prob = 1.0
+        for viscode in samples:
+            scaled_progress = samples[viscode]['progress'] * scaling
+            prob *= _get_probability_for_dpi(scaled_progress, densities, samples[viscode], biomarkers=biomarkers)
+        probs.append(prob)
+
+    # Find the scaling with the highest probability of the corresponding DPI
+    arg_max = np.argmax(probs)
+    return scalings[arg_max]
+
+
+################################################################################
+#
+# _get_probability_for_dpi()
+#
+################################################################################
+def _get_probability_for_dpi(dpi, densities, sample, biomarkers=adni.biomarker_names):
+    ''' Get the probability of a DPI given the density functions, a sample and
+    a set of biomarkers.
+
+    Arguments:
+    dpi --
+    densities --
+    sample --
+    biomarkers --
+
+    Returns
+    The probability of the DPI for the given data.
+    '''
+    prob_sample = 1.0
+
+    prog_prev = math.floor(dpi)
+    prog_next = math.ceil(dpi)
+    prog_offset = dpi - prog_prev
+
+    for biomarker in biomarkers:
+        if biomarker not in densities:
+            print 'WARNING: No densities available for', biomarker
+            prob_sample = 0
+        elif prog_next not in densities[biomarker] or prog_next not in densities[biomarker]:
+            # print 'WARNING: No densities for time', prog_next
+            prob_sample = 0
+        else:
+            values = densities[biomarker]['values']
+            value_sample = sample[biomarker]
+
+            if value_sample is None:
+                print 'WARNING: sample has no value for', biomarker
+            else:
+                # Find value in probability list
+                i = 0
+                while values[i] < value_sample and i < len(values):
+                    i += 1
+                i_prev = i - 1 if i > 0 else 0
+                i_next = i if i < len(values) else len(values)
+
+                # Get factor for value
+                value_prev = values[i_prev]
+                value_next = values[i_next]
+                factor = (value_sample - value_prev) / (value_next - value_prev)
+
+                # Interpolate probability
+                prob_prev = densities[biomarker][prog_prev][i_prev]
+                prob_next = densities[biomarker][prog_prev][i_next]
+                prob_sample_prev = factor * prob_next + (1 - factor) * prob_prev
+
+                if prog_offset == 0.0:
+                    prob_sample *= prob_sample_prev
+                else:
+                    prob_prev = densities[biomarker][prog_next][i_prev]
+                    prob_next = densities[biomarker][prog_next][i_next]
+                    prob_sample_next = factor * prob_next + (1 - factor) * prob_prev
+
+                    # Interpolate between
+                    prob_sample *= (1 - prog_offset) * prob_sample_prev + prog_offset * prob_sample_next
+
+    return prob_sample
+
+
+################################################################################
+#
+# yeojohnson_density()
+#
+################################################################################
+def yeojohnson_density(y, lmbda, mu, sigma):
+    '''Return the probability of a value y given lambda, mu and sigma'''
+    return (1 / sigma) * \
+        _std_normal_dist((_yeojohnson(y, lmbda) - mu) / sigma) * \
+        np.power(np.abs(y) + 1, np.sign(y) * (lmbda - 1))
+
+
+################################################################################
+#
+# _yeojohnson()
+#
+################################################################################
+def _yeojohnson(y, lmbda):
+    if y < 0:
+        if lmbda == 2:
+            return -np.log(-y + 1)
+        else:
+            return -(np.power(-y + 1, 2 - lmbda) - 1) / (2 - lmbda)
+    else:
+        if lmbda == 0:
+            return np.log(y + 1)
+        else:
+            return (np.power(y + 1, lmbda) - 1) / lmbda
+
+
+################################################################################
+#
+# _std_normal_dist()
+#
+################################################################################
+def _std_normal_dist(x):
+    return np.exp(-0.5 * np.square(x)) / np.sqrt(2 * np.pi)

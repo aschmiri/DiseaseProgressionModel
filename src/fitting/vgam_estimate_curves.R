@@ -28,12 +28,12 @@ table <- table_all[c(2,3)]
 #
 # Perform the fit. The degrees of freedom are given by the third argument.
 #
-#fit <- vgam(value ~ s(progress, df = as.integer(degrees_of_freedom)), lms.yjn2(percentiles = c(5,25,50,75,95), lsigma = 'identity'), table, trace = TRUE)
-fit <- vgam(value ~ s(progress, df = as.integer(degrees_of_freedom)), lms.yjn2(percentiles = c(1,5,25,50,75,95,99)), table, trace = TRUE)
-#fit <- vgam(value ~ s(progress, df = c(as.integer(degrees_of_freedom), 1)), lms.yjn2(percentiles = c(5,25,50,75,95), lsigma = 'identity', dfmu.init = 2) , table, trace = TRUE)
-#fit <- vgam(value ~ s(progress, df = 2), lms.bcn(percentiles = c(5,25,50,75,95), dfmu.init = 2, lmu = 'identity', zero = c(1,3)), table, trace = TRUE)
-#fit <- vgam(value ~ s(progress, df = c(as.integer(degrees_of_freedom), 2)), lms.bcn(percentiles=c(5,25,50,75,95), dfmu.init = 2), table, trace = TRUE)
-#fit <- vgam(value ~ s(progress, df = c(3,1)), lms.bcn(percentiles = c(5,25,50,75,95), zero = 1), table, trace = TRUE)
+#fit <- vgam(value ~ s(progress, df = as.integer(degrees_of_freedom)), lms.yjn2(percentiles = c(1,5,25,50,75,95,99), lsigma = 'identity'), data = table, trace = TRUE)
+fit <- vgam(value ~ s(progress, df = as.integer(degrees_of_freedom)), lms.yjn2(percentiles = c(1,5,25,50,75,95,99)), data = table, trace = TRUE)
+#fit <- vgam(value ~ s(progress, df = c(as.integer(degrees_of_freedom), 1)), lms.yjn2(percentiles = c(1,5,25,50,75,95,99), lsigma = 'identity', dfmu.init = 2), data = table, trace = TRUE)
+#fit <- vgam(value ~ s(progress, df = 2), lms.bcn(percentiles = c(1,5,25,50,75,95,99), dfmu.init = 2, lmu = 'identity', zero = c(1,3)), data = table, trace = TRUE)
+#fit <- vgam(value ~ s(progress, df = c(as.integer(degrees_of_freedom), 2)), lms.bcn(percentiles=c(1,5,25,50,75,95,99), dfmu.init = 2), data = table, trace = TRUE)
+#fit <- vgam(value ~ s(progress, df = c(3,1)), lms.bcn(percentiles = c(1,5,25,50,75,95,99)), data = table, trace = TRUE)
 
 #
 # Concatenate the age, lms coeffs and fitted percentiles.
