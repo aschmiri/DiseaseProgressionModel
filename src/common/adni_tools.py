@@ -163,6 +163,10 @@ volume_names = [
     'Right TTG transverse temporal gyrus',
     'Left TTG transverse temporal gyrus']
 
+manifold_coordinate_names = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8',
+                             'D9', 'D10', 'D11', 'D12', 'D13', 'D14', 'D15',
+                             'D16', 'D17', 'D18', 'D19', 'D20']
+
 biomarker_names = cog_score_names + volume_names
 
 rids_converters = [241, 21, 23, 546, 324, 141, 273, 276, 337, 159, 424, 256,
