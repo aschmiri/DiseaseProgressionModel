@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # print __doc__
-
+import argparse
 import os.path
 import adni_tools as adni
 import csv
@@ -9,10 +9,10 @@ import sqlite3
 
 ################################################################################
 #
-# crate_adnimerge_db
+# create_adnimerge_db
 #
 ################################################################################
-def crate_adnimerge_db():
+def create_adnimerge_db():
     import rpy2.robjects as robjects
 
     # Lead adnimerge
@@ -118,10 +118,10 @@ def create_adniquery_db():
 
 ################################################################################
 #
-# crate_years_after_diag_db
+# create_years_after_diag_db
 #
 ################################################################################
-def crate_years_after_diag_db():
+def create_years_after_diag_db():
     # Open database conenction
     con = sqlite3.connect(os.path.join(adni.project_folder, 'lists', 'adni.db'))
     cur = con.cursor()
@@ -161,10 +161,10 @@ def crate_years_after_diag_db():
 
 ################################################################################
 #
-# print_data_for_rid
+# print_adnimerge_data_for_rid
 #
 ################################################################################
-def print_data_for_rid(rid=43):
+def print_adnimerge_data_for_rid(rid=43):
     import rpy2.robjects as robjects
 
     # Lead database
@@ -191,15 +191,25 @@ def print_data_for_rid(rid=43):
 #
 ################################################################################
 if __name__ == "__main__":
-    # crate_years_after_diag_db()
-    # create_adniquery_db()
-    # crate_adnimerge_db()
-    # print_data_for_rid( 101 )
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-r', '--rid', dest='rid', type=int, default=4097)
+    parser.add_argument('-q', '--create_query_db', action='store_true', default=False)
+    parser.add_argument('-m', '--create_merge_db', action='store_true', default=False)
+    parser.add_argument('-y', '--create_years_db', action='store_true', default=False)
+    args = parser.parse_args()
+
+    if args.create_query_db:
+        create_adniquery_db()
+    if args.create_merge_db:
+        create_adnimerge_db()
+    if args.create_years_db:
+        create_years_after_diag_db()
+    print_adnimerge_data_for_rid(args.rid)
 
     # Test DB
     con = sqlite3.connect(os.path.join(adni.project_folder, 'lists', 'adni.db'))
     cur = con.cursor()
-    cur.execute("SELECT iid, rid, viscode, study, study_bl, fieldstrength, mmse, faq, moca, cdrsb FROM adnimerge JOIN adnimerge_cog USING (rid, viscode) WHERE rid = 54")
+    cur.execute("SELECT iid, rid, viscode, study, study_bl, fieldstrength, mmse, faq, moca, cdrsb FROM adnimerge JOIN adnimerge_cog USING (rid, viscode) WHERE rid = " + str(args.rid))
 
     rows = cur.fetchall()
     for row in rows:
