@@ -26,31 +26,30 @@ def main():
     global output_folder
     output_folder = os.path.join(data_folder, 'native/images')
 
-    print 'Found', str(len(baseline_files)), 'images...'
+    print 'Found', len(baseline_files), 'images...'
     jl.Parallel(n_jobs=args.nr_threads)(jl.delayed(run)(i) for i in range(len(baseline_files)))
 
 
 def run(index):
-    for i in range(len(baseline_files)):
-        image = baseline_files[i]
-        image_base = os.path.basename(image)
+    image = baseline_files[index]
+    image_base = os.path.basename(image)
 
-        mask = os.path.join(mask_folder, image_base)
-        mask = adni.find_file(mask)
-        if mask is not None:
-            out = os.path.join(output_folder, image_base)
+    mask = os.path.join(mask_folder, image_base)
+    mask = adni.find_file(mask)
+    if mask is not None:
+        out = os.path.join(output_folder, image_base)
 
-            if os.path.isfile(out):
-                print 'Image already exists:', out
-            elif not os.path.isfile(mask):
-                print 'No mask found for: ' + out
-            else:
-                print '--------------------'
-                print 'Image: ', image
-                print 'Mask:  ', mask
-                print 'Output:', out
+        if os.path.isfile(out):
+            print 'Image already exists:', out
+        elif not os.path.isfile(mask):
+            print 'No mask found for: ' + out
+        else:
+            print '--------------------'
+            print 'Image: ', image
+            print 'Mask:  ', mask
+            print 'Output:', out
 
-                call([EXEC_MASK, image, mask, out, '1', '0', '-invert'])
+            call([EXEC_MASK, image, mask, out, '1', '0', '-invert'])
 
 
 if __name__ == '__main__':
