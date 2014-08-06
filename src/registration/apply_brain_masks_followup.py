@@ -14,6 +14,7 @@ def main():
     parser.add_argument('study', type=str, help='the study, should be ADNI1, ADNI2, or ADNIGO')
     parser.add_argument('viscode', type=str, help='the visit code, e.g. bl, m12, m24, ...')
     parser.add_argument('-n', '--nr_threads', dest='nr_threads', type=int, default=1)
+    parser.add_argument('-p', '--padding', dest='padding', type=int, default=0)
     args = parser.parse_args()
 
     data_folder = os.path.join(adni.data_folder, args.study)
@@ -28,10 +29,10 @@ def main():
     output_folder = adni.make_dir(data_folder, 'baseline_linear/images')
 
     print 'Found', len(baseline_files), 'images...'
-    jl.Parallel(n_jobs=args.nr_threads)(jl.delayed(run)(i) for i in range(len(baseline_files)))
+    jl.Parallel(n_jobs=args.nr_threads)(jl.delayed(run)(args, i) for i in range(len(baseline_files)))
 
 
-def run(index):
+def run(args, index):
     baseline = baseline_files[index]
     baseline_base = os.path.basename(baseline)
     followup = followup_files[index]
@@ -52,7 +53,7 @@ def run(index):
             print 'Image:  ' + followup
             print 'Mask:   ' + mask
             print 'Output: ' + out
-            call([EXEC_MASK, followup, mask, out, '1', '0', '-invert'])
+            call([EXEC_MASK, followup, mask, out, '1', str(args.padding), '-invert'])
 
 
 if __name__ == '__main__':
