@@ -2,6 +2,7 @@
 # print __doc__
 import argparse
 import os.path
+import joblib as jl
 from subprocess import call
 from src.common import adni_tools as adni
 
@@ -12,18 +13,27 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('study', type=str, help='the study, should be ADNI1, ADNI2, or ADNIGO')
     parser.add_argument('viscode', type=str, help='the visit code, e.g. bl, m12, m24, ...')
-    a = parser.parse_args()
+    parser.add_argument('-n', '--nr_threads', dest='nr_threads', type=int, default=1)
+    args = parser.parse_args()
 
-    data_folder = os.path.join(adni.data_folder, a.study)
+    global mask_folder
+    data_folder = os.path.join(adni.data_folder, args.study)
     mask_folder = os.path.join(data_folder, 'native/masks_brain')
 
+    global baseline_files
+    global followup_files
     baseline_folder = os.path.join(data_folder, 'native/images_unstripped')
     followup_folder = os.path.join(data_folder, 'baseline_linear/images_unstripped')
-    baseline_files, followup_files = adni.get_baseline_and_followup(baseline_folder, followup_folder, a.study, a.viscode)
+    baseline_files, followup_files = adni.get_baseline_and_followup(baseline_folder, followup_folder, args.study, args.viscode)
 
+    global output_folder
     output_folder = adni.make_dir(data_folder, 'baseline_linear/images')
 
     print 'Found ' + str(len(baseline_files)) + ' images...'
+    jl.Parallel(n_jobs=args.nr_threads)(jl.delayed(run)(i) for i in range(len(baseline_files)))
+
+
+def run(index):
     for i in range(len(baseline_files)):
         baseline = baseline_files[i]
         baseline_base = os.path.basename(baseline)
