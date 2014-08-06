@@ -11,7 +11,7 @@ from src.common import vgam as vgam
 
 def main():
     # parse command line options
-    parser = argparse.ArgumentParser(description='Generate reference curves and reports for BAMBI.')
+    parser = argparse.ArgumentParser(description='Estimate model curves for biomarkers using VGAM.')
     parser.add_argument('-n', '--nr_threads', dest='nr_threads', type=int, default=4, help='number of threads')
     parser.add_argument('-d', '--degrees_of_freedom', dest='degrees_of_freedom', type=int, default=2, help='degrees of freedom for the LMS method')
     parser.add_argument('-s', '--scale_measurements', dest='scale_measurements', action='store_true', default=False, help='scale the measurements by fitting to an initial model')

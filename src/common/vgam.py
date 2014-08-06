@@ -3,12 +3,13 @@
 import os.path
 import csv
 import math
-import re
+# import re
+import datetime
 import numpy as np
 from src.common import adni_tools as adni
 
-MIN_PROGRESS = -42
-MAX_PROGRESS = 51
+MIN_PROGRESS = -1200  # -42
+MAX_PROGRESS = 1200  # 51
 
 MIN_DPR = 0.1
 MAX_DPR = 3.0
@@ -53,6 +54,10 @@ def get_measurements_as_collection(data_file):
                 break
             measurements[rid].update({viscode: {}})
 
+            # Get scan date
+            scandate = datetime.datetime.strptime(row['ScanDate'], "%Y-%m-%d").date()
+            measurements[rid][viscode].update({'scandate': scandate})
+
             # Get age
             measurements[rid][viscode].update({'AGE.scan': float(row['AGE.scan'])})
 
@@ -85,14 +90,17 @@ def get_measurements_as_collection(data_file):
         data_scantime = []
         data_diagnosis = []
 
+        bl_date = measurements[rid]['bl']['scandate']
         for viscode, scan_data in rid_data.items():
-            if viscode == 'bl':
-                scantime = 0
-            elif re.match('m[0-9][0-9]', viscode):
-                scantime = int(viscode[1:])
-            else:
-                print 'ERROR: Invalid viscode:', viscode
-                break
+            #             if viscode == 'bl':
+            #                 scantime = 0
+            #             elif re.match('m[0-9][0-9]', viscode):
+            #                 scantime = int(viscode[1:])
+            #             else:
+            #                 print 'ERROR: Invalid viscode:', viscode
+            #                 break
+            fu_date = measurements[rid][viscode]['scandate']
+            scantime = (fu_date - bl_date).days
 
             data_viscode.append(viscode)
             data_scantime.append(scantime)
@@ -228,7 +236,7 @@ def get_pfds_as_collection(folder=os.path.join(adni.project_folder, 'data'),
 #
 ################################################################################
 def get_scaled_measurements(measurements, biomarkers=adni.biomarker_names):
-    densities = get_pfds_as_collection(folder=os.path.join(adni.project_folder, 'data/init'),
+    densities = get_pfds_as_collection(folder=os.path.join(adni.project_folder, 'data'),
                                        biomarkers=biomarkers)
     for rid in measurements:
         print 'Estimating optimal scaling for subject {0}...'.format(rid)
@@ -244,8 +252,9 @@ def get_scaled_measurements(measurements, biomarkers=adni.biomarker_names):
 
         # Update all progresses
         for viscode in measurements[rid]:
-            progress = measurements[rid][viscode]['progress']
-            measurements[rid][viscode].update({'progress': progress * scaling})
+            if isinstance(viscode, (int, long)):
+                progress = measurements[rid][viscode]['progress']
+                measurements[rid][viscode].update({'progress': progress * scaling})
 
     return measurements
 
@@ -380,7 +389,7 @@ def _get_probability_for_dpi(dpi, densities, sample, biomarkers=adni.biomarker_n
         if biomarker not in densities:
             print 'WARNING: No densities available for', biomarker
             prob_sample = 0
-        elif prog_next not in densities[biomarker] or prog_next not in densities[biomarker]:
+        elif prog_prev not in densities[biomarker] or prog_next not in densities[biomarker]:
             # print 'WARNING: No densities for time', prog_next
             prob_sample = 0
         else:

@@ -49,15 +49,15 @@ df <- write.csv(fit_frame, file = output_file)
 #
 # Save probability densities to csv file
 #
-min_progression <- -60
-max_progression <- 60
+min_progression <- min(table[,1])
+max_progression <- max(table[,1])
 min_value <- min(table[,2])
 max_value <- max(table[,2])
 value_offset <- (max_value - min_value) * 0.2
 value_step <- (max_value - min_value) / 250
-values <- seq( min_value - value_offset, max_value+value_offset, by = value_step )
+values <- seq(min_value - value_offset, max_value + value_offset, by = value_step)
 values_frame <- data.frame(values)
-for (prog in seq(min_progression, max_progression)) {
+for (prog in seq(min_progression, max_progression, by = 10)) {
 	deplot(fit, x0 = prog, y = values, show.plot = FALSE) -> aa
 	values_frame <- data.frame( values_frame, aa@post$deplot$density )
 }

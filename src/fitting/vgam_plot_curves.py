@@ -16,7 +16,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-n', '--biomarker_name', default=None, help='name of the biomarker to be plotted')
     parser.add_argument('-p', '--no_points', action='store_true', default=False, help='indication that no points are to be plotted')
-    parser.add_argument('-f', '--folder', dest='folder', type=str, default='data/init', help='folder where the data is stored in')
+    parser.add_argument('-f', '--folder', dest='folder', type=str, default='data', help='folder where the data is stored in')
     args = parser.parse_args()
 
     if args.biomarker_name is not None:
@@ -62,7 +62,8 @@ def plot_model(biomarker, points_file, curves_file, plot_points, save_file=False
 
         min_val = np.min(curves)
         max_val = np.max(curves)
-        progr_samples = [-36, -18, 3, 18, 33]
+        # progr_samples = [-36, -18, 3, 18, 33]
+        progr_samples = [-1100, -550, 0, 550, 1100]
 
         sample_cmap = cmx.ScalarMappable(
             norm=colors.Normalize(vmin=-len(progr_samples) + 1, vmax=(len(progr_samples) - 1)),

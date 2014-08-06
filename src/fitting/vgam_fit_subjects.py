@@ -42,6 +42,7 @@ def main_estimate_dpi():
     mean_error = np.sum(np.abs(np.array(progresses) - np.array(dpis))) / len(dpis)
     print 'Mean error: {0}, RMS error: {1}'.format(mean_error, rms_error)
 
+    # Plot the results
     plot_correlation(dpis, progresses)
 
 
@@ -87,14 +88,15 @@ def main_estimate_dpi_dpr():
     mean_error = np.sum(np.abs(np.array(progresses) - np.array(dpis))) / len(dpis)
     print 'Mean error: {0}, RMS error: {1}'.format(mean_error, rms_error)
 
-    # plot_correlation(dpis, progresses)
+    # Plot the results
     plot_rcds(dpis, dprs, rcdnum)
 
 
 def main_evaluate_scalings():
+    biomarkers = ['MMSE']
     data_file = os.path.join(adni.project_folder, 'lists/volumes_segbased_sym_5mm.csv')
     measurements = vgam.get_measurements_as_collection(data_file)
-    measurements = vgam.get_scaled_measurements(measurements, biomarkers=['CDRSB'])
+    measurements = vgam.get_scaled_measurements(measurements, biomarkers=biomarkers)
     rcds = vgam.get_rcd_as_collection(measurements)
 
     # Test all available subjects
@@ -104,8 +106,12 @@ def main_evaluate_scalings():
         scalings.append(measurements[rid]['scaling'])
         rcdnum.append(rcds[rid])
 
-    # plot_correlation(dpis, progresses)
-    plt.plot(scalings, rcdnum)
+    # Plot the results
+    plt.title('Correlation between scaling value and MMS decline')
+    plt.xlabel('Estimated scaling values')
+    plt.ylabel('MMSE decline')
+    plt.scatter(scalings, rcdnum, s=50, linewidths=0, alpha=0.5)
+    plt.show()
 
 
 def main_single_biomarker_ranking():
@@ -165,11 +171,12 @@ def plot_rcds(dpis, dprs, rcds):
     plt.title('DPI and DPR with RCD')
     plt.xlabel('Estimated DPI')
     plt.ylabel('Estimated DPR')
-    plt.scatter(dpis, dprs, c=rcds, cmap=adni.adni_cmap, s=50, linewidths=0,)
+    plt.scatter(dpis, dprs, c=rcds, cmap=adni.adni_cmap, s=50, linewidths=0)
     plt.show()
 
 
 if __name__ == '__main__':
     # main_single_biomarker_ranking()
-    # main_estimate_dpi_dpr()
-    main_evaluate_scalings()
+    # main_estimate_dpi()
+    main_estimate_dpi_dpr()
+    # main_evaluate_scalings()
