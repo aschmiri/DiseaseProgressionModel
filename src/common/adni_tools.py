@@ -216,8 +216,8 @@ def safe_cast(in_value, cast_type=float):
 # make_dir
 #
 ################################################################################
-def make_dir(dir1, dir2):
-    directory = os.path.join(dir1, dir2)
+def make_dir(*dirs):
+    directory = os.path.join(*dirs)
     if not os.path.exists(directory):
         os.makedirs(directory)
     return directory
@@ -341,7 +341,7 @@ def find_file(filename):
 
 ################################################################################
 #
-# find_file
+# detect_study
 #
 ################################################################################
 def detect_study(filename):
@@ -425,6 +425,40 @@ def get_baseline_and_followup(baseline_folder, followup_folder, study, viscode):
                 followup_files.append(followup_file)
 
     return np.array(baseline_files), np.array(followup_files)
+
+
+################################################################################
+#
+# get_baseline_and_followups_as_collection
+#
+################################################################################
+def get_baseline_and_followups_as_collection():
+    import sqlite3
+    con = sqlite3.connect(os.path.join(project_folder, 'lists', 'adni.db'))
+    con.row_factory = sqlite3.Row
+    cur = con.cursor()
+
+    cur.execute("SELECT rid, study, filename FROM adnimerge WHERE viscode = 'bl'")
+    baselines = cur.fetchall()
+    file_collection = {}
+    for baseline in baselines:
+        rid = baseline['rid']
+        if rid not in file_collection:
+            file_collection.update({rid: {}})
+            file_collection[rid].update({'bl': {}})
+            file_collection[rid]['bl'].update({'study': baseline['study']})
+            file_collection[rid]['bl'].update({'filename': baseline['filename']})
+
+            # Find followup file
+            cur.execute("SELECT study, filename, viscode FROM adnimerge WHERE rid = " + str(rid) + " AND viscode != 'bl'")
+            followups = cur.fetchall()
+            for followup in followups:
+                followup_viscode = followup['viscode']
+                file_collection[rid].update({followup_viscode: {}})
+                file_collection[rid][followup_viscode].update({'study': followup['study']})
+                file_collection[rid][followup_viscode].update({'filename': followup['filename']})
+
+    return file_collection
 
 
 ################################################################################
