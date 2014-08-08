@@ -69,8 +69,8 @@ def plot_model(biomarker, points_file, curves_file, plot_points, save_file=False
             norm=colors.Normalize(vmin=-len(progr_samples) + 1, vmax=(len(progr_samples) - 1)),
             cmap=plt.get_cmap(adni.adni_cmap))
 
-        for progr in progr_samples:
-            sample_color = sample_cmap.to_rgba(progr_samples.index(progr))
+        for i, progr in enumerate(progr_samples):
+            sample_color = sample_cmap.to_rgba(i)
             ax1.axvline(progr, color=sample_color, linestyle='--', alpha=0.8)
             ax2.set_xlim(min_val, max_val)
             ax2.plot(values, pfds[biomarker][progr], label=str(progr), color=sample_color)

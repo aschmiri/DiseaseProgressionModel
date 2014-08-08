@@ -53,8 +53,8 @@ def main():
     analyse_metric('ADAS11', 'ADAS 11', False)
     analyse_metric('ADAS13', 'ADAS 13', False)
     analyse_metric('FAQ', 'FAQ', False)
-    for vol_index in range(len(adni.volume_names)):
-        analyse_metric(adni.volume_names[vol_index], adni.volume_names[vol_index], True)
+    for volume_name in adni.volume_names:
+        analyse_metric(volume_name, volume_name, True)
 
     args = np.argsort(np.array(metric_robustness_min))[::-1]
     sorted_metric_names = np.array(metric_name)[args]
