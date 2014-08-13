@@ -50,7 +50,7 @@ def get_measurements_as_collection(data_file):
             # Get scan time
             viscode = row['VISCODE']
             if viscode in measurements[rid]:
-                print 'ERROR: Entry already exists:', rid, viscode
+                print adni.ERROR, 'Entry already exists:', rid, viscode
                 break
             measurements[rid].update({viscode: {}})
 
@@ -70,17 +70,18 @@ def get_measurements_as_collection(data_file):
             elif dx_str == 'CN':
                 dx = 0.0
             else:
-                print 'ERROR: Invalid diagnosis:', viscode
+                print adni.ERROR, 'Invalid diagnosis:', viscode
                 break
             measurements[rid][viscode].update({'DX.scan': dx})
 
             # Get and normalise volumes
             for biomarker in adni.biomarker_names:
-                value = adni.safe_cast(row[biomarker])
-                # Scale only if biomarker is a volume
-                if biomarker in adni.volume_names:
-                    value = value / float(row['FactorMNI'])
-                measurements[rid][viscode].update({biomarker: value})
+                if biomarker in row:
+                    value = adni.safe_cast(row[biomarker])
+                    # Scale only if biomarker is a volume
+                    if biomarker in adni.volume_names:
+                        value = value / float(row['FactorMNI'])
+                    measurements[rid][viscode].update({biomarker: value})
 
     #
     # Add time relative to point of conversion to each data set
@@ -187,8 +188,8 @@ def _read_pdf_file(pdf_file):
                     function_values.append(data)
         return np.asarray(metric_grid), np.asarray(progress_grid), np.asarray(function_values)
     except Exception as e:
-        print 'WARNING: failed to read', pdf_file
-        print e
+        print adni.WARNING, 'Failed to read', pdf_file
+        print adni.WARNING, e
         return None, None, None
 
 
@@ -215,7 +216,7 @@ def get_pfds_as_collection(folder=os.path.join(adni.project_folder, 'data'),
     '''
     pdfs = {}
     for biomarker in biomarkers:
-        print 'Reading pdfs for', biomarker
+        print adni.INFO, 'Reading pdfs for', biomarker
 
         pdf_file = os.path.join(folder, biomarker.replace(' ', '_') + '_densities.csv')
         metric_grid, progress_grid, function_values = _read_pdf_file(pdf_file)
@@ -239,7 +240,7 @@ def get_scaled_measurements(measurements, biomarkers=adni.biomarker_names):
     densities = get_pfds_as_collection(folder=os.path.join(adni.project_folder, 'data'),
                                        biomarkers=biomarkers)
     for rid in measurements:
-        print 'Estimating optimal scaling for subject {0}...'.format(rid)
+        print adni.INFO, 'Estimating optimal scaling for subject {0}...'.format(rid)
 
         # Collect samples
         samples = {}
@@ -387,17 +388,17 @@ def _get_probability_for_dpi(dpi, densities, sample, biomarkers=adni.biomarker_n
 
     for biomarker in biomarkers:
         if biomarker not in densities:
-            print 'WARNING: No densities available for', biomarker
+            print adni.WARNING, 'No densities available for', biomarker
             prob_sample = 0
         elif prog_prev not in densities[biomarker] or prog_next not in densities[biomarker]:
-            # print 'WARNING: No densities for time', prog_next
+            # print adni.WARNING, 'No densities for time', prog_next
             prob_sample = 0
         else:
             values = densities[biomarker]['values']
             value_sample = sample[biomarker]
 
             if value_sample is None:
-                print 'WARNING: sample has no value for', biomarker
+                print adni.WARNING, 'Sample has no value for', biomarker
             else:
                 # Find value in probability list
                 i = 0

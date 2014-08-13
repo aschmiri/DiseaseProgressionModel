@@ -26,7 +26,7 @@ def main_estimate_dpi():
     dpis = []
     progresses = []
     for rid in measurements:
-        print 'Estimating DPI for subject {0}...'.format(rid)
+        print adni.INFO, 'Estimating DPI for subject {0}...'.format(rid)
         progress = measurements[rid]['bl']['progress']
 
         samples = {}
@@ -34,13 +34,13 @@ def main_estimate_dpi():
             samples.update({viscode: measurements[rid][viscode]})
         dpi = vgam.get_dpi_for_samples(densities, samples, biomarkers=biomarkers)
 
-        print 'Estimated DPI: {0}, Progress: {1}'.format(dpi, progress)
+        print adni.RESULT, 'Estimated DPI: {0}, Progress: {1}'.format(dpi, progress)
         dpis.append(dpi)
         progresses.append(progress)
 
     rms_error = np.sqrt(np.sum(np.square(np.array(progresses) - np.array(dpis))) / len(dpis))
     mean_error = np.sum(np.abs(np.array(progresses) - np.array(dpis))) / len(dpis)
-    print 'Mean error: {0}, RMS error: {1}'.format(mean_error, rms_error)
+    print adni.RESULT, 'Mean error: {0}, RMS error: {1}'.format(mean_error, rms_error)
 
     # Plot the results
     plot_correlation(dpis, progresses)
@@ -69,7 +69,7 @@ def main_estimate_dpi_dpr():
     progresses = []
     rcdnum = []
     for rid in measurements:
-        print 'Estimating DPI and DPR for subject {0}...'.format(rid)
+        print adni.INFO, 'Estimating DPI and DPR for subject {0}...'.format(rid)
         progress = measurements[rid]['bl']['progress']
 
         samples = {}
@@ -77,7 +77,7 @@ def main_estimate_dpi_dpr():
             samples.update({viscode: measurements[rid][viscode]})
         dpi, dpr = vgam.get_dpi_dpr_for_samples(densities, samples, biomarkers=biomarkers)
 
-        print 'Estimated DPI: {0}, DPR: {1}, Progress: {2}'.format(dpi, dpr, progress)
+        print adni.RESULT, 'Estimated DPI: {0}, DPR: {1}, Progress: {2}'.format(dpi, dpr, progress)
         dpis.append(dpi)
         dprs.append(dpr)
         progresses.append(progress)
@@ -86,7 +86,7 @@ def main_estimate_dpi_dpr():
 
     rms_error = np.sqrt(np.sum(np.square(np.array(progresses) - np.array(dpis))) / len(dpis))
     mean_error = np.sum(np.abs(np.array(progresses) - np.array(dpis))) / len(dpis)
-    print 'Mean error: {0}, RMS error: {1}'.format(mean_error, rms_error)
+    print adni.RESULT, 'Mean error: {0}, RMS error: {1}'.format(mean_error, rms_error)
 
     # Plot the results
     plot_rcds(dpis, dprs, rcdnum)
@@ -140,7 +140,7 @@ def main_single_biomarker_ranking():
         rms_error /= num_errors
         rms_error = np.sqrt(rms_error)
         mean_errors.append(rms_error)
-        print 'RMS error for {0}: {1} ({2})'.format(biomarker, rms_error, num_errors)
+        print adni.RESULT, 'RMS error for {0}: {1} ({2})'.format(biomarker, rms_error, num_errors)
 
     # Sort results according to error
     mean_errors = np.array(mean_errors)

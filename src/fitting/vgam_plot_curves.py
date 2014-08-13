@@ -25,7 +25,7 @@ def main():
         biomarker_names = adni.biomarker_names
 
     for biomarker in biomarker_names:
-        print 'Generating plot for', biomarker
+        print adni.INFO, 'Generating plot for {0}...'.format(biomarker)
 
         points_file = os.path.join(adni.project_folder, args.folder, biomarker.replace(' ', '_') + '.csv')
         curves_file = points_file.replace('.csv', '_curves.csv')
