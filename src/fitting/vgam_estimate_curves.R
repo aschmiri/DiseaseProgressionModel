@@ -51,17 +51,18 @@ df <- write.csv(fit_frame, file = output_file)
 #
 min_progression <- min(table[,1])
 max_progression <- max(table[,1])
+progression_step <- 10
 min_value <- min(table[,2])
 max_value <- max(table[,2])
 value_offset <- (max_value - min_value) * 0.2
 value_step <- (max_value - min_value) / 250
 values <- seq(min_value - value_offset, max_value + value_offset, by = value_step)
 values_frame <- data.frame(values)
-for (prog in seq(min_progression, max_progression, by = 10)) {
+for (prog in seq(min_progression, max_progression, by = progression_step)) {
 	deplot(fit, x0 = prog, y = values, show.plot = FALSE) -> aa
-	values_frame <- data.frame( values_frame, aa@post$deplot$density )
+	values_frame <- data.frame(values_frame, aa@post$deplot$density)
 }
-colnames(values_frame) <- c("values",seq(min_progression, max_progression))
+colnames(values_frame) <- c("values",seq(min_progression, max_progression, by = progression_step))
 df <- write.csv(t(values_frame), file = densities_file)
 
 
@@ -75,7 +76,7 @@ if (save_plot == 0) {
 } else {
     pdf(plot_file, width = w, height = h)
 }
-qtplot(fit, percentiles = c(5, 25, 50, 75, 95), main = "Quantiles",xlim = c(-40, 40), las = 1, ylab = "Metric value", lwd = 2, lcol = 4)
+qtplot(fit, percentiles = c(5, 25, 50, 75, 95), main = "Quantiles", xlim = c(-min_progression, max_progression), las = 1, ylab = "Metric value", lwd = 2, lcol = 4)
 
 if (save_plot == 0) {
     z <- locator()
