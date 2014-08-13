@@ -28,7 +28,7 @@ def main():
     global output_folder
     output_folder = adni.make_dir(data_folder, 'baseline_linear/images')
 
-    print 'Found', len(baseline_files), 'images...'
+    print adni.RESULT, 'Found', len(baseline_files), 'images...'
     jl.Parallel(n_jobs=args.nr_threads)(jl.delayed(run)(args, i) for i in range(len(baseline_files)))
 
 
@@ -45,14 +45,14 @@ def run(args, index):
         out = os.path.join(output_folder, followup_base)
 
         if os.path.isfile(out):
-            print 'Image already exists: ' + out
+            print adni.SKIP, 'Image already exists: ', out
         elif mask is None or not os.path.isfile(mask):
-            print 'No mask found for: ' + out
+            print adni.INFO, 'No mask found for: ', out
         else:
-            print '--------------------'
-            print 'Image:  ' + followup
-            print 'Mask:   ' + mask
-            print 'Output: ' + out
+            print adni.INFO, '--------------------'
+            print adni.INFO, 'Image:  ', followup
+            print adni.INFO, 'Mask:   ', mask
+            print adni.INFO, 'Output: ', out
             call([EXEC_MASK, followup, mask, out, '1', str(args.padding), '-invert'])
 
 

@@ -35,7 +35,7 @@ def main():
     output_folder_img = adni.make_dir(output_folder, 'images')
     output_folder_dof = adni.make_dir(output_folder, 'dof')
 
-    print 'Found', len(image_files), 'images...'
+    print adni.RESULT, 'Found', len(image_files), 'images...'
     jl.Parallel(n_jobs=a.nr_threads)(jl.delayed(run)(i) for i in range(len(image_files)))
 
 

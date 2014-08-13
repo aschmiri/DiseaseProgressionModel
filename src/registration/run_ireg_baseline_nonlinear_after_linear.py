@@ -32,7 +32,7 @@ def main():
     followup_folder = os.path.join(data_folder, 'baseline_linear/images_unstripped')
     baseline_files, followup_files = adni.get_baseline_and_followup(baseline_folder, followup_folder, a.study, a.viscode)
 
-    print 'Found', len(baseline_files), 'image pairs...'
+    print adni.RESULT, 'Found', len(baseline_files), 'image pairs...'
     jl.Parallel(n_jobs=a.nr_threads)(jl.delayed(run)(i) for i in range(len(baseline_files)))
 
 

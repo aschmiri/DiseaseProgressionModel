@@ -29,7 +29,7 @@ def main():
     baseline_folder = os.path.join(data_folder, 'native/images')
     baseline_files = adni.get_baseline(baseline_folder, a.study)
 
-    print 'Found', len(baseline_files), 'images...'
+    print adni.RESULT, 'Found', len(baseline_files), 'images...'
     jl.Parallel(n_jobs=a.nr_threads)(jl.delayed(run)(i) for i in range(len(baseline_files)))
 
 

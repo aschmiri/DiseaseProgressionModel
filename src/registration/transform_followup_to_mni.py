@@ -38,7 +38,7 @@ def main():
     followup_folder = os.path.join(data_folder, 'baseline_linear/images')
     baseline_files, followup_files = adni.get_baseline_and_followup(baseline_folder, followup_folder, a.study, a.viscode)
 
-    print 'Found', len(followup_files), 'images...'
+    print adni.RESULT, 'Found', len(followup_files), 'images...'
     jl.Parallel(n_jobs=a.nr_threads)(jl.delayed(run, a.study)(i) for i in range(len(followup_files)))
 
 
@@ -54,21 +54,21 @@ def run(index, study):
     out_image_nonlin = os.path.join(out_folder_nonlin_img, followup_base)
 
     if os.path.isfile(out_image_affine):
-        print 'Image already exists: ' + out_image_nonlin
+        print adni.SKIP, 'Image already exists: ' + out_image_nonlin
     else:
-        print '--------------------'
-        print 'In image: ', followup
-        print 'Affine:   ', aff
-        print 'Out image:', out_image_affine
+        print adni.INFO, '--------------------'
+        print adni.INFO, 'In image: ', followup
+        print adni.INFO, 'Affine:   ', aff
+        print adni.INFO, 'Out image:', out_image_affine
         call(['transformation', followup, out_image_affine, '-dofin', aff, '-target', adni.mni_atlas, '-cspline', '-matchInputType', '-Sp', '0'])
 
     if os.path.isfile(out_image_nonlin):
-        print 'Image already exists: ' + out_image_nonlin
+        print adni.SKIP, 'Image already exists: ' + out_image_nonlin
     else:
-        print '--------------------'
-        print 'In image: ', out_image_affine
-        print 'Nonlinear:', dof
-        print 'Out image:', out_image_nonlin
+        print adni.INFO, '--------------------'
+        print adni.INFO, 'In image: ', out_image_affine
+        print adni.INFO, 'Nonlinear:', dof
+        print adni.INFO, 'Out image:', out_image_nonlin
         call(['transformation', out_image_affine, out_image_nonlin, '-dofin', dof, '-target', adni.mni_atlas, '-cspline', '-matchInputType', '-Sp', '0'])
 
 

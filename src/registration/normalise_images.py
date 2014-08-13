@@ -19,7 +19,7 @@ def main():
     reg_folder = os.path.join(adni.data_folder, a.study, a.algorithm)
     image_folder = os.path.join(reg_folder, 'images')
     if not os.path.isdir(image_folder):
-        print 'Input folder does not exist.'
+        print adni.ERROR, 'Input folder does not exist.'
         exit()
 
     norm_folder = adni.make_dir(reg_folder, 'images_normalised')
@@ -30,12 +30,12 @@ def main():
             image_out = os.path.join(norm_folder, infile)
 
             if os.path.exists(image_out):
-                print 'Image already exists: ' + image_out
+                print adni.SKIP, 'Image already exists: ', image_out
             else:
-                print '--------------------'
-                print 'Starting: normalize_percentiles_apply'
-                print 'Input:  ' + image_in
-                print 'Output: ' + image_out
+                print adni.INFO, '--------------------'
+                print adni.INFO, 'Starting: normalize_percentiles_apply'
+                print adni.INFO, 'Input:  ' + image_in
+                print adni.INFO, 'Output: ' + image_out
                 call([EXEC_NORM, percentiles, image_in, norm_folder + '/'])
 
 

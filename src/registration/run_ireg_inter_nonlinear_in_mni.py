@@ -43,7 +43,7 @@ def main():
     output_folder_dof = adni.make_dir(output_folder, 'dof')
     output_folder_img = adni.make_dir(output_folder, 'images')
 
-    print 'Found', len(selected_images), 'relevant images for state', a.state, '...'
+    print adni.RESULT, 'Found', len(selected_images), 'relevant images for state', a.state, '...'
     for j in range(len(selected_images)):
         jl.Parallel(n_jobs=a.nr_threads)(
             jl.delayed(run)(i, j, save_image=a.save_image) for i in range(len(selected_images)))
