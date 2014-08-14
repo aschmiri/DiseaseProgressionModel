@@ -247,6 +247,37 @@ def make_dir(*dirs):
 
 ################################################################################
 #
+# detect_study
+#
+################################################################################
+def detect_study(filename):
+    if filename.find('ADNI1') != -1:
+        return 'ADNI1'
+    elif filename.find('ADNI2') != -1:
+        return 'ADNI2'
+    elif filename.find('ADNIGO') != -1:
+        return 'ADNIGO'
+    else:
+        print ERROR, 'Study could not be determined from file', filename
+        return None
+
+
+################################################################################
+#
+# detect_study
+#
+################################################################################
+def detect_rid(filename):
+    index = filename.find('_S_')
+    if index < 0:
+        print WARNING, 'Unable to detect rid of', filename
+        return None
+    else:
+        return safe_cast(filename[index + 3:index + 7])
+
+
+################################################################################
+#
 # read_list
 #
 ################################################################################
@@ -324,20 +355,6 @@ def read_list_all_data(folder, diagnosis='ALL', study='ALL', viscode='ALL'):
 
 ################################################################################
 #
-# qc_check
-#
-################################################################################
-def qc_check(rid):
-    excluded_rids = []
-    # excluded_rids = [1268,1286,1380,187,359,384,478,513,544,689,741,973]
-    if rid in excluded_rids:
-        return False
-    else:
-        return True
-
-
-################################################################################
-#
 # find_file
 #
 ################################################################################
@@ -359,23 +376,6 @@ def find_file(filename):
         filename = filenames[0]
         print INFO, 'Alternative file found: ', filename
         return filename
-
-
-################################################################################
-#
-# detect_study
-#
-################################################################################
-def detect_study(filename):
-    if filename.find('ADNI1') != -1:
-        return 'ADNI1'
-    elif filename.find('ADNI2') != -1:
-        return 'ADNI2'
-    elif filename.find('ADNIGO') != -1:
-        return 'ADNIGO'
-    else:
-        print ERROR, 'Study could not be determined from file', filename
-        return None
 
 
 ################################################################################

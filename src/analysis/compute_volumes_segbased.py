@@ -71,15 +71,15 @@ def main():
                           FROM adnimerge WHERE rid = " + str(rid))
             visits = cur.fetchall()
             if len(visits) >= args.min_scans:
-                for vist in visits:
+                for visit in visits:
                     # Get basic parameters
-                    viscode = vist['viscode']
-                    study = vist['study']
-                    study_bl = vist['study_bl']
-                    filename = vist['filename']
-                    diagnosis = vist['diagnosis']
-                    age = vist['age']
-                    scandate = vist['scandate']
+                    viscode = visit['viscode']
+                    study = visit['study']
+                    study_bl = visit['study_bl']
+                    filename = visit['filename']
+                    diagnosis = visit['diagnosis']
+                    age = visit['age']
+                    scandate = visit['scandate']
 
                     # Get cognitive scores
                     bl_factor = get_bl_factor(cur, rid, viscode, study, filename)
@@ -108,7 +108,7 @@ def main():
 
 
 def get_mni_factor(cur, rid):
-    print adni.INFO, 'Computing MNI scaling factor for subject {0})...'.format(rid)
+    print adni.INFO, 'Computing MNI scaling factor for subject {0}...'.format(rid)
     cur.execute("SELECT study, filename \
                 FROM adnimerge WHERE rid = " + str(rid) + " AND viscode = 'bl'")
     bl_data = cur.fetchall()
@@ -166,12 +166,14 @@ def get_volumes_regbased(args, rid, viscode, study, filename):
         seg = adni.find_file(os.path.join(adni.data_folder, study, 'native/seg_138regions_followup_' + args.trans + '_' + args.sx + 'mm', filename))
 
     # Get volumes of the cortical structures
-    if seg is not None:
+    if seg is None:
+        return []
+    else:
         volumes = check_output([EXEC_VOLUMES, seg])
         volumes = [float(vol) for vol in volumes.split(',')]
         volumes.pop(0)
 
-    return volumes
+        return volumes
 
 
 def get_volumes_longitudinal(rid, viscode, study, filename):
@@ -182,12 +184,14 @@ def get_volumes_longitudinal(rid, viscode, study, filename):
         seg = adni.find_file(os.path.join('/vol/medic02/users/cl6311/data/ADNI/ADNI_followup/seg/EM/', 'EM-' + filename))
 
     # Get volumes of the cortical structures
-    if seg is not None:
+    if seg is None:
+        return []
+    else:
         volumes = check_output([EXEC_VOLUMES, seg])
         volumes = [float(vol) for vol in volumes.split(',')]
         volumes.pop(0)
 
-    return volumes
+        return volumes
 
 
 def get_volumes_consistent(rid, index, study, filename):
@@ -202,16 +206,17 @@ def get_volumes_consistent(rid, index, study, filename):
         call([EXEC_EXTRACT, seg_4d, seg_temp, str(index)])
 
         if not os.path.isfile(seg_temp):
-            print adni.WARNING, 'Error occured while extracting slice {0} from {1}'.format(slice, seg_4d)
+            print adni.WARNING, 'Error occurred while extracting slice {0} from {1}'.format(slice, seg_4d)
+            return []
         else:
             volumes = check_output([EXEC_VOLUMES, seg_temp])
             volumes = [float(vol) for vol in volumes.split(',')]
             volumes.pop(0)
 
-        if os.path.isfile(seg_temp):
-            call([EXEC_REMOVE, seg_temp])
+            if os.path.isfile(seg_temp):
+                call([EXEC_REMOVE, seg_temp])
 
-        return volumes
+            return volumes
 
 
 def get_volumes_graphcut(rid, viscode, study_bl, filename, structures):

@@ -2,9 +2,9 @@
 # print __doc__
 import argparse
 import os.path
-import adni_tools as adni
 import csv
 import sqlite3
+import adni_tools as adni
 
 
 ################################################################################
@@ -172,6 +172,7 @@ def print_adnimerge_data_for_rid(rid=43):
     adnimerge = robjects.r['adnimerge']
 
     # Print header
+    print adni.INFO,
     for col in range(adnimerge.ncol):
         print adnimerge.colnames[col],
     print ''
@@ -180,6 +181,7 @@ def print_adnimerge_data_for_rid(rid=43):
     rids = adnimerge[adnimerge.colnames.index('RID')]
     for row in range(adnimerge.nrow):
         if rids[row] == rid:
+            print adni.INFO,
             for col in range(adnimerge.ncol):
                 print adnimerge[col][row],
             print ''
@@ -209,8 +211,10 @@ if __name__ == "__main__":
     # Test DB
     con = sqlite3.connect(os.path.join(adni.project_folder, 'lists', 'adni.db'))
     cur = con.cursor()
-    cur.execute("SELECT iid, rid, viscode, study, study_bl, fieldstrength, mmse, faq, moca, cdrsb FROM adnimerge JOIN adnimerge_cog USING (rid, viscode) WHERE rid = " + str(args.rid))
+    cur.execute("SELECT iid, rid, viscode, study, study_bl, fieldstrength, mmse, faq, moca, cdrsb \
+                 FROM adnimerge JOIN adnimerge_cog USING (rid, viscode) \
+                 WHERE rid = " + str(args.rid))
 
     rows = cur.fetchall()
     for row in rows:
-        print row
+        print adni.INFO, row
