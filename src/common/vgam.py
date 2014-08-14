@@ -79,7 +79,7 @@ def get_measurements_as_collection(data_file):
                 if biomarker in row:
                     value = adni.safe_cast(row[biomarker])
                     # Scale only if biomarker is a volume
-                    if biomarker in adni.volume_names:
+                    if value > 0 and biomarker in adni.volume_names:
                         value = value / float(row['FactorMNI'])
                     measurements[rid][viscode].update({biomarker: value})
 
