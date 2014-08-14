@@ -120,3 +120,7 @@ def run_forward(index, study):
             print adni.INFO, 'Seg out:   ', out_seg
 
             call(['transformation', source_seg, out_seg, '-dofin', dof, '-target', target, '-nn', '-matchInputType'])
+
+
+if __name__ == '__main__':
+    main()
