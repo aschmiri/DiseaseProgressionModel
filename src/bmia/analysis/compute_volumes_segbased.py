@@ -19,8 +19,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('method', choices=['reg', 'long', 'cons', 'graph'])
     parser.add_argument('-m', '--min_scans', dest='min_scans', type=int, default=6, help='the minimal number of scans per subject')
-    parser.add_argument('-t', '--trans', dest='trans', type=str, default='sym', help='the transformation model, e.g. ffd, svffd, sym, or ic (regbased only)')
-    parser.add_argument('-s', '--spacing', dest='sx', type=str, default='5', help='the transformation spacing (regbased only)')
+    parser.add_argument('--trans', type=str, default='sym', help='the transformation model, e.g. ffd, svffd, sym, or ic (regbased only)')
+    parser.add_argument('--spacing', type=str, default='5', help='the transformation spacing (regbased only)')
     parser.add_argument('--all_structures', action='store_true', default=False, help='segment all 138 structures (graphcuts only)')
     args = parser.parse_args()
 
@@ -30,7 +30,7 @@ def main():
     folder_lin_mni = adni.data_folder + '/ALL/MNI152_linear/dof'
     folder_lin_bl = adni.data_folder + '/ALL/baseline_linear/dof'
 
-    out_file_ending = {'reg': 'lists/volumes_segbased_' + args.trans + '_' + args.sx + 'mm.csv',
+    out_file_ending = {'reg': 'lists/volumes_segbased_' + args.trans + '_' + args.spacing + 'mm.csv',
                        'long': 'lists/volumes_segbased_longitudinal.csv',
                        'cons': 'lists/volumes_segbased_consistent.csv',
                        'graph': 'lists/volumes_segbased_graphcut.csv'}

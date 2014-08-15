@@ -64,7 +64,7 @@ def plot_points_for_subject(data_file, rid, vol_index, label, color):
                 elif re.match('m[0-9][0-9]', viscode):
                     scan_time = int(viscode[1:])
                 else:
-                    print log.ERROR, 'Invalid viscode: {0}'.fromat(viscode)
+                    print log.ERROR, 'Invalid viscode: {0}'.format(viscode)
                     break
 
                 # Get diagnosis
@@ -76,7 +76,7 @@ def plot_points_for_subject(data_file, rid, vol_index, label, color):
                 elif dx_str == 'CN':
                     dx = 0.0
                 else:
-                    print log.ERROR, 'Invalid diagnosis: {0}'.fromat(dx_str)
+                    print log.ERROR, 'Invalid diagnosis: {0}'.format(dx_str)
                     break
 
                 # Get and normalise volumes

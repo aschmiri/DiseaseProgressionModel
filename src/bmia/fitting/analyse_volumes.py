@@ -154,7 +154,7 @@ def colorline(x, y, z=None, cmap=aplt.progression_cmap, norm=plt.Normalize(0.0, 
     z = np.asarray(z)
 
     segments = make_segments(x, y)
-    lc = mpl.collections.LineCollection(segments, array=z, cmap=aplt.progression_cmap, norm=norm, linewidth=linewidth, alpha=alpha)
+    lc = mpl.collections.LineCollection(segments, array=z, cmap=cmap, norm=norm, linewidth=linewidth, alpha=alpha)
 
     ax = plt.gca()
     ax.add_collection(lc)

@@ -254,8 +254,8 @@ def compute_bin_error(data_x, data_y, popt, model=exponential,
 
         if len(bin_e) > min_bin_size:
             bins_e.append(np.sqrt(np.mean(np.array(bin_e))))
-    else:
-        return bins_e
+
+    return bins_e
 
 
 def fit_data(data_x, data_y, data_sigma=None, model=exponential):
@@ -384,7 +384,6 @@ def analyse_metric(name_csv, name_hr, normalise, plot=False, csv_writer=None, mo
 
     if plot:
         plt.show()
-
 
 if __name__ == '__main__':
     main()
