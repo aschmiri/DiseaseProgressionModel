@@ -91,6 +91,10 @@ def get_measurements_as_collection(data_file):
         data_scantime = []
         data_diagnosis = []
 
+        if 'bl' not in measurements[rid]:
+            print log.WARNING, 'No bl scan for subject {0}!'.format(rid)
+            continue
+
         bl_date = measurements[rid]['bl']['scandate']
         for viscode, scan_data in rid_data.items():
             #             if viscode == 'bl':

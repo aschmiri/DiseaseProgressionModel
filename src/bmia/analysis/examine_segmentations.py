@@ -17,8 +17,8 @@ def main():
     parser.add_argument('-r', '--rid', type=int, default=None)
     parser.add_argument('-s', '--structure_index', type=int, default=None)
     parser.add_argument('-v', '--viscode', type=str, default=None)
-    parser.add_argument('--trans', dest='trans', type=str, default='sym', help='the transformation model, e.g. ffd, svffd, sym, or ic (regbased only)')
-    parser.add_argument('--spacing', dest='sx', type=str, default='5', help='the transformation spacing (regbased only)')
+    parser.add_argument('--trans', type=str, default='sym', help='the transformation model, e.g. ffd, svffd, sym, or ic (regbased only)')
+    parser.add_argument('--spacing', type=str, default='5', help='the transformation spacing (regbased only)')
     parser.add_argument('--all_structures', action='store_true', default=False, help='segment all 138 structures (graphcuts only)')
     args = parser.parse_args()
 
@@ -95,7 +95,7 @@ def get_segmentation_regbased(args, viscode, study, filename):
     if viscode == 'bl':
         return adni.find_alternative_file(os.path.join(adni.data_folder, study, 'native/seg_138regions_baseline', 'EM-' + filename))
     else:
-        return adni.find_alternative_file(os.path.join(adni.data_folder, study, 'native/seg_138regions_followup_' + args.trans + '_' + args.sx + 'mm', filename))
+        return adni.find_alternative_file(os.path.join(adni.data_folder, study, 'native/seg_138regions_followup_' + args.trans + '_' + args.spacing + 'mm', filename))
 
 
 def get_segmentation_longitudinal(viscode, study, filename):

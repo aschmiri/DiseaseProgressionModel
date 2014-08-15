@@ -15,9 +15,9 @@ from bmia.common import adni_plot as aplt
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('method', choices=['reg', 'long', 'cons', 'graph'])
     parser.add_argument('-n', '--biomarker_name', default=None, help='name of the biomarker to be plotted')
     parser.add_argument('-p', '--no_points', action='store_true', default=False, help='indication that no points are to be plotted')
-    parser.add_argument('-f', '--folder', dest='folder', type=str, default='data', help='folder where the data is stored in')
     args = parser.parse_args()
 
     if args.biomarker_name is not None:
@@ -28,7 +28,7 @@ def main():
     for biomarker in biomarker_names:
         print log.INFO, 'Generating plot for {0}...'.format(biomarker)
 
-        points_file = os.path.join(adni.project_folder, args.folder, biomarker.replace(' ', '_') + '.csv')
+        points_file = os.path.join(adni.project_folder, 'data', args.method, biomarker.replace(' ', '_') + '.csv')
         curves_file = points_file.replace('.csv', '_curves.csv')
         if os.path.isfile(points_file) and os.path.isfile(curves_file):
             plot_model(biomarker, points_file, curves_file, not args.no_points)
@@ -64,7 +64,7 @@ def plot_model(biomarker, points_file, curves_file, plot_points, save_file=False
         min_val = np.min(curves)
         max_val = np.max(curves)
         # progr_samples = [-36, -18, 3, 18, 33]
-        progr_samples = [-1100, -550, 0, 550, 1100]
+        progr_samples = [-1099, -549, 1, 551, 1101]
 
         sample_cmap = cmx.ScalarMappable(
             norm=colors.Normalize(vmin=-len(progr_samples) + 1, vmax=(len(progr_samples) - 1)),
