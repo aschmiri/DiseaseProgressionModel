@@ -1,9 +1,9 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import argparse
 import os.path
 from subprocess import call
-from src.common import adni_tools as adni
+from common import log as log
+from common import adni_tools as adni
 
 EXEC_RVIEW = '/vol/medic01/users/aschmidt/development/build_helvellyn/irtk-as12312/bin/rview'
 
@@ -29,7 +29,7 @@ def main():
 
     baseline_files, followup_files = adni.get_baseline_and_followup(baseline_folder, followup_folder, a.study, a.viscode)
 
-    print adni.RESULT, 'Found ' + str(len(baseline_files)) + ' images:'
+    print log.RESULT, 'Found ' + str(len(baseline_files)) + ' images:'
     for i in range(len(baseline_files)):
         target = baseline_files[i]
         source = followup_files[i]
@@ -38,10 +38,10 @@ def main():
 
         if os.path.isfile(dof):
             if a.rid is None or adni.detect_rid(source) == a.rid:
-                print adni.INFO, '--------------------'
-                print adni.INFO, 'Target: ' + target
-                print adni.INFO, 'Source: ' + source
-                print adni.INFO, 'DOF:    ' + dof
+                print log.INFO, '--------------------'
+                print log.INFO, 'Target: ' + target
+                print log.INFO, 'Source: ' + source
+                print log.INFO, 'DOF:    ' + dof
 
                 call([EXEC_RVIEW, target, source, dof, '-res', '1.5', '-mix'])
 

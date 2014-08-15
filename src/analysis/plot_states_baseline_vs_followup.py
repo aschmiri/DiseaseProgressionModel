@@ -1,5 +1,4 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import csv
 import numpy as np
 import scipy.stats

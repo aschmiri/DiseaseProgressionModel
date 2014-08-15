@@ -1,5 +1,4 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import csv
 import numpy as np
 import scipy.stats as stats
@@ -11,8 +10,8 @@ def main():
 
     #
     # Read data
-    ages_cn, mmses_cn, states_cn = read_data(datafile_bl, ['CN'])
-    ages_mci, mmses_mci, states_mci = read_data(datafile_bl, ['EMCI', 'LMCI'])
+#     ages_cn, mmses_cn, states_cn = read_data(datafile_bl, ['CN'])
+#     ages_mci, mmses_mci, states_mci = read_data(datafile_bl, ['EMCI', 'LMCI'])
     ages_ad, mmses_ad, states_ad = read_data(datafile_bl, ['AD'])
 
     print 'Pearson CC: Disease state // MMSE'

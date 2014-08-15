@@ -1,10 +1,9 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import os.path
 import argparse
 import csv
 from subprocess import check_output
-from src.common import adni_tools as adni
+from common import adni_tools as adni
 
 EXEC_ESTIMATE = 'stateestimation'
 

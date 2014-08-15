@@ -1,12 +1,13 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import os.path
 import argparse
 import csv
 import sqlite3
 from subprocess import call
 from subprocess import check_output
-from src.common import adni_tools as adni
+from common import log as log
+from common import adni_tools as adni
+
 
 EXEC_VOLUMES = '/vol/biomedic/users/cl6311/irtk_svn_workspace/irtk/build/bin/cl_compute_volume'
 EXEC_EXTRACT = '/vol/biomedic/users/cl6311/irtk_svn_workspace/irtk/build/bin/cl_extract_frame'
@@ -18,8 +19,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('method', choices=['reg', 'long', 'cons', 'graph'])
     parser.add_argument('-m', '--min_scans', dest='min_scans', type=int, default=6, help='the minimal number of scans per subject')
-    parser.add_argument('-t', '--trans', dest='trans', type=str, default='sym', help='the transformation model, e.g. ffd, svffd, sym, or ic (regbased only)')
-    parser.add_argument('-s', '--spacing', dest='sx', type=str, default='5', help='the transformation spacing (regbased only)')
+    parser.add_argument('--trans', type=str, default='sym', help='the transformation model, e.g. ffd, svffd, sym, or ic (regbased only)')
+    parser.add_argument('--spacing', type=str, default='5', help='the transformation spacing (regbased only)')
     parser.add_argument('--all_structures', action='store_true', default=False, help='segment all 138 structures (graphcuts only)')
     args = parser.parse_args()
 
@@ -29,7 +30,7 @@ def main():
     folder_lin_mni = adni.data_folder + '/ALL/MNI152_linear/dof'
     folder_lin_bl = adni.data_folder + '/ALL/baseline_linear/dof'
 
-    out_file_ending = {'reg': 'lists/volumes_segbased_' + args.trans + '_' + args.sx + 'mm.csv',
+    out_file_ending = {'reg': 'lists/volumes_segbased_' + args.trans + '_' + args.spacing + 'mm.csv',
                        'long': 'lists/volumes_segbased_longitudinal.csv',
                        'cons': 'lists/volumes_segbased_consistent.csv',
                        'graph': 'lists/volumes_segbased_graphcut.csv'}
@@ -98,7 +99,7 @@ def main():
                         volumes = get_volumes_graphcut(rid, viscode, study_bl, filename, structures)
 
                     if len(volumes) != len(structures):
-                        print adni.ERROR, '{0} volumes read for subject {1}'.format(len(volumes), rid)
+                        print log.ERROR, '{0} volumes read for subject {1}'.format(len(volumes), rid)
                     else:
                         writer.writerow([str(rid), viscode, diagnosis, age, scandate] +
                                         cog_scores +
@@ -108,32 +109,32 @@ def main():
 
 
 def get_mni_factor(cur, rid):
-    print adni.INFO, 'Computing MNI scaling factor for subject {0}...'.format(rid)
+    print log.INFO, 'Computing MNI scaling factor for subject {0}...'.format(rid)
     cur.execute("SELECT study, filename \
                 FROM adnimerge WHERE rid = " + str(rid) + " AND viscode = 'bl'")
     bl_data = cur.fetchall()
     if len(bl_data) != 1:
-        print adni.WARNING, 'cog_data has wrong size:', len(bl_data)
+        print log.WARNING, 'cog_data has wrong size:', len(bl_data)
 
     study = bl_data[0]['study']
     filename = bl_data[0]['filename']
 
     mni_dof = os.path.join(folder_lin_mni.replace('ALL', study), filename.replace('.nii.gz', '.dof.gz'))
     if not os.path.isfile(mni_dof):
-        print adni.ERROR, 'File not found:', mni_dof
+        print log.ERROR, 'File not found:', mni_dof
         return -1
     else:
         return float(check_output([EXEC_FACTORS, mni_dof]))
 
 
 def get_bl_factor(cur, rid, viscode, study, filename):
-    print adni.INFO, 'Computing scaling factor for subject {0} ({1})...'.format(rid, viscode)
+    print log.INFO, 'Computing scaling factor for subject {0} ({1})...'.format(rid, viscode)
     if viscode == 'bl':
         return 1
     else:
         bl_dof = os.path.join(folder_lin_bl.replace('ALL', study), filename.replace('.nii.gz', '.dof.gz'))
         if not os.path.isfile(bl_dof):
-            print adni.ERROR, 'File not found:', bl_dof
+            print log.ERROR, 'File not found:', bl_dof
             return -1
         else:
             return float(check_output([EXEC_FACTORS, bl_dof]))
@@ -141,13 +142,13 @@ def get_bl_factor(cur, rid, viscode, study, filename):
 
 def get_cog_scores(cur, rid, viscode):
     # TODO: make consistent with adni.cogscore_names
-    print adni.INFO, 'Querying cognitive scores for subject {0} ({1})...'.format(rid, viscode)
+    print log.INFO, 'Querying cognitive scores for subject {0} ({1})...'.format(rid, viscode)
     cur.execute("SELECT mmse, cdrsb, adas11, adas13, faq \
                 FROM adnimerge JOIN adnimerge_cog USING (rid, viscode) \
                 WHERE rid = " + str(rid) + " AND viscode = '" + viscode + "'")
     cog_data = cur.fetchall()
     if len(cog_data) != 1:
-        print adni.WARNING, 'cog_data has wrong size:', len(cog_data)
+        print log.WARNING, 'cog_data has wrong size:', len(cog_data)
 
     mmse = adni.safe_cast(cog_data[0]['mmse'])
     cdrsb = adni.safe_cast(cog_data[0]['cdrsb'])
@@ -159,11 +160,11 @@ def get_cog_scores(cur, rid, viscode):
 
 
 def get_volumes_regbased(args, rid, viscode, study, filename):
-    print adni.INFO, 'Reading volumes for subject {0} ({1})...'.format(rid, viscode)
+    print log.INFO, 'Reading volumes for subject {0} ({1})...'.format(rid, viscode)
     if viscode == 'bl':
-        seg = adni.find_file(os.path.join(adni.data_folder, study, 'native/seg_138regions_baseline', 'EM-' + filename))
+        seg = adni.find_alternative_file(os.path.join(adni.data_folder, study, 'native/seg_138regions_baseline', 'EM-' + filename))
     else:
-        seg = adni.find_file(os.path.join(adni.data_folder, study, 'native/seg_138regions_followup_' + args.trans + '_' + args.sx + 'mm', filename))
+        seg = adni.find_alternative_file(os.path.join(adni.data_folder, study, 'native/seg_138regions_followup_' + args.trans + '_' + args.sx + 'mm', filename))
 
     # Get volumes of the cortical structures
     if seg is None:
@@ -177,11 +178,11 @@ def get_volumes_regbased(args, rid, viscode, study, filename):
 
 
 def get_volumes_longitudinal(rid, viscode, study, filename):
-    print adni.INFO, 'Reading volumes for subject {0} ({1})...'.format(rid, viscode)
+    print log.INFO, 'Reading volumes for subject {0} ({1})...'.format(rid, viscode)
     if viscode == 'bl':
-        seg = adni.find_file(os.path.join(adni.data_folder, study, 'native/seg_138regions_baseline', 'EM-' + filename))
+        seg = adni.find_alternative_file(os.path.join(adni.data_folder, study, 'native/seg_138regions_baseline', 'EM-' + filename))
     else:
-        seg = adni.find_file(os.path.join('/vol/medic02/users/cl6311/data/ADNI/ADNI_followup/seg/EM/', 'EM-' + filename))
+        seg = adni.find_alternative_file(os.path.join('/vol/medic02/users/cl6311/data/ADNI/ADNI_followup/seg/EM/', 'EM-' + filename))
 
     # Get volumes of the cortical structures
     if seg is None:
@@ -195,18 +196,18 @@ def get_volumes_longitudinal(rid, viscode, study, filename):
 
 
 def get_volumes_consistent(rid, index, study, filename):
-    print adni.INFO, 'Reading volumes for subject {0} (index {1})...'.format(rid, index)
+    print log.INFO, 'Reading volumes for subject {0} (index {1})...'.format(rid, index)
 
     seg_4d = os.path.join('/vol/medic02/users/cl6311/ADNI4D/results', filename[:15] + '_4D.nii.gz')
     if not os.path.isfile(seg_4d):
-        print adni.WARNING, 'Segmentation not found {0}'.format(seg_4d)
+        print log.WARNING, 'Segmentation not found {0}'.format(seg_4d)
         return []
     else:
         seg_temp = os.path.join('/tmp/', filename)
         call([EXEC_EXTRACT, seg_4d, seg_temp, str(index)])
 
         if not os.path.isfile(seg_temp):
-            print adni.WARNING, 'Error occurred while extracting slice {0} from {1}'.format(slice, seg_4d)
+            print log.WARNING, 'Error occurred while extracting slice {0} from {1}'.format(slice, seg_4d)
             return []
         else:
             volumes = check_output([EXEC_VOLUMES, seg_temp])
@@ -221,7 +222,7 @@ def get_volumes_consistent(rid, index, study, filename):
 
 def get_volumes_graphcut(rid, viscode, study_bl, filename, structures):
     # Get data for volume computation
-    print adni.INFO, 'Collecting volumes for subject {0} ({1})...'.format(rid, viscode)
+    print log.INFO, 'Collecting volumes for subject {0} ({1})...'.format(rid, viscode)
     seg_dir = os.path.join(adni.data_folder, study_bl, 'native/seg_138regions_graphcut')
     volumes = []
     for structure in structures:
@@ -230,18 +231,18 @@ def get_volumes_graphcut(rid, viscode, study_bl, filename, structures):
         seg = os.path.join(seg_dir, filename.replace('.nii.gz', postfix + '.nii.gz'))
         # Get volumes of 138 objects
         if not os.path.isfile(seg):
-            print adni.WARNING, 'Segmentation not found: {0}'.format(os.path.basename(seg))
+            print log.WARNING, 'Segmentation not found: {0}'.format(os.path.basename(seg))
             volumes.append(-1.0)
         else:
             output = check_output([EXEC_VOLUMES, seg])
             output_split = output.split(',')
             if len(output_split) == 1:
-                print adni.WARNING, 'No {0} found in {1}'.format(structure, os.path.basename(seg))
+                print log.WARNING, 'No {0} found in {1}'.format(structure, os.path.basename(seg))
                 volumes.append(0.0)
             elif len(output_split) == 2:
                 volumes.append(float(output_split[1]))
             else:
-                print adni.WARNING, 'Corrupted output from {0} ({1})'.format(os.path.basename(seg), output_split)
+                print log.WARNING, 'Corrupted output from {0} ({1})'.format(os.path.basename(seg), output_split)
                 volumes.append(-1.0)
 
     return volumes
@@ -262,7 +263,7 @@ def get_sorted_viscodes(cur, rid):
         elif re.match('m[0-9][0-9]', viscode):
             scantime = int(viscode[1:])
         else:
-            print adni.ERROR, 'Invalid viscode', rid, viscode
+            print log.ERROR, 'Invalid viscode', rid, viscode
             break
 
         scantimes.append(scantime)

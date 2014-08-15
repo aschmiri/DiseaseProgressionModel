@@ -1,9 +1,9 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import argparse
 import os.path
 import csv
 import sqlite3
+import log
 import adni_tools as adni
 
 
@@ -172,7 +172,7 @@ def print_adnimerge_data_for_rid(rid=43):
     adnimerge = robjects.r['adnimerge']
 
     # Print header
-    print adni.INFO,
+    print log.INFO,
     for col in range(adnimerge.ncol):
         print adnimerge.colnames[col],
     print ''
@@ -181,7 +181,7 @@ def print_adnimerge_data_for_rid(rid=43):
     rids = adnimerge[adnimerge.colnames.index('RID')]
     for row in range(adnimerge.nrow):
         if rids[row] == rid:
-            print adni.INFO,
+            print log.INFO,
             for col in range(adnimerge.ncol):
                 print adnimerge[col][row],
             print ''
@@ -217,4 +217,4 @@ if __name__ == "__main__":
 
     rows = cur.fetchall()
     for row in rows:
-        print adni.INFO, row
+        print log.INFO, row

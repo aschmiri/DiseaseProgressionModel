@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import os.path
 import argparse
 import numpy as np
@@ -8,15 +7,17 @@ import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
-from src.common import adni_tools as adni
-from src.common import vgam as vgam
+from common import log as log
+from common import adni_tools as adni
+from common import adni_plot as aplt
+from common import vgam as vgam
 
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('method', choices=['reg', 'long', 'cons', 'graph'])
     parser.add_argument('-n', '--biomarker_name', default=None, help='name of the biomarker to be plotted')
     parser.add_argument('-p', '--no_points', action='store_true', default=False, help='indication that no points are to be plotted')
-    parser.add_argument('-f', '--folder', dest='folder', type=str, default='data', help='folder where the data is stored in')
     args = parser.parse_args()
 
     if args.biomarker_name is not None:
@@ -25,9 +26,9 @@ def main():
         biomarker_names = adni.biomarker_names
 
     for biomarker in biomarker_names:
-        print adni.INFO, 'Generating plot for {0}...'.format(biomarker)
+        print log.INFO, 'Generating plot for {0}...'.format(biomarker)
 
-        points_file = os.path.join(adni.project_folder, args.folder, biomarker.replace(' ', '_') + '.csv')
+        points_file = os.path.join(adni.project_folder, 'data', args.method, biomarker.replace(' ', '_') + '.csv')
         curves_file = points_file.replace('.csv', '_curves.csv')
         if os.path.isfile(points_file) and os.path.isfile(curves_file):
             plot_model(biomarker, points_file, curves_file, not args.no_points)
@@ -63,11 +64,11 @@ def plot_model(biomarker, points_file, curves_file, plot_points, save_file=False
         min_val = np.min(curves)
         max_val = np.max(curves)
         # progr_samples = [-36, -18, 3, 18, 33]
-        progr_samples = [-1100, -550, 0, 550, 1100]
+        progr_samples = [-1099, -549, 1, 551, 1101]
 
         sample_cmap = cmx.ScalarMappable(
             norm=colors.Normalize(vmin=-len(progr_samples) + 1, vmax=(len(progr_samples) - 1)),
-            cmap=plt.get_cmap(adni.adni_cmap))
+            cmap=plt.get_cmap(aplt.progression_cmap))
 
         for i, progr in enumerate(progr_samples):
             sample_color = sample_cmap.to_rgba(i)
@@ -88,7 +89,7 @@ def plot_model(biomarker, points_file, curves_file, plot_points, save_file=False
         progr_points = m['progress']
         value_points = m['value']
         diagn_points = [0.5 if p < 0 else 1.0 for p in progr_points]
-        ax1.scatter(progr_points, value_points, c=diagn_points, vmin=0.0, vmax=1.0, linewidths=0, cmap=adni.adni_cmap, alpha=0.25)
+        ax1.scatter(progr_points, value_points, c=diagn_points, vmin=0.0, vmax=1.0, linewidths=0, cmap=aplt.progression_cmap, alpha=0.25)
 
     #
     # Plot the percentile curves

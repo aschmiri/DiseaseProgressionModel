@@ -1,41 +1,50 @@
-#!/usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import os.path
 import argparse
 import csv
 import subprocess
 import joblib as jl
-from src.common import adni_tools as adni
-from src.common import vgam as vgam
+from common import log as log
+from common import adni_tools as adni
+from common import vgam as vgam
 
 
 def main():
     # parse command line options
     parser = argparse.ArgumentParser(description='Estimate model curves for biomarkers using VGAM.')
+    parser.add_argument('method', choices=['reg', 'long', 'cons', 'graph'])
     parser.add_argument('-n', '--nr_threads', dest='nr_threads', type=int, default=4, help='number of threads')
     parser.add_argument('-d', '--degrees_of_freedom', dest='degrees_of_freedom', type=int, default=2, help='degrees of freedom for the LMS method')
     parser.add_argument('-s', '--scale_measurements', dest='scale_measurements', action='store_true', default=False, help='scale the measurements by fitting to an initial model')
-    parser.add_argument('--data_file', type=str, default=os.path.join(adni.project_folder, 'lists/volumes_segbased_graphcut.csv'), help='the data file with the biomarker values')
-    parser.add_argument('--folder', type=str, default='data', help='folder to store the data in')
+    parser.add_argument('--trans', dest='trans', type=str, default='sym', help='the transformation model, e.g. ffd, svffd, sym, or ic (regbased only)')
+    parser.add_argument('--spacing', type=str, default='5', help='the transformation spacing (regbased only)')
     args = parser.parse_args()
+
+    # setup data file
+    data_filename = {'reg': 'volumes_segbased_' + args.trans + '_' + args.spacing + 'mm.csv',
+                     'long': 'volumes_segbased_longitudinal.csv',
+                     'cons': 'volumes_segbased_consistent.csv',
+                     'graph': 'volumes_segbased_graphcut.csv'}
+    data_filepath = os.path.join(adni.project_folder, 'lists', data_filename[args.method])
 
     # Set the data file and the biomarkers to be considered
     biomarkers = adni.volume_names_essential
 
     # Estimate curves
-    generate_csv_files(args, biomarkers, args.data_file)
+    generate_csv_files(args, biomarkers, data_filepath)
     estimate_model_all_biomarkers(args, biomarkers)
 
 
 def generate_csv_files(args, biomarkers, data_file):
+    out_folder = os.path.join(adni.project_folder, 'data', args.method)
     measurements = vgam.get_measurements_as_collection(data_file)
     if args.scale_measurements:
         measurements = vgam.get_scaled_measurements(measurements, biomarkers=['CDRSB'])
 
     for biomarker in biomarkers:
-        print adni.INFO, 'Generating output CSV for {0}...'.format(biomarker)
+        print log.INFO, 'Generating output CSV for {0}...'.format(biomarker)
 
-        csv_file = os.path.join(adni.project_folder, args.folder, biomarker.replace(' ', '_') + '.csv')
+        csv_file = os.path.join(out_folder, biomarker.replace(' ', '_') + '.csv')
         writer = csv.writer(open(csv_file, 'wb'), delimiter=',')
         writer.writerow(['rid', 'progress', 'value'])
 
@@ -52,9 +61,10 @@ def estimate_model_all_biomarkers(args, biomarkers):
 
 
 def estimate_model(args, biomarker):
-    print adni.INFO, 'Fitting curve to {0}...'.format(biomarker)
-    r_file = os.path.join(adni.project_folder, 'src/fitting/vgam_estimate_curves.R')
-    csv_file = os.path.join(adni.project_folder, args.folder, biomarker.replace(' ', '_') + '.csv')
+    print log.INFO, 'Fitting curve to {0}...'.format(biomarker)
+    r_file = os.path.join(adni.project_folder, 'src/bmia/fitting/vgam_estimate_curves.R')
+    out_folder = os.path.join(adni.project_folder, 'data', args.method)
+    csv_file = os.path.join(out_folder, biomarker.replace(' ', '_') + '.csv')
     output_file = csv_file.replace('.csv', '_curves.csv')
     densities_file = csv_file.replace('.csv', '_densities.csv')
     image_file = csv_file.replace('.csv', '_curves.pdf')

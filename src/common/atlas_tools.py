@@ -1,11 +1,10 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import numpy as np
 
 
 ################################################################################
 #
-# read_datafile
+# find_file
 #
 ################################################################################
 def find_file(filename, method_folder, type_folder):

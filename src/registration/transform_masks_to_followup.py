@@ -1,10 +1,10 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import argparse
 import os.path
 import joblib as jl
 from subprocess import call
-from src.common import adni_tools as adni
+from common import log as log
+from common import adni_tools as adni
 
 
 def main():
@@ -37,7 +37,7 @@ def main():
     followup_folder = os.path.join(data_folder, 'native/images_unstripped')
     baseline_files, followup_files = adni.get_baseline_and_followup(baseline_folder, followup_folder, a.study, a.viscode)
 
-    print adni.RESULT, 'Found', len(baseline_files), 'image pairs...'
+    print log.RESULT, 'Found', len(baseline_files), 'image pairs...'
     if a.forward:
         jl.Parallel(n_jobs=a.nr_threads)(jl.delayed(run_forward)(i, a.study) for i in range(len(baseline_files)))
     else:
@@ -55,26 +55,26 @@ def run_backward(index, study):
     dof_nonlin = os.path.join(dof_folder_nonlin, source_base.replace('.nii.gz', '.dof.gz'))
 
     target_seg = os.path.join(seg_folder_in.replace(study, study_bl), 'EM-' + target_base)
-    target_seg = adni.find_file(target_seg)
+    target_seg = adni.find_alternative_file(target_seg)
     out_seg = os.path.join(seg_folder_out, source_base)
 
     if target_seg is not None:
         if not os.path.isfile(dof_nonlin):
-            print adni.WARNING, 'DOF file', dof_nonlin, 'does not exists!'
+            print log.WARNING, 'DOF file', dof_nonlin, 'does not exists!'
         elif os.path.isfile(out_seg):
-            print adni.SKIP, 'File', out_seg, 'already exists!'
+            print log.SKIP, 'File', out_seg, 'already exists!'
         else:
             #
             # Run transform masks
             #
-            print adni.INFO, '--------------------'
-            print adni.INFO, 'Starting: transformation'
-            print adni.INFO, 'Target:    ', target
-            print adni.INFO, 'Source:    ', source
-            print adni.INFO, 'DOF lin:   ', dof_lin
-            print adni.INFO, 'DOF nonlin:', dof_nonlin
-            print adni.INFO, 'Seg in:    ', target_seg
-            print adni.INFO, 'Seg out:   ', out_seg
+            print log.INFO, '--------------------'
+            print log.INFO, 'Starting: transformation'
+            print log.INFO, 'Target:    ', target
+            print log.INFO, 'Source:    ', source
+            print log.INFO, 'DOF lin:   ', dof_lin
+            print log.INFO, 'DOF nonlin:', dof_nonlin
+            print log.INFO, 'Seg in:    ', target_seg
+            print log.INFO, 'Seg out:   ', out_seg
 
             dof_lin_ffd = out_seg.replace('.nii.gz', '_lin.dof.gz')
             dof_combined = out_seg.replace('.nii.gz', '_combined.dof.gz')
@@ -99,25 +99,25 @@ def run_forward(index, study):
     dof = os.path.join(dof_folder_followup, 'baseline_to_' + target_base.replace('.nii.gz', '.dof.gz'))
 
     source_seg = os.path.join(seg_folder_in.replace(study, study_bl), 'EM-' + source_base)
-    source_seg = adni.find_file(source_seg)
+    source_seg = adni.find_alternative_file(source_seg)
     out_seg = os.path.join(seg_folder_out, target_base)
 
     if source_seg is not None:
         if not os.path.isfile(dof):
-            print adni.WARNING, 'DOF file', dof, 'does not exists!'
+            print log.WARNING, 'DOF file', dof, 'does not exists!'
         elif os.path.isfile(out_seg):
-            print adni.SKIP, 'File', out_seg, 'already exists!'
+            print log.SKIP, 'File', out_seg, 'already exists!'
         else:
             #
             # Run transform masks
             #
-            print adni.INFO, '--------------------'
-            print adni.INFO, 'Starting: transformation'
-            print adni.INFO, 'Target:    ', target
-            print adni.INFO, 'Source:    ', source
-            print adni.INFO, 'DOF:       ', dof
-            print adni.INFO, 'Seg in:    ', source_seg
-            print adni.INFO, 'Seg out:   ', out_seg
+            print log.INFO, '--------------------'
+            print log.INFO, 'Starting: transformation'
+            print log.INFO, 'Target:    ', target
+            print log.INFO, 'Source:    ', source
+            print log.INFO, 'DOF:       ', dof
+            print log.INFO, 'Seg in:    ', source_seg
+            print log.INFO, 'Seg out:   ', out_seg
 
             call(['transformation', source_seg, out_seg, '-dofin', dof, '-target', target, '-nn', '-matchInputType'])
 

@@ -1,11 +1,11 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import argparse
 import os.path
 import re
 import joblib as jl
-from src.common import adni_tools as adni
-from src.registration import ireg_nonlinear
+from common import log as log
+from common import adni_tools as adni
+from registration import ireg_nonlinear
 
 
 def main():
@@ -35,7 +35,7 @@ def main():
     output_folder_img = adni.make_dir(output_folder, 'images')
     output_folder_dof = adni.make_dir(output_folder, 'dof')
 
-    print adni.RESULT, 'Found', len(image_files), 'images...'
+    print log.RESULT, 'Found', len(image_files), 'images...'
     jl.Parallel(n_jobs=a.nr_threads)(jl.delayed(run)(i) for i in range(len(image_files)))
 
 

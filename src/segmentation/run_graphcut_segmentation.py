@@ -1,10 +1,11 @@
-#! /usr/bin/env python
+#! /usr/bin/env python2.7
 import os.path
 import argparse
 import joblib as jl
 from subprocess import call
 import numpy as np
-from src.common import adni_tools as adni
+from common import log as log
+from common import adni_tools as adni
 
 EXEC_GRAPH = '/vol/biomedic/users/rw1008/linux_64/bin/atrophy_graphcut4D_v221'
 EXEC_TRANS = 'transformation'
@@ -28,7 +29,7 @@ def main():
 
     file_collection = adni.get_baseline_and_followups_as_collection()
 
-    print adni.INFO, 'Assembling list of subjects...'
+    print log.INFO, 'Assembling list of subjects...'
     pairs_collection = {}
     for rid in file_collection:
         if (args.rid is None and args.rid_mod is None) or (args.rid_mod is not None and np.mod(rid, 5) == args.rid_mod) or rid == args.rid:
@@ -61,16 +62,16 @@ def main():
                     # Add to pairs collection
                     pairs_collection.update({bl_filepath: fu_filepaths})
 
-    print adni.RESULT, 'Found', len(pairs_collection), 'pairs...'
+    print log.RESULT, 'Found', len(pairs_collection), 'pairs...'
     jl.Parallel(n_jobs=args.nr_threads)(jl.delayed(process_image_pairs)(args, baseline, followups) for baseline, followups in pairs_collection.items())
 
 
 def process_image_pairs(args, baseline, followups):
-    print adni.INFO, '======================='
-    print adni.INFO, 'STARTING 4D graph cuts'
-    print adni.INFO, 'baseline: ', os.path.basename(baseline)
+    print log.INFO, '======================='
+    print log.INFO, 'STARTING 4D graph cuts'
+    print log.INFO, 'baseline: ', os.path.basename(baseline)
     for i, followup in enumerate(followups):
-        print adni.INFO, 'followup {0}: {1}'.format(i, os.path.basename(followup))
+        print log.INFO, 'followup {0}: {1}'.format(i, os.path.basename(followup))
 
     # Determine structures to segment
     if args.all_structures:
@@ -90,15 +91,15 @@ def process_image_pairs(args, baseline, followups):
     followups_normalised = []
     for followup in followups:
         if not os.path.isfile(followup):
-            print adni.WARNING, 'No warped follow up image found:', followup
+            print log.WARNING, 'No warped follow up image found:', followup
         else:
             fu_name = os.path.basename(followup).replace('.nii.gz', '')
             fu_normalised = os.path.join(temp_dir, fu_name + '_normalised.nii.gz')
             if os.path.isfile(fu_normalised):
-                print adni.SKIP, 'Warped followup available for {0}'.format(bl_name)
+                print log.SKIP, 'Warped followup available for {0}'.format(bl_name)
             else:
                 if not os.path.isfile(fu_normalised):
-                    print adni.INFO, 'Normalising follow-up image to baseline intensities...'
+                    print log.INFO, 'Normalising follow-up image to baseline intensities...'
                     call([EXEC_NORM, baseline, followup, fu_normalised, '-Tp', '-1', '-Sp', '-1'])
             followups_normalised.append(fu_normalised)
 
@@ -107,9 +108,9 @@ def process_image_pairs(args, baseline, followups):
     wm_mask_transformed = os.path.join(temp_dir, bl_name + '_wm.nii.gz')
     csf_mask_transformed = os.path.join(temp_dir, bl_name + '_csf.nii.gz')
     if files_present([gm_mask_transformed, wm_mask_transformed, csf_mask_transformed]):
-        print adni.SKIP, 'Tissue class priors available for {0}'.format(bl_name)
+        print log.SKIP, 'Tissue class priors available for {0}'.format(bl_name)
     else:
-        print adni.INFO, 'Propagating tissue class priors for graph-cut optimisation...'
+        print log.INFO, 'Propagating tissue class priors for graph-cut optimisation...'
         gm_mask = os.path.join(adni.mni_folder, 'mni_icbm152_gm_tal_nlin_asym_09a_scaled.nii')
         wm_mask = os.path.join(adni.mni_folder, 'mni_icbm152_wm_tal_nlin_asym_09a_scaled.nii')
         csf_mask = os.path.join(adni.mni_folder, 'mni_icbm152_csf_tal_nlin_asym_09a_scaled.nii')
@@ -118,7 +119,7 @@ def process_image_pairs(args, baseline, followups):
         mni_dof_dir = os.path.join(adni.data_folder, bl_study, 'MNI152_linear', 'dof')
         mni_dof = os.path.join(mni_dof_dir, bl_name + '.dof.gz')
         if not os.path.isfile(mni_dof):
-            print adni.ERROR, 'Transformation to MNI space not found:', mni_dof
+            print log.ERROR, 'Transformation to MNI space not found:', mni_dof
             return
 
         call([EXEC_TRANS, gm_mask, gm_mask_transformed, '-dofin', mni_dof, '-target', baseline, '-invert'])
@@ -128,7 +129,7 @@ def process_image_pairs(args, baseline, followups):
     # Check atlas folder
     atlas_folder = os.path.join(adni.data_folder, bl_study, 'native', 'seg_138regions_probs', bl_name)
     if not os.path.isdir(atlas_folder):
-        print adni.ERROR, 'Atlas folder not found:', atlas_folder
+        print log.ERROR, 'Atlas folder not found:', atlas_folder
         return
 
     # Process all structures individually
@@ -136,35 +137,35 @@ def process_image_pairs(args, baseline, followups):
         output_names = get_output_names(out_dir, bl_name, followups_normalised, structure)
 
         if files_present(output_names):
-            print adni.SKIP, 'Segmentations of {0} present for {1}'.format(structure, bl_name)
+            print log.SKIP, 'Segmentations of {0} present for {1}'.format(structure, bl_name)
         else:
-            print adni.INFO, '---------------------'
-            print adni.INFO, 'Segmenting {0}...'.format(structure)
+            print log.INFO, '---------------------'
+            print log.INFO, 'Segmenting {0}...'.format(structure)
 
             # Get atlas for structure
             posterior_index = adni.volume_names.index(structure) + 1
             atlas = os.path.join(temp_dir, bl_name + '_posteriors_{0}.nii.gz'.format(posterior_index))
             if not os.path.isfile(atlas):
-                print adni.INFO, 'Scaling atlas to [0..100]...'
+                print log.INFO, 'Scaling atlas to [0..100]...'
                 atlas_unscaled = os.path.join(atlas_folder, 'posteriors_{0}.nii.gz'.format(posterior_index))
                 call([EXEC_SCALE, '-I', atlas_unscaled, '-O', atlas, '-a', '0', '-m', '100'])
 
             # Perform graph cut
-            print adni.INFO, 'Performing graph-cut optimisation...'
+            print log.INFO, 'Performing graph-cut optimisation...'
             call([EXEC_GRAPH, str(len(followups_normalised) + 1), baseline] + followups_normalised +
                  ['1', atlas, wm_mask_transformed, gm_mask_transformed, csf_mask_transformed,
                   str(args.lmbda), str(args.alpha), out_dir, '-minPercentage', str(args.min_percentage)])
 
             # Rename output segmentations
-            print adni.INFO, 'Renaming files...'
+            print log.INFO, 'Renaming files...'
             for i, output_name in enumerate(output_names):
                 call(['mv', os.path.join(out_dir, '{0}_{1}.nii.gz'.format(bl_name, i)), output_name])
 
     # Clean temporal files
     # call('rm ' + os.path.join(temp_dir, bl_name[:15] + '*'), shell=True)
 
-    print adni.INFO, 'Finished processing of {0}'.format(bl_name)
-    print adni.INFO, '======================='
+    print log.INFO, 'Finished processing of {0}'.format(bl_name)
+    print log.INFO, '======================='
 
 
 def get_output_names(out_dir, bl_name, fu_names, structure):

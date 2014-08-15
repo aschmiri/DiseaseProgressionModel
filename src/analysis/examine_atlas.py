@@ -1,12 +1,11 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import os.path
 import argparse
 import numpy as np
 import nibabel as nib
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-import common.adni_tools as adni
+from common import adni_tools as adni
 
 
 def main():

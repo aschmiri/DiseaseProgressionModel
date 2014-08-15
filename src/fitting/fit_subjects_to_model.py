@@ -1,10 +1,9 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import os.path
 import csv
 import re
 import numpy as np
-from src.common import adni_tools as adni
+from common import adni_tools as adni
 
 
 def main():

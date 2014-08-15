@@ -1,10 +1,9 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
-from src.common import atlas_tools as at
+from common import atlas_tools as at
 
 
 def main():
@@ -12,8 +11,8 @@ def main():
 
     #
     # Read data
-    states_cn = read_data(datafile_bl, ['CN'])
-    states_mci = read_data(datafile_bl, ['EMCI', 'LMCI'])
+#     states_cn = read_data(datafile_bl, ['CN'])
+#     states_mci = read_data(datafile_bl, ['EMCI', 'LMCI'])
     states_ad = read_data(datafile_bl, ['AD'])
 
     x = np.arange(0, 15.5, 0.5)

@@ -1,10 +1,10 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import argparse
 import os.path
 import joblib as jl
-from src.common import adni_tools as adni
-from src.registration import ireg_nonlinear
+from common import log as log
+from common import adni_tools as adni
+from registration import ireg_nonlinear
 
 
 def main():
@@ -32,7 +32,7 @@ def main():
     followup_folder = os.path.join(data_folder, 'MNI152_' + a.trans + '_' + a.sx + 'mm_after_linear/images_' + a.viscode)
     baseline_files, followup_files = adni.get_baseline_and_followup(baseline_folder, followup_folder, a.study, a.viscode)
 
-    print adni.RESULT, 'Found', len(baseline_files), 'image pairs...'
+    print log.RESULT, 'Found', len(baseline_files), 'image pairs...'
     jl.Parallel(n_jobs=a.nr_threads)(jl.delayed(run)(i) for i in range(len(baseline_files)))
 
 

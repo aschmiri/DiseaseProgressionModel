@@ -1,10 +1,10 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import argparse
 import os.path
 from subprocess import call
-from src.common import adni_tools as adni
-from src.common import atlas_tools as at
+from common import log as log
+from common import adni_tools as adni
+from common import atlas_tools as at
 
 EXEC_RVIEW = 'rview'
 
@@ -28,7 +28,7 @@ def main():
 
     dof_folder = os.path.join(adni.data_folder, 'ADNI/MNI152_intra_' + a.trans + '_' + a.sx + 'mm', 'dof')
 
-    print adni.RESULT, 'Found ' + str(len(selected_images)) + ' relevant images for state ' + str(a.state) + '...'
+    print log.RESULT, 'Found ' + str(len(selected_images)) + ' relevant images for state ' + str(a.state) + '...'
     for i in range(len(selected_images)):
         for j in range(len(selected_images)):
             target = selected_images[i]
@@ -41,10 +41,10 @@ def main():
 
             if os.path.exists(dof):
                 if a.target_rid is None or a.target_rid == target_rid:
-                    print adni.INFO, '--------------------'
-                    print adni.INFO, 'Target: ' + target
-                    print adni.INFO, 'Source: ' + source
-                    print adni.INFO, 'DOF:    ' + dof
+                    print log.INFO, '--------------------'
+                    print log.INFO, 'Target: ' + target
+                    print log.INFO, 'Source: ' + source
+                    print log.INFO, 'DOF:    ' + dof
 
                     call([EXEC_RVIEW, target, source, dof, '-res', '1.5', '-mix'])
 

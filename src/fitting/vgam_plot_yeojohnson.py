@@ -1,5 +1,4 @@
-#!/usr/local/bin/python2.7
-# encoding: utf-8
+#! /usr/bin/env python2.7
 '''
 A small program to plot the Yeo-Johnson transformation [1] and the corresponding
 probability density function.

@@ -1,10 +1,11 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import os.path
 import numpy as np
 import matplotlib.pyplot as plt
-from src.common import adni_tools as adni
-from src.common import vgam as vgam
+from common import log as log
+from common import adni_tools as adni
+from common import adni_plot as aplt
+from common import vgam as vgam
 
 
 def main_estimate_dpi():
@@ -26,7 +27,7 @@ def main_estimate_dpi():
     dpis = []
     progresses = []
     for rid in measurements:
-        print adni.INFO, 'Estimating DPI for subject {0}...'.format(rid)
+        print log.INFO, 'Estimating DPI for subject {0}...'.format(rid)
         progress = measurements[rid]['bl']['progress']
 
         samples = {}
@@ -34,13 +35,13 @@ def main_estimate_dpi():
             samples.update({viscode: measurements[rid][viscode]})
         dpi = vgam.get_dpi_for_samples(densities, samples, biomarkers=biomarkers)
 
-        print adni.RESULT, 'Estimated DPI: {0}, Progress: {1}'.format(dpi, progress)
+        print log.RESULT, 'Estimated DPI: {0}, Progress: {1}'.format(dpi, progress)
         dpis.append(dpi)
         progresses.append(progress)
 
     rms_error = np.sqrt(np.sum(np.square(np.array(progresses) - np.array(dpis))) / len(dpis))
     mean_error = np.sum(np.abs(np.array(progresses) - np.array(dpis))) / len(dpis)
-    print adni.RESULT, 'Mean error: {0}, RMS error: {1}'.format(mean_error, rms_error)
+    print log.RESULT, 'Mean error: {0}, RMS error: {1}'.format(mean_error, rms_error)
 
     # Plot the results
     plot_correlation(dpis, progresses)
@@ -69,7 +70,7 @@ def main_estimate_dpi_dpr():
     progresses = []
     rcdnum = []
     for rid in measurements:
-        print adni.INFO, 'Estimating DPI and DPR for subject {0}...'.format(rid)
+        print log.INFO, 'Estimating DPI and DPR for subject {0}...'.format(rid)
         progress = measurements[rid]['bl']['progress']
 
         samples = {}
@@ -77,7 +78,7 @@ def main_estimate_dpi_dpr():
             samples.update({viscode: measurements[rid][viscode]})
         dpi, dpr = vgam.get_dpi_dpr_for_samples(densities, samples, biomarkers=biomarkers)
 
-        print adni.RESULT, 'Estimated DPI: {0}, DPR: {1}, Progress: {2}'.format(dpi, dpr, progress)
+        print log.RESULT, 'Estimated DPI: {0}, DPR: {1}, Progress: {2}'.format(dpi, dpr, progress)
         dpis.append(dpi)
         dprs.append(dpr)
         progresses.append(progress)
@@ -86,7 +87,7 @@ def main_estimate_dpi_dpr():
 
     rms_error = np.sqrt(np.sum(np.square(np.array(progresses) - np.array(dpis))) / len(dpis))
     mean_error = np.sum(np.abs(np.array(progresses) - np.array(dpis))) / len(dpis)
-    print adni.RESULT, 'Mean error: {0}, RMS error: {1}'.format(mean_error, rms_error)
+    print log.RESULT, 'Mean error: {0}, RMS error: {1}'.format(mean_error, rms_error)
 
     # Plot the results
     plot_rcds(dpis, dprs, rcdnum)
@@ -140,7 +141,7 @@ def main_single_biomarker_ranking():
         rms_error /= num_errors
         rms_error = np.sqrt(rms_error)
         mean_errors.append(rms_error)
-        print adni.RESULT, 'RMS error for {0}: {1} ({2})'.format(biomarker, rms_error, num_errors)
+        print log.RESULT, 'RMS error for {0}: {1} ({2})'.format(biomarker, rms_error, num_errors)
 
     # Sort results according to error
     mean_errors = np.array(mean_errors)
@@ -171,7 +172,7 @@ def plot_rcds(dpis, dprs, rcds):
     plt.title('DPI and DPR with RCD')
     plt.xlabel('Estimated DPI')
     plt.ylabel('Estimated DPR')
-    plt.scatter(dpis, dprs, c=rcds, cmap=adni.adni_cmap, s=50, linewidths=0)
+    plt.scatter(dpis, dprs, c=rcds, cmap=aplt.progression_cmap, s=50, linewidths=0)
     plt.show()
 
 

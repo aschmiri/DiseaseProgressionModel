@@ -1,11 +1,11 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import os.path
 import csv
 import re
 import numpy as np
 import matplotlib.pyplot as plt
-from src.common import adni_tools as adni
+from common import log as log
+from common import adni_tools as adni
 
 
 def main():
@@ -32,7 +32,7 @@ def main():
     for volume in adni.volume_names_essential:
         vol_index = adni.volume_names.index(volume)
 
-        print adni.INFO, 'Plotting {0}...'.format(adni.volume_names[vol_index])
+        print log.INFO, 'Plotting {0}...'.format(adni.volume_names[vol_index])
 
         for rid in [112, 307, 408]:
             plot_points_for_subject(data_file_r, rid, vol_index, 'reg-based', 'r')
@@ -48,7 +48,7 @@ def main():
 
 
 def plot_points_for_subject(data_file, rid, vol_index, label, color):
-    print adni.INFO, 'Plotting subject {0}...'.format(rid)
+    print log.INFO, 'Plotting subject {0}...'.format(rid)
     traj_x = []
     traj_y = []
     traj_d = []
@@ -64,7 +64,7 @@ def plot_points_for_subject(data_file, rid, vol_index, label, color):
                 elif re.match('m[0-9][0-9]', viscode):
                     scan_time = int(viscode[1:])
                 else:
-                    print adni.ERROR, 'Invalid viscode: {0}'.fromat(viscode)
+                    print log.ERROR, 'Invalid viscode: {0}'.format(viscode)
                     break
 
                 # Get diagnosis
@@ -76,7 +76,7 @@ def plot_points_for_subject(data_file, rid, vol_index, label, color):
                 elif dx_str == 'CN':
                     dx = 0.0
                 else:
-                    print adni.ERROR, 'Invalid diagnosis: {0}'.fromat(dx_str)
+                    print log.ERROR, 'Invalid diagnosis: {0}'.format(dx_str)
                     break
 
                 # Get and normalise volumes

@@ -1,9 +1,8 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import os.path
 import numpy as np
 import socket
-from sys import stdout
+import log
 
 ################################################################################
 #
@@ -180,44 +179,6 @@ manifold_coordinate_names = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8',
 
 biomarker_names = cog_score_names + volume_names
 
-rids_converters = [241, 21, 23, 546, 324, 141, 273, 276, 337, 159, 424, 256,
-                   307, 403, 644, 259, 260, 394, 291, 352, 551, 626, 314, 464,
-                   861, 1080, 835, 125, 112, 51, 656, 673, 869, 945, 408, 839,
-                   605, 680, 708, 865, 434, 156, 204, 292, 557, 563, 658, 679,
-                   1070, 1155, 169, 906, 922, 668, 722, 800, 973, 33, 158, 301,
-                   972, 994, 443, 481, 631, 1045, 1007, 1034, 384, 441, 1187,
-                   921, 1118, 1182, 1299, 1130, 96, 130, 961, 1351, 752, 1271,
-                   649, 382, 361, 834, 1280, 1224, 1318, 1346, 1352, 1261,
-                   1282, 1186, 997, 1131, 746, 1032, 1140, 123, 1194, 1195,
-                   1202, 1268, 878, 1073, 1023, 150, 303, 1010, 1260, 269, 351,
-                   160, 171, 1188, 925, 867, 1066, 1394, 1425, 1418, 1414, 830,
-                   454, 539, 566, 588, 1078, 1389, 294, 326, 362, 667, 778,
-                   378, 1121, 782, 295, 41, 413, 68, 685, 101, 729, 128, 249,
-                   293, 634, 344, 419, 30, 450, 406, 155, 142, 58, 31, 42, 388,
-                   81, 604, 1046, 126, 217, 331, 376, 887, 422, 625, 698, 61,
-                   74, 116, 118, 120, 179, 214, 513, 514, 567, 723, 671, 952,
-                   389, 507, 621, 919, 89, 311, 386, 108, 298, 1300, 200, 86,
-                   107, 186, 429, 914, 262, 127, 210, 473]
-
-import matplotlib as mpl
-cdict = {
-    'red': ((0.0, 0.0, 0.0), (0.5, 0.8, 0.8), (1.0, 1.0, 1.0)),
-    'green': ((0.0, 0.5, 0.5), (0.5, 0.8, 0.8), (1.0, 0.0, 0.0)),
-    'blue': ((0.0, 0.0, 0.0), (0.5, 0.0, 0.0), (1.0, 0.0, 0.0))
-}
-adni_cmap = mpl.colors.LinearSegmentedColormap('my_colormap', cdict)
-
-################################################################################
-#
-# Color output
-#
-################################################################################
-SKIP = '\033[95mSKIP:\033[0m' if stdout.isatty() else 'SKIP:'
-INFO = '\033[94mINFO:\033[0m' if stdout.isatty() else 'INFO:'
-RESULT = '\033[92mRESULT:\033[0m' if stdout.isatty() else 'RESULT:'
-WARNING = '\033[93mWARNING:\033[0m' if stdout.isatty() else 'WARNING:'
-ERROR = '\033[91mERROR:\033[0m' if stdout.isatty() else 'ERROR:'
-
 
 ################################################################################
 #
@@ -258,7 +219,7 @@ def detect_study(filename):
     elif filename.find('ADNIGO') != -1:
         return 'ADNIGO'
     else:
-        print ERROR, 'Study could not be determined from file', filename
+        print log.ERROR, 'Study could not be determined from file', filename
         return None
 
 
@@ -270,7 +231,7 @@ def detect_study(filename):
 def detect_rid(filename):
     index = filename.find('_S_')
     if index < 0:
-        print WARNING, 'Unable to detect rid of', filename
+        print log.WARNING, 'Unable to detect rid of', filename
         return None
     else:
         return safe_cast(filename[index + 3:index + 7])
@@ -355,10 +316,10 @@ def read_list_all_data(folder, diagnosis='ALL', study='ALL', viscode='ALL'):
 
 ################################################################################
 #
-# find_file
+# find_alternative_file
 #
 ################################################################################
-def find_file(filename):
+def find_alternative_file(filename):
     if os.path.isfile(filename):
         return filename
     else:
@@ -367,14 +328,14 @@ def find_file(filename):
         folder = os.path.dirname(filename)
         filenames = glob.glob(folder + '/*' + filename[filename.rfind('_I'):])
         if len(filenames) == 0:
-            print ERROR, 'No alternative file found for', filename
+            print log.ERROR, 'No alternative file found for', filename
             return None
 
         if len(filenames) > 1:
-            print WARNING, 'Multiple alternative files found! Selecting fist one...'
+            print log.WARNING, 'Multiple alternative files found! Selecting fist one...'
 
         filename = filenames[0]
-        print INFO, 'Alternative file found: ', filename
+        print log.INFO, 'Alternative file found: ', filename
         return filename
 
 
@@ -384,7 +345,7 @@ def find_file(filename):
 #
 ################################################################################
 def get_images(folder, study, viscode):
-    print INFO, 'Querying file names of scans ({0})...'.format(viscode)
+    print log.INFO, 'Querying file names of scans ({0})...'.format(viscode)
     files, _ = read_list(folder, study=study, viscode=viscode)
     return np.array(files)
 
@@ -395,7 +356,7 @@ def get_images(folder, study, viscode):
 #
 ################################################################################
 def get_baseline(baseline_folder, study):
-    print INFO, 'Querying file names of baseline scans...'
+    print log.INFO, 'Querying file names of baseline scans...'
     baseline_files = get_images(baseline_folder, study=study, viscode='bl')
     return np.array(baseline_files)
 
@@ -406,7 +367,7 @@ def get_baseline(baseline_folder, study):
 #
 ################################################################################
 def get_followup(baseline_folder, study, viscode='fu'):
-    print INFO, 'Querying file names of followup scans...'
+    print log.INFO, 'Querying file names of followup scans...'
     followup_files = get_images(baseline_folder, study=study, viscode=viscode)
     return np.array(followup_files)
 
@@ -417,7 +378,7 @@ def get_followup(baseline_folder, study, viscode='fu'):
 #
 ################################################################################
 def get_baseline_and_followup(baseline_folder, followup_folder, study, viscode):
-    print INFO, 'Querying file names of baseline and followup scans...'
+    print log.INFO, 'Querying file names of baseline and followup scans...'
     # Followup scans shouldn't be baseline
     if viscode == 'ALL':
         viscode = 'fu'
@@ -436,13 +397,13 @@ def get_baseline_and_followup(baseline_folder, followup_folder, study, viscode):
         cur.execute("SELECT study, filename FROM adnimerge WHERE rid = " + str(followup_rid) + " AND viscode = 'bl'")
         rows = cur.fetchall()
         if len(rows) == 0:
-            print WARNING, 'No baseline file found for', followup_file
+            print log.WARNING, 'No baseline file found for', followup_file
         elif len(rows) > 1:
-            print WARNING, 'Multiple baseline files found for', followup_file
+            print log.WARNING, 'Multiple baseline files found for', followup_file
         else:
             baseline_file = os.path.join(baseline_folder.replace(study, rows[0]['study']), rows[0]['filename'])
             if not os.path.isfile(baseline_file):
-                print WARNING, 'Baseline file not found:', followup_file
+                print log.WARNING, 'Baseline file not found:', followup_file
             else:
                 baseline_files.append(baseline_file)
                 followup_files.append(followup_file)
@@ -456,7 +417,7 @@ def get_baseline_and_followup(baseline_folder, followup_folder, study, viscode):
 #
 ################################################################################
 def get_baseline_and_followups_as_collection():
-    print INFO, 'Querying file names of baseline and followup scans...'
+    print log.INFO, 'Querying file names of baseline and followup scans...'
     import sqlite3
     con = sqlite3.connect(os.path.join(project_folder, 'lists', 'adni.db'))
     con.row_factory = sqlite3.Row
@@ -491,12 +452,12 @@ def get_baseline_and_followups_as_collection():
 #
 ################################################################################
 def get_baseline_transformations(dof_folder_adni1, dof_folder_adni2, viscode, diagnosis='ALL'):
-    print INFO, 'Querying baseline transformations...'
+    print log.INFO, 'Querying baseline transformations...'
     velocities_ADNI1, _ = read_list(dof_folder_adni1, diagnosis=diagnosis, study='ADNI1', viscode=viscode)
     velocities_ADNI2, _ = read_list(dof_folder_adni2, diagnosis=diagnosis, study='ADNI2', viscode=viscode)
 
-    print RESULT, 'Found', len(velocities_ADNI1), 'velocities in ADNI1...'
-    print RESULT, 'Found', len(velocities_ADNI2), 'velocities in ADNI2/GO...'
+    print log.RESULT, 'Found', len(velocities_ADNI1), 'velocities in ADNI1...'
+    print log.RESULT, 'Found', len(velocities_ADNI2), 'velocities in ADNI2/GO...'
 
     return np.array(velocities_ADNI1 + velocities_ADNI2)
 
@@ -507,12 +468,12 @@ def get_baseline_transformations(dof_folder_adni1, dof_folder_adni2, viscode, di
 #
 ################################################################################
 def get_baseline_transformations_and_rids(dof_folder_adni1, dof_folder_adni2, viscode, diagnosis='ALL'):
-    print INFO, 'Querying baseline transformations and RIDs...'
+    print log.INFO, 'Querying baseline transformations and RIDs...'
     velocities_ADNI1, rids_ADNI1 = read_list(dof_folder_adni1, diagnosis=diagnosis, study='ADNI1', viscode=viscode)
     velocities_ADNI2, rids_ADNI2 = read_list(dof_folder_adni2, diagnosis=diagnosis, study='ADNI2', viscode=viscode)
 
-    print RESULT, 'Found', len(velocities_ADNI1), 'velocities in ADNI1...'
-    print RESULT, 'Found', len(velocities_ADNI2), 'velocities in ADNI2/GO...'
+    print log.RESULT, 'Found', len(velocities_ADNI1), 'velocities in ADNI1...'
+    print log.RESULT, 'Found', len(velocities_ADNI2), 'velocities in ADNI2/GO...'
 
     velocities = np.array(velocities_ADNI1 + velocities_ADNI2)
     rids = np.array(rids_ADNI1 + rids_ADNI2, dtype='int')
@@ -526,7 +487,7 @@ def get_baseline_transformations_and_rids(dof_folder_adni1, dof_folder_adni2, vi
 #
 ################################################################################
 def get_all_data(data_folder_adni1, data_folder_adni2, data_folder_adniG, viscode, diagnosis='ALL'):
-    print INFO, 'Querying scan data...'
+    print log.INFO, 'Querying scan data...'
     files1, rid1, diagnoses1, age1, mmse1 = read_list_all_data(data_folder_adni1, diagnosis=diagnosis, study='ADNI1', viscode=viscode)
     files2, rid2, diagnoses2, age2, mmse2 = read_list_all_data(data_folder_adni2, diagnosis=diagnosis, study='ADNI2', viscode=viscode)
     if viscode == 'bl':
@@ -534,9 +495,9 @@ def get_all_data(data_folder_adni1, data_folder_adni2, data_folder_adniG, viscod
     else:
         filesG = [], ridG = [], diagnosesG = [], ageG = [], mmseG = []
 
-    print RESULT, 'Found', len(files1), 'files in ADNI1...'
-    print RESULT, 'Found', len(files2), 'files in ADNI2...'
-    print RESULT, 'Found', len(filesG), 'files in ADNIGO...'
+    print log.RESULT, 'Found', len(files1), 'files in ADNI1...'
+    print log.RESULT, 'Found', len(files2), 'files in ADNI2...'
+    print log.RESULT, 'Found', len(filesG), 'files in ADNIGO...'
 
     files = np.array(files1 + files2 + filesG)
     rids = np.array(rid1 + rid2 + ridG, dtype='int')
@@ -579,20 +540,20 @@ def check_image_data():
         folder = os.path.join(data_folder, study, 'native/images_unstripped')
 
         image_files = get_images(folder, study=study, viscode='ALL')
-        print RESULT, 'Found', len(image_files), 'images in', study
+        print log.RESULT, 'Found', len(image_files), 'images in', study
 
         baseline_files = get_baseline(folder, study=study)
-        print RESULT, 'Found', len(baseline_files), 'baseline images in', study
+        print log.RESULT, 'Found', len(baseline_files), 'baseline images in', study
 
         followup_files = get_followup(folder, study=study)
-        print RESULT, 'Found', len(followup_files), 'followup images in', study
+        print log.RESULT, 'Found', len(followup_files), 'followup images in', study
 
         for vc in followup_viscodes:
             followup_files = get_followup(folder, study=study, viscode=vc)
-            print RESULT, 'Found', len(followup_files), 'followup images in', study, '(' + vc + ')'
+            print log.RESULT, 'Found', len(followup_files), 'followup images in', study, '(' + vc + ')'
 
         baseline_files, _ = get_baseline_and_followup(folder, folder, study=study, viscode='fu')
-        print RESULT, 'Found', len(baseline_files), 'image pairs in', study, '(fu)'
+        print log.RESULT, 'Found', len(baseline_files), 'image pairs in', study, '(fu)'
 
 
 ################################################################################

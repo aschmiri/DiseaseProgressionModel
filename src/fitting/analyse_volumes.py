@@ -1,5 +1,4 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import os.path
 import csv
 import re
@@ -7,7 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from scipy.optimize import curve_fit
-from src.common import adni_tools as adni
+from common import adni_tools as adni
+from common import adni_plot as aplt
 
 
 def main():
@@ -136,7 +136,7 @@ def make_segments(x, y):
 
 # Interface to LineCollection:
 
-def colorline(x, y, z=None, cmap=adni.adni_cmap, norm=plt.Normalize(0.0, 1.0), linewidth=2, alpha=1.0):
+def colorline(x, y, z=None, cmap=aplt.progression_cmap, norm=plt.Normalize(0.0, 1.0), linewidth=2, alpha=1.0):
     ''' Plot a colored line with coordinates x and y
 
     Optionally specify colors in the array z
@@ -154,7 +154,7 @@ def colorline(x, y, z=None, cmap=adni.adni_cmap, norm=plt.Normalize(0.0, 1.0), l
     z = np.asarray(z)
 
     segments = make_segments(x, y)
-    lc = mpl.collections.LineCollection(segments, array=z, cmap=adni.adni_cmap, norm=norm, linewidth=linewidth, alpha=alpha)
+    lc = mpl.collections.LineCollection(segments, array=z, cmap=cmap, norm=norm, linewidth=linewidth, alpha=alpha)
 
     ax = plt.gca()
     ax.add_collection(lc)
@@ -235,7 +235,7 @@ def plot_trajectories(traj_x, traj_y, traj_d, rid=0, plot_steps=100, biomarker='
                    ['CN', 'MCI', 'AD'],
                    bbox_to_anchor=(0.25, 0.95))
         ax = plt.gca()
-        ax.scatter(xdata, ydata, c=ddata, cmap=adni.adni_cmap, vmin=0.0, vmax=1.0, s=40, linewidths=0)
+        ax.scatter(xdata, ydata, c=ddata, cmap=aplt.progression_cmap, vmin=0.0, vmax=1.0, s=40, linewidths=0)
         plt.show()
 
 

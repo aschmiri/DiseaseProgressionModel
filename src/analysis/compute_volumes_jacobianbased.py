@@ -1,11 +1,10 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import os.path
 import argparse
 import csv
 import sqlite3
 from subprocess import check_output
-from src.common import adni_tools as adni
+from common import adni_tools as adni
 
 
 def main():
@@ -68,7 +67,7 @@ def main():
 
                     # Get folder with the binary probablistic segmentations
                     if a.binary:
-                        seg = adni.find_file(os.path.join(adni.data_folder, study, 'native/seg_138regions_baseline', 'EM-' + bl_base))
+                        seg = adni.find_alternative_file(os.path.join(adni.data_folder, study, 'native/seg_138regions_baseline', 'EM-' + bl_base))
                         if seg is None or not os.path.isfile(seg):
                             print 'ERROR: File not found:', seg
                             break

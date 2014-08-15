@@ -1,10 +1,10 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import argparse
 import os.path
 import joblib as jl
-from src.common import adni_tools as adni
-from src.registration import ireg_linear
+from common import log as log
+from common import adni_tools as adni
+from registration import ireg_linear
 
 
 def main():
@@ -29,7 +29,7 @@ def main():
     baseline_folder = os.path.join(data_folder, 'native/images')
     baseline_files = adni.get_baseline(baseline_folder, a.study)
 
-    print adni.RESULT, 'Found', len(baseline_files), 'images...'
+    print log.RESULT, 'Found', len(baseline_files), 'images...'
     jl.Parallel(n_jobs=a.nr_threads)(jl.delayed(run)(i) for i in range(len(baseline_files)))
 
 

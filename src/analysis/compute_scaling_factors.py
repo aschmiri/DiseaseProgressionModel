@@ -1,10 +1,9 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import argparse
 import csv
 import os.remove
 from subprocess import check_output
-from src.common import adni_tools as adni
+from common import adni_tools as adni
 
 EXEC_FACTORS = '/vol/medic01/users/aschmidt/development/build_helvellyn/irtk-as12312/bin/affineScaling'
 

@@ -1,12 +1,11 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import os.path
 import argparse
 import csv
 import numpy as np
 from subprocess import call
-from src.common import adni_tools as adni
-from src.common import atlas_tools as at
+from common import adni_tools as adni
+from common import atlas_tools as at
 
 EXEC_ATLAS = 'atlas'
 EXEC_FFDAVERAGE = 'ffdaverage'

@@ -1,5 +1,4 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import os.path
 import argparse
 import csv
@@ -8,7 +7,8 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
-from src.common import adni_tools as adni
+from common import adni_tools as adni
+from common import adni_plot as aplt
 
 
 def main():
@@ -254,8 +254,8 @@ def compute_bin_error(data_x, data_y, popt, model=exponential,
 
         if len(bin_e) > min_bin_size:
             bins_e.append(np.sqrt(np.mean(np.array(bin_e))))
-    else:
-        return bins_e
+
+    return bins_e
 
 
 def fit_data(data_x, data_y, data_sigma=None, model=exponential):
@@ -332,7 +332,7 @@ def analyse_metric(name_csv, name_hr, normalise, plot=False, csv_writer=None, mo
                     mpl.patches.Rectangle((0, 0), 1, 1, fc=(1.0, 0.0, 0.0))],
                    ['CN', 'MCI', 'AD'],
                    bbox_to_anchor=(0.25, 0.95))
-        ax1.scatter(list_x, list_y, c=list_d, vmin=0.0, vmax=1.0, linewidths=0, cmap=adni.adni_cmap, alpha=0.25)
+        ax1.scatter(list_x, list_y, c=list_d, vmin=0.0, vmax=1.0, linewidths=0, cmap=aplt.progression_cmap, alpha=0.25)
 
     # -----------------------
     # Compute and plot binned fit
@@ -384,7 +384,6 @@ def analyse_metric(name_csv, name_hr, normalise, plot=False, csv_writer=None, mo
 
     if plot:
         plt.show()
-
 
 if __name__ == '__main__':
     main()

@@ -1,11 +1,11 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import argparse
 import os.path
 import joblib as jl
-from src.common import adni_tools as adni
-from src.common import atlas_tools as at
-from src.registration import ireg_nonlinear
+from common import log as log
+from common import adni_tools as adni
+from common import atlas_tools as at
+from registration import ireg_nonlinear
 
 
 def main():
@@ -43,7 +43,7 @@ def main():
     output_folder_dof = adni.make_dir(output_folder, 'dof')
     output_folder_img = adni.make_dir(output_folder, 'images')
 
-    print adni.RESULT, 'Found', len(selected_images), 'relevant images for state', a.state, '...'
+    print log.RESULT, 'Found', len(selected_images), 'relevant images for state', a.state, '...'
     for j in range(len(selected_images)):
         jl.Parallel(n_jobs=a.nr_threads)(
             jl.delayed(run)(i, j, save_image=a.save_image) for i in range(len(selected_images)))

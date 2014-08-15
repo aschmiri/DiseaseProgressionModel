@@ -1,10 +1,10 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import argparse
 import os.path
 import joblib as jl
 from subprocess import call
-from src.common import adni_tools as adni
+from common import log as log
+from common import adni_tools as adni
 
 EXEC_MASK = 'padding'
 
@@ -28,7 +28,7 @@ def main():
     global output_folder
     output_folder = adni.make_dir(data_folder, 'baseline_linear/images')
 
-    print adni.RESULT, 'Found', len(baseline_files), 'images...'
+    print log.RESULT, 'Found', len(baseline_files), 'images...'
     jl.Parallel(n_jobs=args.nr_threads)(jl.delayed(run)(args, i) for i in range(len(baseline_files)))
 
 
@@ -40,19 +40,19 @@ def run(args, index):
 
     baseline_study = adni.detect_study(baseline)
     mask = os.path.join(adni.data_folder, baseline_study, 'native/masks_brain', baseline_base)
-    mask = adni.find_file(mask)
+    mask = adni.find_alternative_file(mask)
     if mask is not None:
         out = os.path.join(output_folder, followup_base)
 
         if os.path.isfile(out):
-            print adni.SKIP, 'Image already exists: ', out
+            print log.SKIP, 'Image already exists: ', out
         elif mask is None or not os.path.isfile(mask):
-            print adni.INFO, 'No mask found for: ', out
+            print log.INFO, 'No mask found for: ', out
         else:
-            print adni.INFO, '--------------------'
-            print adni.INFO, 'Image:  ', followup
-            print adni.INFO, 'Mask:   ', mask
-            print adni.INFO, 'Output: ', out
+            print log.INFO, '--------------------'
+            print log.INFO, 'Image:  ', followup
+            print log.INFO, 'Mask:   ', mask
+            print log.INFO, 'Output: ', out
             call([EXEC_MASK, followup, mask, out, '1', str(args.padding), '-invert'])
 
 

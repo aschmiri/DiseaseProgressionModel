@@ -1,5 +1,4 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,16 +7,16 @@ import matplotlib.pyplot as plt
 def main():
     datafile_m0 = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_0/data_sym_m24_AD.csv'
     datafile_m1 = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_1/data_sym_m24_AD.csv'
-    datafile_m2 = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_2/data_sym_m24_AD.csv'
+#     datafile_m2 = '/vol/medic01/users/aschmidt/projects/AgeingAtlas/atlas/model_2/data_sym_m24_AD.csv'
 
     #
     # Read data
-    states_m0_cn = read_data(datafile_m0, ['CN'])
-    states_m0_mci = read_data(datafile_m0, ['EMCI', 'LMCI'])
+#     states_m0_cn = read_data(datafile_m0, ['CN'])
+#     states_m0_mci = read_data(datafile_m0, ['EMCI', 'LMCI'])
     states_m0_ad = read_data(datafile_m0, ['AD'])
 
-    states_m1_cn = read_data(datafile_m1, ['CN'])
-    states_m1_mci = read_data(datafile_m1, ['EMCI', 'LMCI'])
+#     states_m1_cn = read_data(datafile_m1, ['CN'])
+#     states_m1_mci = read_data(datafile_m1, ['EMCI', 'LMCI'])
     states_m1_ad = read_data(datafile_m1, ['AD'])
 
     # states_m2_cn  = read_data( datafile_m2, ['CN'] )

@@ -1,9 +1,9 @@
-#! /usr/bin/env python
-# print __doc__
+#! /usr/bin/env python2.7
 import argparse
 import os.path
 from subprocess import call
-from src.common import adni_tools as adni
+from common import log as log
+from common import adni_tools as adni
 
 EXEC_RVIEW = '/vol/medic01/users/aschmidt/development/build_helvellyn/irtk-as12312/bin/rview'
 
@@ -36,14 +36,14 @@ def main():
     baseline_files = adni.get_baseline(baseline_folder, a.study)
     baseline_files, dof_files = adni.find_images_with_dof(baseline_files, dof_folder)
 
-    print adni.RESULT, 'Found ' + str(len(baseline_files)) + ' images:'
+    print log.RESULT, 'Found ' + str(len(baseline_files)) + ' images:'
     for i in range(len(baseline_files)):
         source = baseline_files[i]
         dof = dof_files[i]
         if a.rid is None or adni.detect_rid(source) == a.rid:
-            print adni.INFO, '--------------------'
-            print adni.INFO, 'Source: ' + source
-            print adni.INFO, 'DOF:    ' + dof
+            print log.INFO, '--------------------'
+            print log.INFO, 'Source: ' + source
+            print log.INFO, 'DOF:    ' + dof
 
             if a.dof:
                 call([EXEC_RVIEW, adni.mni_atlas, source, dof, '-res', '1.5', '-mix'])
