@@ -2,7 +2,6 @@
 import os.path
 import csv
 import math
-# import re
 import datetime
 import numpy as np
 from common import log as log
@@ -20,22 +19,83 @@ MAX_DPR = 3.0
 # get_measurements_as_collection()
 #
 ################################################################################
-def get_measurements_as_collection(data_file):
-    '''Return all measurements as a collection.
+def get_measurements_as_collection(select_converters=True, no_regression=False,
+                                   data_file_meta=os.path.join(adni.project_folder, 'lists/metadata.csv'),
+                                   data_file_cog=os.path.join(adni.project_folder, 'lists/metadata.csv'),
+                                   data_file_vol=os.path.join(adni.project_folder, 'lists/volumes_graphcut.csv'),
+                                   data_file_mbl=os.path.join(adni.project_folder, 'lists/manifold_features.csv')):
+    '''Return all subjects measurements as a collection.
 
     Arguments:
-    data_file -- the names of the csv file containing the data
+    select_converters -- only select MCI -> AD converters
+    no_regression -- do not perform age regression
+    data_file_meta -- the name of the csv file containing the metadata
+    data_file_cog -- the name of the csv file containing the cognitive scores
+    data_file_vol -- the name of the csv file containing the structure volumes
+    data_file_mbl -- the name of the csv file containing the MBL coordinates
 
     Returns:
     A collection with the following structure:
-    { RID : { viscode : { DX.scan : <diagnosis> }
-                        { scantime : <months after bl> }
-                        { progress : <months relative to conversion> }
-                        { <biomarker> : <value> } }
-            { viscode : ... }
-      RID : ... }
+    { <rid> : { <viscode> : { DX.scan : <diagnosis> }
+                            { AGE.scan : <age in years> }
+                            { scandate : <date of scan> }
+                            { scantime : <days after bl> }
+                            { progress : <days relative to conversion> }
+                            { <biomarker1> : <volume> }
+                            ... }
+              { <viscode> : ... }
+      <rid> : ... }
     '''
-    measurements = {}
+    # Read data from lists
+    metadata = _get_metadata_as_collection(data_file_meta, select_converters=select_converters)
+
+    if data_file_cog is not None:
+        metadata = _update_metadata_with_biomarker_values(metadata, data_file_cog,
+                                                          adni.cog_score_names,
+                                                          no_regression=no_regression)
+
+    if data_file_vol is not None:
+        metadata = _update_metadata_with_biomarker_values(metadata, data_file_vol,
+                                                          adni.volume_names,
+                                                          no_regression=no_regression)
+
+    if data_file_mbl is not None:
+        metadata = _update_metadata_with_biomarker_values(metadata, data_file_mbl,
+                                                          adni.manifold_coordinate_names,
+                                                          no_regression=no_regression)
+
+    # Return measurements
+    return metadata
+
+
+################################################################################
+#
+# _get_metadata_as_collection()
+#
+################################################################################
+def _get_metadata_as_collection(data_file, select_converters=True):
+    '''Return all subjects metadata as a collection.
+
+    Arguments:
+    data_file -- the names of the csv file containing the data
+    select_converters -- only select MCI -> AD converters
+
+    Returns:
+    A collection with the following structure:
+    { <rid> : { <viscode> : { DX.scan : <diagnosis> }
+                            { AGE.scan : <age in years> }
+                            { scandate : <date of scan> }
+                            { scantime : <days after bl> }
+                            { progress : <days relative to conversion> } }
+              { <viscode> : ... }
+      <rid> : ... }
+    '''
+    print log.INFO, 'Collecting metadata...'
+    metadata = {}
+
+    if not os.path.isfile(data_file):
+        print log.ERROR, 'Data file dies not exist:', data_file
+        return metadata
 
     #
     # Get all measurements from CSV file
@@ -44,22 +104,25 @@ def get_measurements_as_collection(data_file):
         for row in rows:
             # Get rid
             rid = int(row['RID'])
-            if rid not in measurements:
-                measurements.update({rid: {}})
+            if rid not in metadata:
+                metadata.update({rid: {}})
 
             # Get scan time
             viscode = row['VISCODE']
-            if viscode in measurements[rid]:
-                print log.ERROR, 'Entry already exists:', rid, viscode
+            if viscode in metadata[rid]:
+                print log.WARNING, 'Entry already exists {0} ({1}). Skipping.'.format(rid, viscode)
                 break
-            measurements[rid].update({viscode: {}})
+            metadata[rid].update({viscode: {}})
 
             # Get scan date
             scandate = datetime.datetime.strptime(row['ScanDate'], "%Y-%m-%d").date()
-            measurements[rid][viscode].update({'scandate': scandate})
+            metadata[rid][viscode].update({'scandate': scandate})
 
             # Get age
-            measurements[rid][viscode].update({'AGE.scan': float(row['AGE.scan'])})
+            metadata[rid][viscode].update({'AGE.scan': float(row['AGE.scan'])})
+
+            # Get factor
+            metadata[rid][viscode].update({'FactorMNI': float(row['FactorMNI'])})
 
             # Get diagnosis as numerical value
             dx_str = row['DX.scan']
@@ -72,73 +135,210 @@ def get_measurements_as_collection(data_file):
             else:
                 print log.ERROR, 'Invalid diagnosis:', viscode
                 break
-            measurements[rid][viscode].update({'DX.scan': dx})
-
-            # Get and normalise volumes
-            for biomarker in adni.biomarker_names:
-                if biomarker in row:
-                    value = adni.safe_cast(row[biomarker])
-                    # Scale only if biomarker is a volume
-                    if value > 0 and biomarker in adni.volume_names:
-                        value = value / float(row['FactorMNI'])
-                    measurements[rid][viscode].update({biomarker: value})
+            metadata[rid][viscode].update({'DX.scan': dx})
 
     #
     # Add time relative to point of conversion to each data set
-    valid_rids = []
-    for rid, rid_data in measurements.items():
-        data_viscode = []
-        data_scantime = []
-        data_diagnosis = []
+    if select_converters:
+        print log.INFO, 'Selecting converters...'
+        valid_rids = []
+        for rid, rid_data in metadata.items():
+            data_viscode = []
+            data_scantime = []
+            data_diagnosis = []
 
-        if 'bl' not in measurements[rid]:
-            print log.WARNING, 'No bl scan for subject {0}!'.format(rid)
-            continue
+            if 'bl' not in metadata[rid]:
+                print log.WARNING, 'No bl scan for subject {0}!'.format(rid)
+                continue
 
-        bl_date = measurements[rid]['bl']['scandate']
-        for viscode, scan_data in rid_data.items():
-            #             if viscode == 'bl':
-            #                 scantime = 0
-            #             elif re.match('m[0-9][0-9]', viscode):
-            #                 scantime = int(viscode[1:])
-            #             else:
-            #                 print 'ERROR: Invalid viscode:', viscode
-            #                 break
-            fu_date = measurements[rid][viscode]['scandate']
-            scantime = (fu_date - bl_date).days
+            bl_date = metadata[rid]['bl']['scandate']
+            for viscode, scan_data in rid_data.items():
+                fu_date = metadata[rid][viscode]['scandate']
+                scantime = (fu_date - bl_date).days
 
-            data_viscode.append(viscode)
-            data_scantime.append(scantime)
-            data_diagnosis.append(scan_data['DX.scan'])
+                data_viscode.append(viscode)
+                data_scantime.append(scantime)
+                data_diagnosis.append(scan_data['DX.scan'])
 
-        data_viscode = np.array(data_viscode)
-        data_scantime = np.array(data_scantime)
-        data_diagnosis = np.array(data_diagnosis)
+            data_viscode = np.array(data_viscode)
+            data_scantime = np.array(data_scantime)
+            data_diagnosis = np.array(data_diagnosis)
 
-        args = np.argsort(data_scantime)
-        data_viscode = data_viscode[args]
-        data_scantime = data_scantime[args]
-        data_diagnosis = data_diagnosis[args]
+            args = np.argsort(data_scantime)
+            data_viscode = data_viscode[args]
+            data_scantime = data_scantime[args]
+            data_diagnosis = data_diagnosis[args]
 
-        if data_diagnosis[-1] == 1.0 and data_diagnosis[0] == 0.5:
-            valid_rids.append(rid)
-            scantime_prev = data_scantime[0]
-            for diagnosis, scantime in zip(data_diagnosis, data_scantime):
-                if diagnosis == 1.0:
-                    time_convert = scantime_prev + (scantime - scantime_prev) / 2
-                    break
-                else:
-                    scantime_prev = scantime
+            if data_diagnosis[-1] == 1.0 and data_diagnosis[0] == 0.5:
+                valid_rids.append(rid)
+                scantime_prev = data_scantime[0]
+                for diagnosis, scantime in zip(data_diagnosis, data_scantime):
+                    if diagnosis == 1.0:
+                        time_convert = scantime_prev + (scantime - scantime_prev) / 2
+                        break
+                    else:
+                        scantime_prev = scantime
 
-            for viscode, scantime in zip(data_viscode, data_scantime):
-                measurements[rid][viscode].update({'scantime': scantime})
-                measurements[rid][viscode].update({'progress': scantime - time_convert})
+                for viscode, scantime in zip(data_viscode, data_scantime):
+                    metadata[rid][viscode].update({'scantime': scantime})
+                    metadata[rid][viscode].update({'progress': scantime - time_convert})
+
+        #
+        # Remove non-valid rids
+        metadata = {rid: value for rid, value in metadata.items() if rid in valid_rids}
+
+    return metadata
+
+
+################################################################################
+#
+# _update_metadata_with_biomarker_values()
+#
+################################################################################
+def _update_metadata_with_biomarker_values(metadata, data_file,
+                                           biomarker_names=adni.biomarker_names,
+                                           no_regression=False):
+    '''
+    Update the metadata collection with the biomarker values.
+
+    Arguments:
+    metadata -- the metadata
+    data_file -- the data file containing the biomarker values
+    biomarker_names -- the biomarkers to be read
+    no_regression -- do not perform age regression
+    '''
+    biomarker_values = _get_biomarker_values_as_collection(data_file, metadata,
+                                                           biomarker_names=biomarker_names,
+                                                           no_regression=no_regression)
+
+    # Update metadata with feature values
+    for rid in metadata:
+        for viscode in metadata[rid]:
+            for biomarker in biomarker_names:
+                try:
+                    value = biomarker_values[rid][viscode][biomarker]
+                    metadata[rid][viscode].update({biomarker: value})
+                except:
+                    # TODO: Debug message
+                    pass
+
+    return metadata
+
+
+################################################################################
+#
+# _get_biomarker_values_as_collection()
+#
+################################################################################
+def _get_biomarker_values_as_collection(data_file, metadata,
+                                        biomarker_names=adni.biomarker_names,
+                                        no_regression=False):
+    '''Return all measurements as a collection.
+
+    Arguments:
+    data_file -- the names of the csv file containing the data
+    biomarker_names -- the biomarkers to be read
+    no_regression -- do not perform age regression
+
+    Returns:
+    A collection with the following structure:
+    { <rid> : { <viscode> : { <biomarker1> : <value> }
+                            { <biomarker2> : <value> } ... }
+              { <viscode> : ... }
+      <rid> : ... }
+    '''
+    if data_file is None:
+        return {}
+
+    NO_REGRESSION_STR = '{0} no regression'
+    print log.INFO, 'Collecting biomarker values...'
+    values = {}
 
     #
-    # Remove non-valid rids
-    measurements = {rid: value for rid, value in measurements.items() if rid in valid_rids}
+    # Get all measurements from CSV file
+    with open(data_file, 'rb') as csvfile:
+        rows = csv.DictReader(csvfile)
+        for row in rows:
+            # Get rid
+            rid = int(row['RID'])
+            if rid not in values:
+                values.update({rid: {}})
 
-    return measurements
+            # Get scan time
+            viscode = row['VISCODE']
+            if viscode in values[rid]:
+                print log.WARNING, 'Entry already exists {0} ({1}). Skipping.'.format(rid, viscode)
+                break
+            values[rid].update({viscode: {}})
+
+            # Get and normalise volumes
+            for biomarker in biomarker_names:
+                if biomarker in row:
+                    value = adni.safe_cast(row[biomarker])
+
+                    # Normalise volumes with mni transformation
+                    if value > 0 and biomarker in adni.volume_names:
+                        try:
+                            factor = metadata[rid][viscode]['FactorMNI']
+                            value /= factor
+                        except:
+                            break
+
+                    if no_regression:
+                        values[rid][viscode].update({biomarker: value})
+                    else:
+                        values[rid][viscode].update({NO_REGRESSION_STR.format(biomarker): value})
+
+    if not no_regression:
+        print log.INFO, 'Performing age regression..'
+        for biomarker in biomarker_names:
+            rids = []
+            viscodes = []
+            vals = []
+            ages = []
+            for rid, visits in values.items():
+                for viscode in visits:
+                    # Get age
+                    try:
+                        age = metadata[rid][viscode]['AGE.scan']
+                    except:
+                        age = None
+
+                    if age is not None and NO_REGRESSION_STR.format(biomarker) in visits[viscode]:
+                        value = visits[viscode][NO_REGRESSION_STR.format(biomarker)]
+                        if value is not None:
+                            ages.append(age)
+                            vals.append(value)
+                            rids.append(rid)
+                            viscodes.append(viscode)
+
+            if len(ages) > 1:
+                regressed_vals = _age_regression(ages, vals)
+
+                for rid, viscode, value in zip(rids, viscodes, regressed_vals):
+                    values[rid][viscode].update({biomarker: value})
+
+    return values
+
+
+################################################################################
+#
+# _age_regression()
+#
+################################################################################
+def _age_regression(timepoints, values):
+    '''
+    Perform age regression.
+    '''
+    timepoints = np.array(timepoints)
+    values = np.array(values)
+    mean_val = np.mean(values)
+
+    import scipy.stats as stats
+    slope, intercept, _, _, _ = stats.linregress(timepoints, values)
+    values = values - (timepoints * slope + intercept) + mean_val
+
+    return values
 
 
 ################################################################################
@@ -155,19 +355,61 @@ def get_rcd_as_collection(measurements):
 
     Returns:
     A collection with the following structure:
-    { RID : [True|False]
+    { <rid> : [True|False]
       ... }
     '''
     rcds = {}
 
     for rid in measurements:
-        mmse_bl = measurements[rid]['bl']['MMSE']
-        mmse_24 = measurements[rid]['m24']['MMSE']
-        # rcd = True if (mmse_24 - mmse_bl) < -7 else False
-        decline = mmse_bl - mmse_24
-        rcds.update({rid: decline})
+        try:
+            mmse_bl = measurements[rid]['bl']['MMSE']
+            mmse_24 = measurements[rid]['m24']['MMSE']
+            # rcd = True if (mmse_24 - mmse_bl) < -7 else False
+            decline = mmse_bl - mmse_24
+            rcds.update({rid: decline})
+        except Exception:
+            # TODO: debug message
+            pass
 
     return rcds
+
+
+################################################################################
+#
+# get_pdfs_as_collection()
+#
+################################################################################
+def get_pfds_as_collection(folder=os.path.join(adni.project_folder, 'data'),
+                           biomarkers=adni.biomarker_names):
+    '''Return all density distribution functions (PDFs) as a collection.
+
+    Keyword arguments:
+    folder -- the folder where the csv files describing the biomarkers are found
+    biomarkers -- the names of the biomarkers that are to be included
+
+    Returns:
+    A collection with the following structure:
+    { <biomarker> : { values : [sample points of value] }
+                    { MIN_PROGRESS : [PDF at progress MIN_PROGRESS] }
+                    ...
+                    { MAX_PROGRESS : [PDF at progress MAX_PROGRESS] }
+      <biomarker> : ... }
+    '''
+    pdfs = {}
+    for biomarker in biomarkers:
+        print log.INFO, 'Reading pdfs for', biomarker
+
+        pdf_file = os.path.join(folder, biomarker.replace(' ', '_') + '_densities.csv')
+        metric_grid, progress_grid, function_values = _read_pdf_file(pdf_file)
+
+        if metric_grid is not None and progress_grid is not None and function_values is not None:
+            pdfs.update({biomarker: {}})
+            pdfs[biomarker].update({'values': metric_grid})
+
+            for i in range(len(function_values)):
+                pdfs[biomarker].update({progress_grid[i]: function_values[i]})
+
+    return pdfs
 
 
 ################################################################################
@@ -202,37 +444,34 @@ def _read_pdf_file(pdf_file):
 # get_pdfs_as_collection()
 #
 ################################################################################
-def get_pfds_as_collection(folder=os.path.join(adni.project_folder, 'data'),
-                           biomarkers=adni.biomarker_names):
-    '''Return all density distribution functions (PDFs) as a collection.
-
-    Keyword arguments:
-    biomarkers -- the names of the biomarkers that are to be included
-    folder -- the folder where the csv files describing the biomarkers are found
-
-    Returns:
-    A collection with the following structure:
-    { <biomarker> : { values : [sample points of value] }
-                    { MIN_PROGRESS : [PDF at progress MIN_PROGRESS] }
-                    ...
-                    { MAX_PROGRESS : [PDF at progress MAX_PROGRESS] }
-      <biomarker> : ... }
+def interpolate_pdf(pdfs, progression):
     '''
-    pdfs = {}
-    for biomarker in biomarkers:
-        print log.INFO, 'Reading pdfs for', biomarker
+    Interpolate the PDF for a certain progression.
+    '''
+    if progression in pdfs:
+        return pdfs[progression]
+    else:
+        progressions = pdfs.keys()
+        progressions = np.sort(np.array(progressions))
 
-        pdf_file = os.path.join(folder, biomarker.replace(' ', '_') + '_densities.csv')
-        metric_grid, progress_grid, function_values = _read_pdf_file(pdf_file)
+        if progression < progressions[0]:
+            print log.WARNING, 'Progression out of scope, returning smallest PDF.'
+            return pdfs[progressions[0]]
 
-        if metric_grid is not None and progress_grid is not None and function_values is not None:
-            pdfs.update({biomarker: {}})
-            pdfs[biomarker].update({'values': metric_grid})
+        elif progression > progressions[-1]:
+            print log.WARNING, 'Progression out of scope, returning largest PDF.'
+            return pdfs[progressions[-1]]
 
-            for i in range(len(function_values)):
-                pdfs[biomarker].update({progress_grid[i]: function_values[i]})
+        else:
+            idx = 0
+            while progressions[idx] < progression:
+                idx += 1
 
-    return pdfs
+            factor = (progressions[idx] - progression) / (progressions[idx] - progressions[idx - 1])
+            pdf_smaller = np.array(pdfs[progressions[idx - 1]])
+            pdf_larger = np.array(pdfs[progressions[idx]])
+
+            return factor * pdf_smaller + (1 - factor) * pdf_larger
 
 
 ################################################################################
@@ -240,9 +479,10 @@ def get_pfds_as_collection(folder=os.path.join(adni.project_folder, 'data'),
 # get_scaled_measurements()
 #
 ################################################################################
-def get_scaled_measurements(measurements, biomarkers=adni.biomarker_names):
-    densities = get_pfds_as_collection(folder=os.path.join(adni.project_folder, 'data'),
-                                       biomarkers=biomarkers)
+def get_scaled_measurements(measurements,
+                            folder=os.path.join(adni.project_folder, 'data'),
+                            biomarkers=adni.biomarker_names):
+    densities = get_pfds_as_collection(folder, biomarkers=biomarkers)
     for rid in measurements:
         print log.INFO, 'Estimating optimal scaling for subject {0}...'.format(rid)
 
@@ -341,7 +581,7 @@ def get_dpi_dpr_for_samples(densities, samples, biomarkers=adni.biomarker_names)
 #
 ################################################################################
 def get_scaling_for_samples(densities, samples, biomarkers=adni.biomarker_names):
-    '''Return the estimated DPI and DPR of a subject given a number of samples
+    '''Return the optimal scaling value for a subject given a number of samples
     and a set of biomarkers.
 
     Arguments:

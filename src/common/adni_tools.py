@@ -173,11 +173,11 @@ volume_names_essential = [
     'Right Putamen', 'Left Putamen',
     'Right Thalamus Proper', 'Left Thalamus Proper']
 
-manifold_coordinate_names = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8',
+manifold_coordinate_names = ['P_D1D2', 'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8',
                              'D9', 'D10', 'D11', 'D12', 'D13', 'D14', 'D15',
                              'D16', 'D17', 'D18', 'D19', 'D20']
 
-biomarker_names = cog_score_names + volume_names
+biomarker_names = cog_score_names + volume_names + manifold_coordinate_names
 
 
 ################################################################################
@@ -328,7 +328,7 @@ def find_alternative_file(filename):
         folder = os.path.dirname(filename)
         filenames = glob.glob(folder + '/*' + filename[filename.rfind('_I'):])
         if len(filenames) == 0:
-            print log.ERROR, 'No alternative file found for', filename
+            print log.WARNING, 'No alternative file found for', filename
             return None
 
         if len(filenames) > 1:

@@ -1,5 +1,4 @@
 #! /usr/bin/env python2.7
-import os.path
 import numpy as np
 import matplotlib.pyplot as plt
 from common import log as log
@@ -19,8 +18,7 @@ def main_estimate_dpi():
     viscodes = ['bl', 'm12', 'm24']
 
     # Collect data for test
-    data_file = os.path.join(adni.project_folder, 'lists/volumes_segbased_sym_5mm.csv')
-    measurements = vgam.get_measurements_as_collection(data_file)
+    measurements = vgam.get_measurements_as_collection()
     densities = vgam.get_pfds_as_collection(biomarkers=biomarkers)
 
     # Test all available subjects
@@ -28,7 +26,10 @@ def main_estimate_dpi():
     progresses = []
     for rid in measurements:
         print log.INFO, 'Estimating DPI for subject {0}...'.format(rid)
-        progress = measurements[rid]['bl']['progress']
+        try:
+            progress = measurements[rid]['bl']['progress']
+        except Exception:
+            continue
 
         samples = {}
         for viscode in viscodes:
@@ -59,9 +60,9 @@ def main_estimate_dpi_dpr():
     viscodes = ['bl', 'm12', 'm24']
 
     # Collect data for test
-    data_file = os.path.join(adni.project_folder, 'lists/volumes_segbased_sym_5mm.csv')
-    measurements = vgam.get_measurements_as_collection(data_file)
+    measurements = vgam.get_measurements_as_collection()
     densities = vgam.get_pfds_as_collection(biomarkers=biomarkers)
+
     rcds = vgam.get_rcd_as_collection(measurements)
 
     # Test all available subjects
@@ -71,7 +72,10 @@ def main_estimate_dpi_dpr():
     rcdnum = []
     for rid in measurements:
         print log.INFO, 'Estimating DPI and DPR for subject {0}...'.format(rid)
-        progress = measurements[rid]['bl']['progress']
+        try:
+            progress = measurements[rid]['bl']['progress']
+        except Exception:
+            continue
 
         samples = {}
         for viscode in viscodes:
@@ -95,8 +99,7 @@ def main_estimate_dpi_dpr():
 
 def main_evaluate_scalings():
     biomarkers = ['MMSE']
-    data_file = os.path.join(adni.project_folder, 'lists/volumes_segbased_sym_5mm.csv')
-    measurements = vgam.get_measurements_as_collection(data_file)
+    measurements = vgam.get_measurements_as_collection()
     measurements = vgam.get_scaled_measurements(measurements, biomarkers=biomarkers)
     rcds = vgam.get_rcd_as_collection(measurements)
 
@@ -117,8 +120,7 @@ def main_evaluate_scalings():
 
 def main_single_biomarker_ranking():
     # Collect data for test
-    data_file = os.path.join(adni.project_folder, 'lists/volumes_segbased_sym_5mm.csv')
-    measurements = vgam.get_measurements_as_collection(data_file)
+    measurements = vgam.get_measurements_as_collection()
 
     # Compute error for each biomarker
     mean_errors = []

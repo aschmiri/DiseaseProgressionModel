@@ -17,8 +17,8 @@ EXEC_REMOVE = 'rm'
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('method', choices=['reg', 'long', 'cons', 'graph'])
-    parser.add_argument('-m', '--min_scans', dest='min_scans', type=int, default=6, help='the minimal number of scans per subject')
+    parser.add_argument('method', choices=['reg', 'long', 'cons', 'graph', 'meta'])
+    parser.add_argument('-m', '--min_scans', type=int, default=0, help='the minimal number of scans per subject')
     parser.add_argument('--trans', type=str, default='sym', help='the transformation model, e.g. ffd, svffd, sym, or ic (regbased only)')
     parser.add_argument('--spacing', type=str, default='5', help='the transformation spacing (regbased only)')
     parser.add_argument('--all_structures', action='store_true', default=False, help='segment all 138 structures (graphcuts only)')
@@ -33,11 +33,14 @@ def main():
     out_file_ending = {'reg': 'lists/volumes_segbased_' + args.trans + '_' + args.spacing + 'mm.csv',
                        'long': 'lists/volumes_segbased_longitudinal.csv',
                        'cons': 'lists/volumes_segbased_consistent.csv',
-                       'graph': 'lists/volumes_segbased_graphcut.csv'}
+                       'graph': 'lists/volumes_segbased_graphcut.csv',
+                       'meta': 'lists/metadata.csv'}
     out_file = os.path.join(adni.project_folder, out_file_ending[args.method])
 
     # Determine structures to segment
-    if args.method == 'graph' and not args.all_structures:
+    if args.method == 'meta':
+        structures = []
+    elif args.method == 'graph' and not args.all_structures:
         structures = adni.volume_names_essential
     else:
         structures = adni.volume_names
@@ -97,9 +100,11 @@ def main():
                         volumes = get_volumes_consistent(rid, sorted_viscodes.index(viscode), study, filename)
                     elif args.method == 'graph':
                         volumes = get_volumes_graphcut(rid, viscode, study_bl, filename, structures)
+                    else:
+                        volumes = []
 
                     if len(volumes) != len(structures):
-                        print log.ERROR, '{0} volumes read for subject {1}'.format(len(volumes), rid)
+                        print log.WARNING, '{0} volumes read for subject {1} ({2})'.format(len(volumes), rid, viscode)
                     else:
                         writer.writerow([str(rid), viscode, diagnosis, age, scandate] +
                                         cog_scores +
@@ -114,7 +119,7 @@ def get_mni_factor(cur, rid):
                 FROM adnimerge WHERE rid = " + str(rid) + " AND viscode = 'bl'")
     bl_data = cur.fetchall()
     if len(bl_data) != 1:
-        print log.WARNING, 'cog_data has wrong size:', len(bl_data)
+        print log.WARNING, 'bl_data has wrong size ({0}), using first entry.'.format(len(bl_data))
 
     study = bl_data[0]['study']
     filename = bl_data[0]['filename']
@@ -122,7 +127,7 @@ def get_mni_factor(cur, rid):
     mni_dof = os.path.join(folder_lin_mni.replace('ALL', study), filename.replace('.nii.gz', '.dof.gz'))
     if not os.path.isfile(mni_dof):
         print log.ERROR, 'File not found:', mni_dof
-        return -1
+        return None
     else:
         return float(check_output([EXEC_FACTORS, mni_dof]))
 
@@ -130,12 +135,12 @@ def get_mni_factor(cur, rid):
 def get_bl_factor(cur, rid, viscode, study, filename):
     print log.INFO, 'Computing scaling factor for subject {0} ({1})...'.format(rid, viscode)
     if viscode == 'bl':
-        return 1
+        return 1.0
     else:
         bl_dof = os.path.join(folder_lin_bl.replace('ALL', study), filename.replace('.nii.gz', '.dof.gz'))
         if not os.path.isfile(bl_dof):
             print log.ERROR, 'File not found:', bl_dof
-            return -1
+            return None
         else:
             return float(check_output([EXEC_FACTORS, bl_dof]))
 
@@ -148,7 +153,7 @@ def get_cog_scores(cur, rid, viscode):
                 WHERE rid = " + str(rid) + " AND viscode = '" + viscode + "'")
     cog_data = cur.fetchall()
     if len(cog_data) != 1:
-        print log.WARNING, 'cog_data has wrong size:', len(cog_data)
+        print log.ERROR, 'cog_data has wrong size:', len(cog_data)
 
     mmse = adni.safe_cast(cog_data[0]['mmse'])
     cdrsb = adni.safe_cast(cog_data[0]['cdrsb'])
@@ -164,7 +169,7 @@ def get_volumes_regbased(args, rid, viscode, study, filename):
     if viscode == 'bl':
         seg = adni.find_alternative_file(os.path.join(adni.data_folder, study, 'native/seg_138regions_baseline', 'EM-' + filename))
     else:
-        seg = adni.find_alternative_file(os.path.join(adni.data_folder, study, 'native/seg_138regions_followup_' + args.trans + '_' + args.sx + 'mm', filename))
+        seg = adni.find_alternative_file(os.path.join(adni.data_folder, study, 'native/seg_138regions_followup_' + args.trans + '_' + args.spacing + 'mm', filename))
 
     # Get volumes of the cortical structures
     if seg is None:

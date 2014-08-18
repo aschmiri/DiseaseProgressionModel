@@ -76,7 +76,7 @@ if (save_plot == 0) {
 } else {
     pdf(plot_file, width = w, height = h)
 }
-qtplot(fit, percentiles = c(5, 25, 50, 75, 95), main = "Quantiles", xlim = c(-min_progression, max_progression), las = 1, ylab = "Metric value", lwd = 2, lcol = 4)
+qtplot(fit, percentiles = c(5, 25, 50, 75, 95), main = "Quantiles", xlim = c(min_progression, max_progression), las = 1, ylab = "Metric value", lwd = 2, lcol = 4)
 
 if (save_plot == 0) {
     z <- locator()

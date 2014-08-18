@@ -173,7 +173,7 @@ def collect_data(name_csv, normalise):
 
             if rid != previous_rid and previous_rid is not None:
                 # Handle data of previous subject
-                if traj_d[-1] == 1.0 and traj_d[0] == 0.5:  # TODO BUG condition after sort
+                if traj_d[-1] == 1.0 and traj_d[0] == 0.5:  # FIXME: check condition after sort
                     normalise_and_append(traj_x, traj_y, traj_d, traj_a, normalise)
                 traj_x = []
                 traj_y = []
@@ -193,11 +193,11 @@ def age_regress_data():
     global list_y
     global list_a
 
-    import scipy.stats as stats
     list_y = np.array(list_y)
     list_a = np.array(list_a)
     mean_y = np.mean(list_y)
 
+    import scipy.stats as stats
     slope, intercept, _, _, _ = stats.linregress(list_a, list_y)
     list_y = list_y - (list_a * slope + intercept) + mean_y
 

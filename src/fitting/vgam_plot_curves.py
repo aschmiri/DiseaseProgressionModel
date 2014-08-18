@@ -15,7 +15,7 @@ from common import vgam as vgam
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('method', choices=['reg', 'long', 'cons', 'graph'])
+    parser.add_argument('method', choices=['cog', 'reg', 'long', 'cons', 'graph', 'mbl'])
     parser.add_argument('-n', '--biomarker_name', default=None, help='name of the biomarker to be plotted')
     parser.add_argument('-p', '--no_points', action='store_true', default=False, help='indication that no points are to be plotted')
     args = parser.parse_args()
@@ -23,12 +23,18 @@ def main():
     if args.biomarker_name is not None:
         biomarker_names = [args.biomarker_name]
     else:
-        biomarker_names = adni.biomarker_names
+        biomarker_sets = {'cog': adni.cog_score_names,
+                          'reg': adni.volume_names,
+                          'long': adni.volume_names,
+                          'cons': adni.volume_names,
+                          'graph': adni.volume_names_essential,
+                          'mbl': adni.manifold_coordinate_names}
+        biomarker_names = biomarker_sets[args.method]
 
     for biomarker in biomarker_names:
         print log.INFO, 'Generating plot for {0}...'.format(biomarker)
 
-        points_file = os.path.join(adni.project_folder, 'data', args.method, biomarker.replace(' ', '_') + '.csv')
+        points_file = os.path.join(adni.project_folder, 'data', args.method, 'init', biomarker.replace(' ', '_') + '.csv')
         curves_file = points_file.replace('.csv', '_curves.csv')
         if os.path.isfile(points_file) and os.path.isfile(curves_file):
             plot_model(biomarker, points_file, curves_file, not args.no_points)
@@ -50,10 +56,10 @@ def plot_model(biomarker, points_file, curves_file, plot_points, save_file=False
     # Plot PDFs
     #
     if plot_densities is not None:
-        pfds = vgam.get_pfds_as_collection(folder=os.path.dirname(curves_file),
+        pdfs = vgam.get_pfds_as_collection(folder=os.path.dirname(curves_file),
                                            biomarkers=[biomarker])
 
-        values = pfds[biomarker]['values']
+        values = pdfs[biomarker].pop('values')
 
         ax1 = plt.subplot(1, 2, 1)
         ax2 = plt.subplot(1, 2, 2)
@@ -63,18 +69,18 @@ def plot_model(biomarker, points_file, curves_file, plot_points, save_file=False
 
         min_val = np.min(curves)
         max_val = np.max(curves)
-        # progr_samples = [-36, -18, 3, 18, 33]
-        progr_samples = [-1099, -549, 1, 551, 1101]
+        progr_samples = [-1100, -550, 0, 500, 1100]
 
         sample_cmap = cmx.ScalarMappable(
             norm=colors.Normalize(vmin=-len(progr_samples) + 1, vmax=(len(progr_samples) - 1)),
             cmap=plt.get_cmap(aplt.progression_cmap))
 
         for i, progr in enumerate(progr_samples):
+            pdf = vgam.interpolate_pdf(pdfs[biomarker], progr)
             sample_color = sample_cmap.to_rgba(i)
             ax1.axvline(progr, color=sample_color, linestyle='--', alpha=0.8)
             ax2.set_xlim(min_val, max_val)
-            ax2.plot(values, pfds[biomarker][progr], label=str(progr), color=sample_color)
+            ax2.plot(values, pdf, label=str(progr), color=sample_color)
 
         handles2, labels2 = ax2.get_legend_handles_labels()
         ax2.legend(handles2, labels2, fontsize=10)
@@ -89,6 +95,8 @@ def plot_model(biomarker, points_file, curves_file, plot_points, save_file=False
         progr_points = m['progress']
         value_points = m['value']
         diagn_points = [0.5 if p < 0 else 1.0 for p in progr_points]
+
+        print log.INFO, 'Plotting {0} sample points...'.format(len(progr_points))
         ax1.scatter(progr_points, value_points, c=diagn_points, vmin=0.0, vmax=1.0, linewidths=0, cmap=aplt.progression_cmap, alpha=0.25)
 
     #
