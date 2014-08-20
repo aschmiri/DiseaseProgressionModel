@@ -7,24 +7,162 @@ import numpy as np
 from common import log as log
 from common import adni_tools as adni
 
-MIN_PROGRESS = -1200  # -42
-MAX_PROGRESS = 1200  # 51
-
 MIN_DPR = 0.1
 MAX_DPR = 3.0
 
 
 ################################################################################
 #
-# get_measurements_as_collection()
+# add_common_arguments()
 #
 ################################################################################
-def get_measurements_as_collection(select_converters=True, no_regression=False,
-                                   data_file_meta=os.path.join(adni.project_folder, 'lists/metadata.csv'),
-                                   data_file_cog=os.path.join(adni.project_folder, 'lists/metadata.csv'),
-                                   data_file_vol=os.path.join(adni.project_folder, 'lists/volumes_graphcut.csv'),
-                                   data_file_mbl=os.path.join(adni.project_folder, 'lists/manifold_features.csv')):
-    '''Return all subjects measurements as a collection.
+def add_common_arguments(parser):
+    parser.add_argument('method', choices=['cog', 'reg', 'long', 'cons', 'graph', 'mbl'])
+    parser.add_argument('-i', '--iteration', type=int, default=0, help='the refinement iteration')
+    parser.add_argument('-b', '--biomarker_name', default=None, help='name of the biomarker to be plotted')
+    parser.add_argument('--trans', type=str, default='sym', help='the transformation model, e.g. ffd, svffd, sym, or ic (regbased only)')
+    parser.add_argument('--spacing', type=str, default='5', help='the transformation spacing (regbased only)')
+
+    return parser
+
+
+################################################################################
+#
+# get_biomarker_set()
+#
+################################################################################
+def get_biomarker_set(args):
+    ''' Get the right set of biomarkers for the given arguments.
+
+    Arguments:
+    args -- command line arguments with:
+    args.method -- the method, choice of ['cog', 'reg', 'long', 'cons', 'graph', 'mbl']
+    args.biomarker_name -- a name of a single biomarker or None to return all biomarkers
+    '''
+    if args.biomarker_name is not None:
+        return [args.biomarker_name]
+    else:
+        biomarker_sets = {'cog': adni.cog_score_names,
+                          'reg': adni.volume_names,
+                          'long': adni.volume_names,
+                          'cons': adni.volume_names,
+                          'graph': adni.volume_names_essential,
+                          'mbl': adni.manifold_coordinate_names,
+                          'all': adni.biomarker_names}
+
+        return biomarker_sets[args.method]
+
+
+################################################################################
+#
+# get_data_files()
+#
+################################################################################
+def get_data_files(args):
+    ''' Get the right data files for the given arguments.
+
+    Arguments:
+    args -- command line arguments with:
+    args.method -- the method, choice of ['cog', 'reg', 'long', 'cons', 'graph', 'mbl']
+    args.trans -- the transformation if method == 'reg'
+    args.spacing -- the spacing if method == 'reg'
+    '''
+    data_files = {'meta': os.path.join(adni.project_folder, 'lists/metadata.csv'),
+                  'cog': os.path.join(adni.project_folder, 'lists/metadata.csv'),
+                  'mbl': os.path.join(adni.project_folder, 'lists/manifold_features.csv')}
+
+    try:
+        if args.method == 'reg':
+            data_files.update({'vol': os.path.join(adni.project_folder, 'lists/volumes_segbased_' + args.trans + '_' + args.spacing + 'mm.csv')})
+        elif args.method == 'long':
+            data_files.update({'vol': os.path.join(adni.project_folder, 'lists/volumes_segbased_longitudinal.csv')})
+        elif args.method == 'cons':
+            data_files.update({'vol': os.path.join(adni.project_folder, 'lists/volumes_segbased_consistent.csv')})
+        else:
+            data_files.update({'vol': os.path.join(adni.project_folder, 'lists/volumes_segbased_graphcut.csv')})
+    except:
+        data_files.update({'vol': os.path.join(adni.project_folder, 'lists/volumes_segbased_graphcut.csv')})
+
+    return data_files
+
+
+################################################################################
+#
+# get_data_folders()
+#
+################################################################################
+def get_data_folders(args, previous_iteration=False):
+    ''' Get the right data folders for the given arguments.
+
+    Arguments:
+    args -- command line arguments with:
+    args.method -- the method, choice of ['cog', 'reg', 'long', 'cons', 'graph', 'mbl']
+    args.iteration -- the iteration of the fitting
+    args.trans -- the transformation if method == 'reg'
+    args.spacing -- the spacing if method == 'reg'
+    '''
+    iteration = args.iteration - 1 if previous_iteration else args.iteration
+    if iteration < 0:
+        print log.WARNING, 'No previous iteration for iteration 0!'
+        iteration = 0
+    iteration_folder = 'it_{0}'.format(iteration)
+
+    data_folders = {'cog': os.path.join(adni.project_folder, 'data', 'cog', iteration_folder),
+                    'mbl': os.path.join(adni.project_folder, 'data', 'mbl', iteration_folder)}
+
+    try:
+        if args.method == 'reg':
+            data_folders.update({'vol': os.path.join(adni.project_folder, 'data', 'reg', iteration_folder)})
+        elif args.method == 'long':
+            data_folders.update({'vol': os.path.join(adni.project_folder, 'data', 'long', iteration_folder)})
+        elif args.method == 'cons':
+            data_folders.update({'vol': os.path.join(adni.project_folder, 'data', 'cons', iteration_folder)})
+        else:
+            data_folders.update({'vol': os.path.join(adni.project_folder, 'data', 'graph', iteration_folder)})
+    except:
+        data_folders.update({'vol': os.path.join(adni.project_folder, 'data', 'graph', iteration_folder)})
+
+    return data_folders
+
+
+################################################################################
+#
+# get_data_folders()
+#
+################################################################################
+def get_data_folder(data_folders, biomarker):
+    ''' Get the right data folders for the given arguments.
+
+    Arguments:
+    args -- command line arguments with:
+    args.method -- the method, choice of ['cog', 'reg', 'long', 'cons', 'graph', 'mbl']
+    args.iteration -- the iteration of the fitting
+    args.trans -- the transformation if method == 'reg'
+    args.spacing -- the spacing if method == 'reg'
+    '''
+    if biomarker in adni.cog_score_names:
+        adni.make_dir(data_folders['cog'])
+        return data_folders['cog']
+
+    elif biomarker in adni.volume_names:
+        adni.make_dir(data_folders['vol'])
+        return data_folders['vol']
+
+    elif biomarker in adni.manifold_coordinate_names:
+        adni.make_dir(data_folders['mbl'])
+        return data_folders['mbl']
+
+    else:
+        print log.ERROR, 'Data folder could not be determined.'
+
+
+################################################################################
+#
+# get_measurements_as_dict()
+#
+################################################################################
+def get_measurements_as_dict(data_files, select_converters=True, no_regression=False):
+    ''' Return all subjects measurements as a dictionary.
 
     Arguments:
     select_converters -- only select MCI -> AD converters
@@ -35,7 +173,7 @@ def get_measurements_as_collection(select_converters=True, no_regression=False,
     data_file_mbl -- the name of the csv file containing the MBL coordinates
 
     Returns:
-    A collection with the following structure:
+    A dictionary with the following structure:
     { <rid> : { <viscode> : { DX.scan : <diagnosis> }
                             { AGE.scan : <age in years> }
                             { scandate : <date of scan> }
@@ -47,20 +185,20 @@ def get_measurements_as_collection(select_converters=True, no_regression=False,
       <rid> : ... }
     '''
     # Read data from lists
-    metadata = _get_metadata_as_collection(data_file_meta, select_converters=select_converters)
+    metadata = _get_metadata_as_dict(data_files['meta'], select_converters=select_converters)
 
-    if data_file_cog is not None:
-        metadata = _update_metadata_with_biomarker_values(metadata, data_file_cog,
+    if data_files['cog'] is not None:
+        metadata = _update_metadata_with_biomarker_values(metadata, data_files['cog'],
                                                           adni.cog_score_names,
                                                           no_regression=no_regression)
 
-    if data_file_vol is not None:
-        metadata = _update_metadata_with_biomarker_values(metadata, data_file_vol,
+    if data_files['vol'] is not None:
+        metadata = _update_metadata_with_biomarker_values(metadata, data_files['vol'],
                                                           adni.volume_names,
                                                           no_regression=no_regression)
 
-    if data_file_mbl is not None:
-        metadata = _update_metadata_with_biomarker_values(metadata, data_file_mbl,
+    if data_files['mbl'] is not None:
+        metadata = _update_metadata_with_biomarker_values(metadata, data_files['mbl'],
                                                           adni.manifold_coordinate_names,
                                                           no_regression=no_regression)
 
@@ -70,18 +208,18 @@ def get_measurements_as_collection(select_converters=True, no_regression=False,
 
 ################################################################################
 #
-# _get_metadata_as_collection()
+# _get_metadata_as_dict()
 #
 ################################################################################
-def _get_metadata_as_collection(data_file, select_converters=True):
-    '''Return all subjects metadata as a collection.
+def _get_metadata_as_dict(data_file, select_converters=True):
+    ''' Return all subjects metadata as a dictionary.
 
     Arguments:
     data_file -- the names of the csv file containing the data
     select_converters -- only select MCI -> AD converters
 
     Returns:
-    A collection with the following structure:
+    A dictionary with the following structure:
     { <rid> : { <viscode> : { DX.scan : <diagnosis> }
                             { AGE.scan : <age in years> }
                             { scandate : <date of scan> }
@@ -198,8 +336,7 @@ def _get_metadata_as_collection(data_file, select_converters=True):
 def _update_metadata_with_biomarker_values(metadata, data_file,
                                            biomarker_names=adni.biomarker_names,
                                            no_regression=False):
-    '''
-    Update the metadata collection with the biomarker values.
+    ''' Update the metadata dictionary with the biomarker values.
 
     Arguments:
     metadata -- the metadata
@@ -207,9 +344,9 @@ def _update_metadata_with_biomarker_values(metadata, data_file,
     biomarker_names -- the biomarkers to be read
     no_regression -- do not perform age regression
     '''
-    biomarker_values = _get_biomarker_values_as_collection(data_file, metadata,
-                                                           biomarker_names=biomarker_names,
-                                                           no_regression=no_regression)
+    biomarker_values = _get_biomarker_values_as_dict(metadata, data_file,
+                                                     biomarker_names=biomarker_names,
+                                                     no_regression=no_regression)
 
     # Update metadata with feature values
     for rid in metadata:
@@ -227,13 +364,13 @@ def _update_metadata_with_biomarker_values(metadata, data_file,
 
 ################################################################################
 #
-# _get_biomarker_values_as_collection()
+# _get_biomarker_values_as_dict()
 #
 ################################################################################
-def _get_biomarker_values_as_collection(data_file, metadata,
-                                        biomarker_names=adni.biomarker_names,
-                                        no_regression=False):
-    '''Return all measurements as a collection.
+def _get_biomarker_values_as_dict(metadata, data_file,
+                                  biomarker_names=adni.biomarker_names,
+                                  no_regression=False):
+    ''' Return all measurements as a dictionary.
 
     Arguments:
     data_file -- the names of the csv file containing the data
@@ -241,7 +378,7 @@ def _get_biomarker_values_as_collection(data_file, metadata,
     no_regression -- do not perform age regression
 
     Returns:
-    A collection with the following structure:
+    A dictionary with the following structure:
     { <rid> : { <viscode> : { <biomarker1> : <value> }
                             { <biomarker2> : <value> } ... }
               { <viscode> : ... }
@@ -290,7 +427,7 @@ def _get_biomarker_values_as_collection(data_file, metadata,
                         values[rid][viscode].update({NO_REGRESSION_STR.format(biomarker): value})
 
     if not no_regression:
-        print log.INFO, 'Performing age regression..'
+        print log.INFO, 'Performing age regression...'
         for biomarker in biomarker_names:
             rids = []
             viscodes = []
@@ -327,9 +464,7 @@ def _get_biomarker_values_as_collection(data_file, metadata,
 #
 ################################################################################
 def _age_regression(timepoints, values):
-    '''
-    Perform age regression.
-    '''
+    ''' Perform age regression. '''
     timepoints = np.array(timepoints)
     values = np.array(values)
     mean_val = np.mean(values)
@@ -343,18 +478,18 @@ def _age_regression(timepoints, values):
 
 ################################################################################
 #
-# get_rcd_as_collection()
+# get_rcd_as_dict()
 #
 ################################################################################
-def get_rcd_as_collection(measurements):
-    '''Return all a collection that indicates for each RID if the subject
+def get_rcd_as_dict(measurements):
+    ''' Return all a dictionary that indicates for each RID if the subject
     is classified as RCD (rapid cognitive decline.
 
     Arguments:
-    measurements -- the measurements as a collection
+    measurements -- the measurements as a dictionary
 
     Returns:
-    A collection with the following structure:
+    A dictionary with the following structure:
     { <rid> : [True|False]
       ... }
     '''
@@ -376,19 +511,48 @@ def get_rcd_as_collection(measurements):
 
 ################################################################################
 #
-# get_pdfs_as_collection()
+# get_pfds_as_dict()
 #
 ################################################################################
-def get_pfds_as_collection(folder=os.path.join(adni.project_folder, 'data'),
-                           biomarkers=adni.biomarker_names):
-    '''Return all density distribution functions (PDFs) as a collection.
+def get_pfds_as_dict(data_folders, biomarkers=adni.biomarker_names):
+    ''' Return all density distribution functions (PDFs) as a dictionary.
 
     Keyword arguments:
-    folder -- the folder where the csv files describing the biomarkers are found
     biomarkers -- the names of the biomarkers that are to be included
+    folders -- the folder where the csv files describing the biomarkers are found
 
     Returns:
-    A collection with the following structure:
+    A dictionary with the following structure:
+    { <biomarker> : { values : [sample points of value] }
+                    { MIN_PROGRESS : [PDF at progress MIN_PROGRESS] }
+                    ...
+                    { MAX_PROGRESS : [PDF at progress MAX_PROGRESS] }
+      <biomarker> : ... }
+    '''
+    print log.INFO, 'Reading PDFs...'
+
+    pdfs = {}
+    for biomarker in biomarkers:
+        data_folder = get_data_folder(data_folders, biomarker)
+        pdfs.update(get_pdf_as_dict(data_folder, biomarker))
+
+    return pdfs
+
+
+################################################################################
+#
+# get_pdf_as_dict()
+#
+################################################################################
+def get_pdf_as_dict(data_folder, biomarker):
+    ''' Return all density distribution functions (PDFs) as a dictionary.
+
+    Keyword arguments:
+    biomarkers -- the names of the biomarkers that are to be included
+    folder -- the folder where the csv files describing the biomarkers are found
+
+    Returns:
+    A dictionary with the following structure:
     { <biomarker> : { values : [sample points of value] }
                     { MIN_PROGRESS : [PDF at progress MIN_PROGRESS] }
                     ...
@@ -396,18 +560,15 @@ def get_pfds_as_collection(folder=os.path.join(adni.project_folder, 'data'),
       <biomarker> : ... }
     '''
     pdfs = {}
-    for biomarker in biomarkers:
-        print log.INFO, 'Reading pdfs for', biomarker
+    pdf_file = os.path.join(data_folder, biomarker.replace(' ', '_') + '_densities.csv')
+    metric_grid, progress_grid, function_values = _read_pdf_file(pdf_file)
 
-        pdf_file = os.path.join(folder, biomarker.replace(' ', '_') + '_densities.csv')
-        metric_grid, progress_grid, function_values = _read_pdf_file(pdf_file)
+    if metric_grid is not None and progress_grid is not None and function_values is not None:
+        pdfs.update({biomarker: {}})
+        pdfs[biomarker].update({'values': metric_grid})
 
-        if metric_grid is not None and progress_grid is not None and function_values is not None:
-            pdfs.update({biomarker: {}})
-            pdfs[biomarker].update({'values': metric_grid})
-
-            for i in range(len(function_values)):
-                pdfs[biomarker].update({progress_grid[i]: function_values[i]})
+        for i in range(len(function_values)):
+            pdfs[biomarker].update({progress_grid[i]: function_values[i]})
 
     return pdfs
 
@@ -441,26 +602,32 @@ def _read_pdf_file(pdf_file):
 
 ################################################################################
 #
-# get_pdfs_as_collection()
+# interpolate_pdf()
 #
 ################################################################################
-def interpolate_pdf(pdfs, progression):
-    '''
-    Interpolate the PDF for a certain progression.
-    '''
+def interpolate_pdf(pdfs, progression, extrapolate=True):
+    ''' Interpolate the PDF for a certain progression. '''
     if progression in pdfs:
         return pdfs[progression]
     else:
         progressions = pdfs.keys()
+        if 'values' in progressions:
+            progressions.pop(progressions.index('values'))
         progressions = np.sort(np.array(progressions))
 
         if progression < progressions[0]:
-            print log.WARNING, 'Progression out of scope, returning smallest PDF.'
-            return pdfs[progressions[0]]
+            if extrapolate:
+                print log.WARNING, 'Progression {0} out of scope, returning smallest PDF.'.format(progression)
+                return pdfs[progressions[0]]
+            else:
+                return [0] * len(pdfs[progressions[0]])
 
         elif progression > progressions[-1]:
-            print log.WARNING, 'Progression out of scope, returning largest PDF.'
-            return pdfs[progressions[-1]]
+            if extrapolate:
+                print log.WARNING, 'Progression {0} out of scope, returning largest PDF.'.format(progression)
+                return pdfs[progressions[-1]]
+            else:
+                return [0] * len(pdfs[progressions[-1]])
 
         else:
             idx = 0
@@ -479,10 +646,8 @@ def interpolate_pdf(pdfs, progression):
 # get_scaled_measurements()
 #
 ################################################################################
-def get_scaled_measurements(measurements,
-                            folder=os.path.join(adni.project_folder, 'data'),
-                            biomarkers=adni.biomarker_names):
-    densities = get_pfds_as_collection(folder, biomarkers=biomarkers)
+def get_scaled_measurements(data_folders, measurements, biomarkers=adni.biomarker_names):
+    densities = get_pfds_as_dict(data_folders, biomarkers=biomarkers)
     for rid in measurements:
         print log.INFO, 'Estimating optimal scaling for subject {0}...'.format(rid)
 
@@ -493,13 +658,13 @@ def get_scaled_measurements(measurements,
 
         # Get and save scaling
         scaling = get_scaling_for_samples(densities, samples, biomarkers)
-        measurements[rid].update({'scaling': scaling})
+        print log.RESULT, 'Optimal scaling value:', scaling
 
         # Update all progresses
         for viscode in measurements[rid]:
-            if isinstance(viscode, (int, long)):
-                progress = measurements[rid][viscode]['progress']
-                measurements[rid][viscode].update({'progress': progress * scaling})
+            progress = adni.safe_cast(measurements[rid][viscode]['progress'], int)
+            measurements[rid][viscode].update({'scaling': scaling})
+            measurements[rid][viscode].update({'progress': progress * scaling})
 
     return measurements
 
@@ -510,7 +675,7 @@ def get_scaled_measurements(measurements,
 #
 ################################################################################
 def get_dpi_for_samples(densities, samples, biomarkers=adni.biomarker_names):
-    '''Return the estimated DPI of a subject given a number of samples and
+    ''' Return the estimated DPI of a subject given a number of samples and
     a set of biomarkers.
 
     Arguments:
@@ -522,16 +687,22 @@ def get_dpi_for_samples(densities, samples, biomarkers=adni.biomarker_names):
     The estimated DPI
     '''
     max_scantime = np.max([samples[viscode]['scantime'] for viscode in samples])
-    dpis = np.arange(MIN_PROGRESS, MAX_PROGRESS - max_scantime, 0.5)
+
+    progresses = densities[biomarkers[0]].keys()
+    progresses.pop(progresses.index('values'))
+    min_progress = np.min(progresses)
+    max_progress = np.max(progresses)
+    test_dpis = np.arange(min_progress, max_progress - max_scantime, 10)
+
     probs = []
-    for dpi in dpis:
+    for dpi in test_dpis:
         prob = 1.0
         for viscode in samples:
             offset = samples[viscode]['scantime']
             prob *= _get_probability_for_dpi(dpi + offset, densities, samples[viscode], biomarkers=biomarkers)
         probs.append(prob)
 
-    return dpis[np.argmax(probs)]
+    return test_dpis[np.argmax(probs)]
 
 
 ################################################################################
@@ -540,7 +711,7 @@ def get_dpi_for_samples(densities, samples, biomarkers=adni.biomarker_names):
 #
 ################################################################################
 def get_dpi_dpr_for_samples(densities, samples, biomarkers=adni.biomarker_names):
-    '''Return the estimated DPI and DPR of a subject given a number of samples
+    ''' Return the estimated DPI and DPR of a subject given a number of samples
     and a set of biomarkers.
 
     Arguments:
@@ -557,7 +728,7 @@ def get_dpi_dpr_for_samples(densities, samples, biomarkers=adni.biomarker_names)
     dpi_max = []
     for dpr in dprs:
         dist = max_scantime * dpr
-        dpis = np.arange(MIN_PROGRESS, MAX_PROGRESS - dist, 0.5)
+        dpis = np.arange(-1100, 1100 - dist, 0.5)  # FIXME: Real range
         probs = []
         for dpi in dpis:
             prob = 1.0
@@ -581,7 +752,7 @@ def get_dpi_dpr_for_samples(densities, samples, biomarkers=adni.biomarker_names)
 #
 ################################################################################
 def get_scaling_for_samples(densities, samples, biomarkers=adni.biomarker_names):
-    '''Return the optimal scaling value for a subject given a number of samples
+    ''' Return the optimal scaling value for a subject given a number of samples
     and a set of biomarkers.
 
     Arguments:
@@ -626,23 +797,40 @@ def _get_probability_for_dpi(dpi, densities, sample, biomarkers=adni.biomarker_n
     '''
     prob_sample = 1.0
 
-    prog_prev = math.floor(dpi)
-    prog_next = math.ceil(dpi)
+    prog_prev = int(math.floor(dpi))
+    prog_next = int(math.ceil(dpi))
     prog_offset = dpi - prog_prev
 
     for biomarker in biomarkers:
-        if biomarker not in densities:
+        if biomarker not in sample:
+            print log.WARNING, 'No sample available for', biomarker
+            prob_sample = 0
+        elif biomarker not in densities:
             print log.WARNING, 'No densities available for', biomarker
             prob_sample = 0
-        elif prog_prev not in densities[biomarker] or prog_next not in densities[biomarker]:
-            # print log.WARNING, 'No densities for time', prog_next
-            prob_sample = 0
         else:
+            if prog_prev not in densities[biomarker]:
+                pdf = interpolate_pdf(densities[biomarker], prog_prev, extrapolate=False)
+                densities[biomarker].update({prog_prev: pdf})
+            if prog_offset != 0.0 and prog_next not in densities[biomarker]:
+                pdf = interpolate_pdf(densities[biomarker], prog_next, extrapolate=False)
+                densities[biomarker].update({prog_next: pdf})
+
             values = densities[biomarker]['values']
             value_sample = sample[biomarker]
 
             if value_sample is None:
                 print log.WARNING, 'Sample has no value for', biomarker
+
+            elif value_sample in values:
+                prob_sample_prev = densities[biomarker][prog_prev][value_sample]
+
+                if prog_offset == 0.0:
+                    prob_sample *= prob_sample_prev
+                else:
+                    prob_sample_next = densities[biomarker][prog_next][value_sample]
+                    prob_sample *= (1 - prog_offset) * prob_sample_prev + prog_offset * prob_sample_next
+
             else:
                 # Find value in probability list
                 i = 0
@@ -652,9 +840,12 @@ def _get_probability_for_dpi(dpi, densities, sample, biomarkers=adni.biomarker_n
                 i_next = i if i < len(values) else len(values)
 
                 # Get factor for value
-                value_prev = values[i_prev]
-                value_next = values[i_next]
-                factor = (value_sample - value_prev) / (value_next - value_prev)
+                if i_prev == i_next:
+                    factor = 0
+                else:
+                    value_prev = values[i_prev]
+                    value_next = values[i_next]
+                    factor = (value_sample - value_prev) / (value_next - value_prev)
 
                 # Interpolate probability
                 prob_prev = densities[biomarker][prog_prev][i_prev]
@@ -680,7 +871,7 @@ def _get_probability_for_dpi(dpi, densities, sample, biomarkers=adni.biomarker_n
 #
 ################################################################################
 def yeojohnson_density(y, lmbda, mu, sigma):
-    '''Return the probability of a value y given lambda, mu and sigma'''
+    ''' Return the probability of a value y given lambda, mu and sigma'''
     return (1 / sigma) * \
         _std_normal_dist((_yeojohnson(y, lmbda) - mu) / sigma) * \
         np.power(np.abs(y) + 1, np.sign(y) * (lmbda - 1))

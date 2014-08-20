@@ -10,51 +10,34 @@ from common import vgam as vgam
 
 
 def main():
-    # parse command line options
     parser = argparse.ArgumentParser(description='Estimate model curves for biomarkers using VGAM.')
-    parser.add_argument('method', choices=['cog', 'reg', 'long', 'cons', 'graph', 'mbl'])
+    parser = vgam.add_common_arguments(parser)
     parser.add_argument('-n', '--nr_threads', type=int, default=4, help='number of threads')
     parser.add_argument('-d', '--degrees_of_freedom', type=int, default=2, help='degrees of freedom for the LMS method')
-    parser.add_argument('-s', '--scale_measurements', action='store_true', default=False, help='scale the measurements by fitting to an initial model')
     parser.add_argument('--no_regression', action='store_true', default=False, help='do not perform age regression of biomarker values')
-    parser.add_argument('--trans', type=str, default='sym', help='the transformation model, e.g. ffd, svffd, sym, or ic (regbased only)')
-    parser.add_argument('--spacing', type=str, default='5', help='the transformation spacing (regbased only)')
     args = parser.parse_args()
 
-    # Setup data file
-    volume_files = {'reg': 'volumes_segbased_' + args.trans + '_' + args.spacing + 'mm.csv',
-                    'long': 'volumes_segbased_longitudinal.csv',
-                    'cons': 'volumes_segbased_consistent.csv',
-                    'graph': 'volumes_segbased_graphcut.csv'}
-    if args.method in volume_files:
-        data_file_vol = os.path.join(adni.project_folder, 'lists', volume_files[args.method])
-    else:
-        data_file_vol = None
-
-    # Set biomarkers to be considered
-    biomarker_sets = {'cog': adni.cog_score_names,
-                      'reg': adni.volume_names,
-                      'long': adni.volume_names,
-                      'cons': adni.volume_names,
-                      'graph': adni.volume_names_essential,
-                      'mbl': adni.manifold_coordinate_names}
+    # Get the data files and biomarkers
+    data_files = vgam.get_data_files(args)
+    biomarker_set = vgam.get_biomarker_set(args)
 
     # Estimate curves
-    generate_csv_files(args, biomarker_sets[args.method], data_file_vol=data_file_vol)
-    estimate_model_all_biomarkers(args, biomarker_sets[args.method])
+    generate_csv_files(args, biomarker_set, data_files)
+    estimate_model_all_biomarkers(args, biomarker_set)
 
 
-def generate_csv_files(args, biomarkers, data_file_vol=None):
-    measurements = vgam.get_measurements_as_collection(data_file_vol=data_file_vol)
-    out_folder = adni.make_dir(adni.project_folder, 'data', args.method, 'init')
+def generate_csv_files(args, biomarkers, data_files):
+    measurements = vgam.get_measurements_as_dict(data_files)
+    data_folders = vgam.get_data_folders(args)
 
-    if args.scale_measurements:
-        measurements = vgam.get_scaled_measurements(measurements, biomarkers=['CDRSB'])
+    if args.iteration > 0:
+        input_folders = vgam.get_data_folders(args, previous_iteration=True)
+        measurements = vgam.get_scaled_measurements(input_folders, measurements, biomarkers=['CDRSB'])
 
     for biomarker in biomarkers:
         print log.INFO, 'Generating output CSV for {0}...'.format(biomarker)
-
-        csv_file = os.path.join(out_folder, biomarker.replace(' ', '_') + '.csv')
+        data_folder = vgam.get_data_folder(data_folders, biomarker)
+        csv_file = os.path.join(data_folder, biomarker.replace(' ', '_') + '.csv')
         writer = csv.writer(open(csv_file, 'wb'), delimiter=',')
         writer.writerow(['rid', 'progress', 'value'])
 
@@ -83,8 +66,9 @@ def estimate_model_all_biomarkers(args, biomarkers):
 def estimate_model(args, biomarker):
     print log.INFO, 'Fitting curve to {0}...'.format(biomarker)
     r_file = os.path.join(adni.project_folder, 'src/fitting/vgam_estimate_curves.R')
-    out_folder = os.path.join(adni.project_folder, 'data', args.method, 'init')
-    csv_file = os.path.join(out_folder, biomarker.replace(' ', '_') + '.csv')
+    data_folders = vgam.get_data_folders(args)
+    data_folder = vgam.get_data_folder(data_folders, biomarker)
+    csv_file = os.path.join(data_folder, biomarker.replace(' ', '_') + '.csv')
     output_file = csv_file.replace('.csv', '_curves.csv')
     densities_file = csv_file.replace('.csv', '_densities.csv')
     image_file = csv_file.replace('.csv', '_curves.pdf')

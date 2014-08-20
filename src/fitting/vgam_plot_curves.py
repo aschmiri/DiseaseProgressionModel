@@ -15,32 +15,29 @@ from common import vgam as vgam
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('method', choices=['cog', 'reg', 'long', 'cons', 'graph', 'mbl'])
-    parser.add_argument('-n', '--biomarker_name', default=None, help='name of the biomarker to be plotted')
-    parser.add_argument('-p', '--no_points', action='store_true', default=False, help='indication that no points are to be plotted')
+    parser = vgam.add_common_arguments(parser)
+    parser.add_argument('-p', '--no_points', action='store_true', default=False, help='do not plot points')
+    parser.add_argument('-d', '--no_densities', action='store_true', default=False, help='do not plot densities')
+    parser.add_argument('-s', '--save_file', action='store_true', default=False, help='save the plots as a file')
     args = parser.parse_args()
 
-    if args.biomarker_name is not None:
-        biomarker_names = [args.biomarker_name]
-    else:
-        biomarker_sets = {'cog': adni.cog_score_names,
-                          'reg': adni.volume_names,
-                          'long': adni.volume_names,
-                          'cons': adni.volume_names,
-                          'graph': adni.volume_names_essential,
-                          'mbl': adni.manifold_coordinate_names}
-        biomarker_names = biomarker_sets[args.method]
+    biomarker_set = vgam.get_biomarker_set(args)
+    data_folders = vgam.get_data_folders(args)
 
-    for biomarker in biomarker_names:
-        print log.INFO, 'Generating plot for {0}...'.format(biomarker)
-
-        points_file = os.path.join(adni.project_folder, 'data', args.method, 'init', biomarker.replace(' ', '_') + '.csv')
-        curves_file = points_file.replace('.csv', '_curves.csv')
-        if os.path.isfile(points_file) and os.path.isfile(curves_file):
-            plot_model(biomarker, points_file, curves_file, not args.no_points)
+    for biomarker in biomarker_set:
+        data_folder = vgam.get_data_folder(data_folders, biomarker)
+        plot_model(args, biomarker, data_folder)
 
 
-def plot_model(biomarker, points_file, curves_file, plot_points, save_file=False, plot_densities=True):
+def plot_model(args, biomarker, data_folder):
+    points_file = os.path.join(data_folder, biomarker.replace(' ', '_') + '.csv')
+    curves_file = points_file.replace('.csv', '_curves.csv')
+
+    if not os.path.isfile(points_file) or not os.path.isfile(curves_file):
+        return
+
+    print log.INFO, 'Generating plot for {0}...'.format(biomarker)
+
     plt.figure(figsize=(12, 5), dpi=100)
 
     #
@@ -55,9 +52,8 @@ def plot_model(biomarker, points_file, curves_file, plot_points, save_file=False
     #
     # Plot PDFs
     #
-    if plot_densities is not None:
-        pdfs = vgam.get_pfds_as_collection(folder=os.path.dirname(curves_file),
-                                           biomarkers=[biomarker])
+    if not args.no_densities:
+        pdfs = vgam.get_pdf_as_dict(data_folder, biomarker)
 
         values = pdfs[biomarker].pop('values')
 
@@ -90,7 +86,7 @@ def plot_model(biomarker, points_file, curves_file, plot_points, save_file=False
     #
     # Plot points
     #
-    if plot_points:
+    if not args.no_points:
         m = mlab.csv2rec(points_file)
         progr_points = m['progress']
         value_points = m['value']
@@ -113,8 +109,10 @@ def plot_model(biomarker, points_file, curves_file, plot_points, save_file=False
     ax1.set_title('Percentile curves for %s' % biomarker)
     ax1.set_xlabel('Disease progression relative to point of conversion')
     ax1.set_ylabel('Volume' if biomarker in adni.volume_names else 'Score')
-    progress_offset = (vgam.MAX_PROGRESS - vgam.MIN_PROGRESS) * 0.1
-    ax1.set_xlim(vgam.MIN_PROGRESS - progress_offset, vgam.MAX_PROGRESS + 2 * progress_offset)
+    min_progress = np.min(progrs)
+    max_progress = np.max(progrs)
+    progress_offset = (max_progress - min_progress) * 0.1
+    ax1.set_xlim(min_progress - progress_offset, max_progress + 2 * progress_offset)
     ax1.legend([mpl.patches.Rectangle((0, 0), 1, 1, fc=(0.8, 0.8, 0.0), linewidth=0),
                 mpl.patches.Rectangle((0, 0), 1, 1, fc=(1.0, 0.0, 0.0), linewidth=0)],
                ['MCI', 'AD'], fontsize=10)
@@ -124,8 +122,8 @@ def plot_model(biomarker, points_file, curves_file, plot_points, save_file=False
     #
     # Draw or save the plot
     #
-    if save_file:
-        plot_filename = curves_file.replace('.csv', '_plot.png')
+    if args.save_file:
+        plot_filename = curves_file.replace('.csv', '.pdf')
         plt.savefig(plot_filename, dpi=100)
     else:
         plt.show()

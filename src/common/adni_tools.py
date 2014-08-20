@@ -178,6 +178,7 @@ manifold_coordinate_names = ['P_D1D2', 'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7',
                              'D16', 'D17', 'D18', 'D19', 'D20']
 
 biomarker_names = cog_score_names + volume_names + manifold_coordinate_names
+biomarker_names_essential = cog_score_names + volume_names_essential + manifold_coordinate_names
 
 
 ################################################################################
@@ -413,10 +414,10 @@ def get_baseline_and_followup(baseline_folder, followup_folder, study, viscode):
 
 ################################################################################
 #
-# get_baseline_and_followups_as_collection
+# get_baseline_and_followups_as_dict
 #
 ################################################################################
-def get_baseline_and_followups_as_collection():
+def get_baseline_and_followups_as_dict():
     print log.INFO, 'Querying file names of baseline and followup scans...'
     import sqlite3
     con = sqlite3.connect(os.path.join(project_folder, 'lists', 'adni.db'))
@@ -425,25 +426,25 @@ def get_baseline_and_followups_as_collection():
 
     cur.execute("SELECT rid, study, filename FROM adnimerge WHERE viscode = 'bl'")
     baselines = cur.fetchall()
-    file_collection = {}
+    file_dict = {}
     for baseline in baselines:
         rid = baseline['rid']
-        if rid not in file_collection:
-            file_collection.update({rid: {}})
-            file_collection[rid].update({'bl': {}})
-            file_collection[rid]['bl'].update({'study': baseline['study']})
-            file_collection[rid]['bl'].update({'filename': baseline['filename']})
+        if rid not in file_dict:
+            file_dict.update({rid: {}})
+            file_dict[rid].update({'bl': {}})
+            file_dict[rid]['bl'].update({'study': baseline['study']})
+            file_dict[rid]['bl'].update({'filename': baseline['filename']})
 
             # Find followup file
             cur.execute("SELECT study, filename, viscode FROM adnimerge WHERE rid = " + str(rid) + " AND viscode != 'bl'")
             followups = cur.fetchall()
             for followup in followups:
                 followup_viscode = followup['viscode']
-                file_collection[rid].update({followup_viscode: {}})
-                file_collection[rid][followup_viscode].update({'study': followup['study']})
-                file_collection[rid][followup_viscode].update({'filename': followup['filename']})
+                file_dict[rid].update({followup_viscode: {}})
+                file_dict[rid][followup_viscode].update({'study': followup['study']})
+                file_dict[rid][followup_viscode].update({'filename': followup['filename']})
 
-    return file_collection
+    return file_dict
 
 
 ################################################################################
