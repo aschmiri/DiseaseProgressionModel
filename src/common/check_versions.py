@@ -19,7 +19,7 @@ if __name__ == "__main__":
         import scipy
         print 'SciPy:        ', scipy.__version__
     except:
-        print 'NumPy:         NOT INSTALLED'
+        print 'SciPy:         NOT INSTALLED'
 
     try:
         import matplotlib
