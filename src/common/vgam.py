@@ -874,7 +874,7 @@ def yeojohnson_density(y, lmbda, mu, sigma):
     ''' Return the probability of a value y given lambda, mu and sigma'''
     return (1 / sigma) * \
         _std_normal_dist((_yeojohnson(y, lmbda) - mu) / sigma) * \
-        np.power(np.abs(y) + 1, np.sign(y) * (lmbda - 1))
+        math.pow(math.fabs(y) + 1, math.copysign(1, y) * (lmbda - 1))
 
 
 ################################################################################
@@ -885,14 +885,14 @@ def yeojohnson_density(y, lmbda, mu, sigma):
 def _yeojohnson(y, lmbda):
     if y < 0:
         if lmbda == 2:
-            return -np.log(-y + 1)
+            return -math.log(-y + 1)
         else:
-            return -(np.power(-y + 1, 2 - lmbda) - 1) / (2 - lmbda)
+            return -(math.pow(-y + 1, 2 - lmbda) - 1) / (2 - lmbda)
     else:
         if lmbda == 0:
             return np.log(y + 1)
         else:
-            return (np.power(y + 1, lmbda) - 1) / lmbda
+            return (math.pow(y + 1, lmbda) - 1) / lmbda
 
 
 ################################################################################
@@ -901,4 +901,32 @@ def _yeojohnson(y, lmbda):
 #
 ################################################################################
 def _std_normal_dist(x):
-    return np.exp(-0.5 * np.square(x)) / np.sqrt(2 * np.pi)
+    return math.exp(-0.5 * x ** 2) / math.sqrt(2 * math.pi)
+
+
+################################################################################
+#
+# yeojohnson_quantile()
+#
+################################################################################
+def yeojohnson_quantile(lmbda, mu, sigma, q):
+    ''' Return the value of quantile q'''
+    return _yeojohnson_inverse(mu + sigma * q, lmbda)
+
+
+################################################################################
+#
+# _yeojohnson_inverse()
+#
+################################################################################
+def _yeojohnson_inverse(x, lmbda):
+    if x < 0:
+        if lmbda == 2:
+            return 1 - math.exp(-x)
+        else:
+            return 1 - math.pow(-(2 - lmbda) * x + 1, 1 / (2 - lmbda))
+    else:
+        if lmbda == 0:
+            return math.exp(x) - 1
+        else:
+            return math.pow(lmbda * x + 1, 1 / lmbda) - 1
