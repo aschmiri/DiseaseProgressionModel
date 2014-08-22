@@ -19,9 +19,10 @@ def main():
     parser = DataHandler.add_arguments(parser)
     parser.add_argument('-e', '--extrapolator', type=str, choices=['lin', 'sqrt', 'exp'], default='exp', help='the type of extrapolator')
     parser.add_argument('-p', '--no_points', action='store_true', default=False, help='do not plot points')
-    parser.add_argument('-m', '--no_mu', action='store_true', default=False, help='do not plot mu')
     parser.add_argument('-d', '--no_densities', action='store_true', default=False, help='do not plot densities')
-    parser.add_argument('-s', '--save_file', action='store_true', default=False, help='save the plots as a file')
+    parser.add_argument('--plot_mu', action='store_true', default=False, help='plot mu')
+    parser.add_argument('--plot_errors', action='store_true', default=False, help='plot th errors')
+    parser.add_argument('--save_file', action='store_true', default=False, help='save the plots as a file')
     args = parser.parse_args()
 
     data_handler = DataHandler(args)
@@ -87,14 +88,14 @@ def plot_model(args, data_handler, biomarker):
     max_val = np.max(max_vals)
 
     #
-    # Plot parameters
+    # Plot parameter mu
     #
-    if not args.no_mu:
+    if args.plot_mu:
         # Get second axis of plot 1
         ax1b = ax1.twinx()
 
         # Plot all progressions
-        ax1b.scatter(pm.all_progressions, pm.all_mus, marker='o', linewidths=0, alpha=0.2)
+        ax1b.scatter(pm.all_progressions, pm.all_mus, color='b', marker='o', linewidths=0, alpha=0.2)
         ax1b.text(pm.progressions[-1], pm.mus[-1], '$\mu$', color='b', fontsize=11)
 
         # Plot binned progressions
@@ -104,6 +105,22 @@ def plot_model(args, data_handler, biomarker):
         mus = [pm.get_mu(p) for p in progression_linspace]
         ax1b.plot(progression_linspace, mus, color='b')
         ax1b.set_xlim(min_progression_extra, max_progression_extra)
+
+    #
+    # Plot errors
+    #
+    if args.plot_errors:
+        eval_file = model_file.replace('.csv', '_eval.csv')
+        m = mlab.csv2rec(eval_file)
+        progressions = m['progression']
+        errors = m['error']
+
+        # Get second axis of plot 1
+        ax1b = ax1.twinx()
+        ax1b.set_ylim(0, max(150, 1.2 * np.max(errors)))
+        ax1b.plot(progressions, errors, color='g', marker='x')
+        ax1b.text(progressions[-1], errors[-1], 'Discr.', color='g', fontsize=11)
+        ax1b.axhline(np.mean(errors), color='g', linestyle='--', alpha=0.5)
 
     #
     # Plot points
