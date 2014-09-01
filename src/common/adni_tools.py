@@ -1,7 +1,7 @@
 #! /usr/bin/env python2.7
 import os.path
 import numpy as np
-import socket
+import sys
 import log
 
 ################################################################################
@@ -9,7 +9,7 @@ import log
 # global paths and variables
 #
 ################################################################################
-if socket.gethostname() == 'Schmiris-MacBook-Pro.local':
+if sys.platform == 'darwin':
     project_folder = '/Development/ageingatlas'
 else:
     project_folder = '/vol/medic01/users/aschmidt/projects/AgeingAtlas'
