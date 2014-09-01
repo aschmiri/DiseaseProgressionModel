@@ -31,10 +31,9 @@ def main():
 
 
 def plot_model(args, data_handler, biomarker):
-    samples_file = data_handler.get_samples_file(biomarker)
     model_file = data_handler.get_model_file(biomarker)
-    if not os.path.isfile(samples_file) or not os.path.isfile(model_file):
-        print log.ERROR, 'Files not available for {0}!'.format(biomarker)
+    if not os.path.isfile(model_file):
+        print log.ERROR, 'Model file not found: {0}'.format(model_file)
         return
 
     print log.INFO, 'Generating plot for {0}...'.format(biomarker)
@@ -50,7 +49,7 @@ def plot_model(args, data_handler, biomarker):
     #
     # Setup plot
     #
-    plt.figure(figsize=(12, 5), dpi=100)
+    fig = plt.figure(figsize=(12, 5), dpi=100)
     if not args.no_densities:
         ax1 = plt.subplot(1, 2, 1)
         ax2 = plt.subplot(1, 2, 2)
@@ -111,28 +110,35 @@ def plot_model(args, data_handler, biomarker):
     #
     if args.plot_errors:
         eval_file = model_file.replace('.csv', '_eval.csv')
-        m = mlab.csv2rec(eval_file)
-        progressions = m['progression']
-        errors = m['error']
+        if not os.path.isfile(eval_file):
+            log.ERROR, 'Evaluation file not found: {0}'.format(eval_file)
+        else:
+            m = mlab.csv2rec(eval_file)
+            progressions = m['progression']
+            errors = m['error']
 
-        # Get second axis of plot 1
-        ax1b = ax1.twinx()
-        ax1b.set_ylim(0, max(150, 1.2 * np.max(errors)))
-        ax1b.plot(progressions, errors, color='g', marker='x')
-        ax1b.text(progressions[-1], errors[-1], 'Discr.', color='g', fontsize=11)
-        ax1b.axhline(np.mean(errors), color='g', linestyle='--', alpha=0.5)
+            # Get second axis of plot 1
+            ax1b = ax1.twinx()
+            ax1b.set_ylim(0, max(150, 1.2 * np.max(errors)))
+            ax1b.plot(progressions, errors, color='g', marker='x')
+            ax1b.text(progressions[-1], errors[-1], 'Discr.', color='g', fontsize=11)
+            ax1b.axhline(np.mean(errors), color='g', linestyle='--', alpha=0.5)
 
     #
     # Plot points
     #
     if not args.no_points:
-        m = mlab.csv2rec(samples_file)
-        progr_points = m['progress']
-        value_points = m['value']
-        diagn_points = [0.5 if p < 0 else 1.0 for p in progr_points]
+        samples_file = data_handler.get_samples_file(biomarker)
+        if not os.path.isfile(samples_file):
+            log.ERROR, 'Samples file not found: {0}'.format(samples_file)
+        else:
+            m = mlab.csv2rec(samples_file)
+            progr_points = m['progress']
+            value_points = m['value']
+            diagn_points = [0.5 if p < 0 else 1.0 for p in progr_points]
 
-        print log.INFO, 'Plotting {0} sample points...'.format(len(progr_points))
-        ax1.scatter(progr_points, value_points, c=diagn_points, vmin=0.0, vmax=1.0, linewidths=0, cmap=aplt.progression_cmap, alpha=0.25)
+            print log.INFO, 'Plotting {0} sample points...'.format(len(progr_points))
+            ax1.scatter(progr_points, value_points, c=diagn_points, vmin=0.0, vmax=1.0, linewidths=0, cmap=aplt.progression_cmap, alpha=0.25)
 
     #
     # Plot PDFs
@@ -170,6 +176,7 @@ def plot_model(args, data_handler, biomarker):
         plt.savefig(plot_filename, dpi=100)
     else:
         plt.show()
+    plt.close(fig)
 
 if __name__ == '__main__':
     main()

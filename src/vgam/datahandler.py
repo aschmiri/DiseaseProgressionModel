@@ -24,7 +24,7 @@ class DataHandler(object):
     ############################################################################
     @staticmethod
     def add_arguments(parser):
-        parser.add_argument('method', choices=['cog', 'reg', 'long', 'cons', 'graph', 'mbl'])
+        parser.add_argument('method', choices=['cog', 'reg', 'long', 'cons', 'graph', 'mbl', 'all'])
         parser.add_argument('-i', '--iteration', type=int, default=0, help='the refinement iteration')
         parser.add_argument('-b', '--biomarker_name', default=None, help='name of the biomarker to be plotted')
         parser.add_argument('--trans', type=str, default='sym', help='the transformation model, e.g. ffd, svffd, sym, or ic (regbased only)')
@@ -48,13 +48,17 @@ class DataHandler(object):
         args.spacing -- the spacing if method == 'reg'
         '''
         # Set biomarker sets
+        if args is None:
+            self.__biomarker = None
+        else:
+            self.__biomarker = args.biomarker_name
         self.__biomarker_sets = {'cog': adni.cog_score_names,
                                  'reg': adni.volume_names,
                                  'long': adni.volume_names,
                                  'cons': adni.volume_names,
                                  'graph': adni.volume_names_essential,
                                  'mbl': adni.manifold_coordinate_names,
-                                 'all': adni.biomarker_names}
+                                 'all': adni.biomarker_names_essential}
 
         # Set data folders
         self.__model_folders = {'cog': os.path.join(adni.project_folder, 'models', 'cog'),
@@ -110,8 +114,9 @@ class DataHandler(object):
     ############################################################################
     def get_biomarker_set(self, method=None):
         ''' Get the right set of biomarkers for the given method.'''
-        if method is None:
-            method = self.__method
+        if self.__biomarker is not None:
+            return [self.__biomarker]
+        method = self.__method if method is None else method
         return self.__biomarker_sets[method]
 
     ############################################################################
@@ -121,8 +126,7 @@ class DataHandler(object):
     ############################################################################
     def get_data_file(self, method=None):
         ''' Get the right data file for the given method. '''
-        if method is None:
-            method = self.__method
+        method = self.__method if method is None else method
         return self.__data_files[method]
 
     ############################################################################
@@ -141,14 +145,8 @@ class DataHandler(object):
     ############################################################################
     def get_model_folder(self, method=None, previous_iteration=False):
         ''' Get the right data file for the given method and iteration. '''
-        if method is None:
-            method = self.__method
-
-        if previous_iteration:
-            iteration = self.__iteration - 1
-        else:
-            iteration = self.__iteration
-
+        method = self.__method if method is None else method
+        iteration = self.__iteration - 1 if previous_iteration else self.__iteration
         iteration_folder = 'it_{0}'.format(iteration)
         return adni.make_dir(self.__model_folders[method], iteration_folder)
 
@@ -159,11 +157,8 @@ class DataHandler(object):
     ############################################################################
     def get_model_folder_for_biomarker(self, biomarker, iteration=None):
         ''' Get the right data folders for the given biomarker. '''
-        if iteration is None:
-            iteration = self.__iteration
-
+        iteration = self.__iteration if iteration is None else iteration
         base_folder = self.__model_folders[self.__get_method_for_biomarker(biomarker)]
-
         iteration_folder = 'it_{0}'.format(iteration)
         return adni.make_dir(base_folder, iteration_folder)
 
@@ -174,8 +169,7 @@ class DataHandler(object):
     ############################################################################
     def get_model_file(self, biomarker, iteration=None):
         ''' Get the right model file for the given biomarker. '''
-        if iteration is None:
-            iteration = self.__iteration
+        iteration = self.__iteration if iteration is None else iteration
         model_folder = self.get_model_folder_for_biomarker(biomarker, iteration=iteration)
         return os.path.join(model_folder, biomarker.replace(' ', '_') + '_model.csv')
 
@@ -186,8 +180,7 @@ class DataHandler(object):
     ############################################################################
     def get_samples_file(self, biomarker, iteration=None):
         ''' Get the right model file for the given biomarker. '''
-        if iteration is None:
-            iteration = self.__iteration
+        iteration = self.__iteration if iteration is None else iteration
         model_folder = self.get_model_folder_for_biomarker(biomarker, iteration=iteration)
         return os.path.join(model_folder, biomarker.replace(' ', '_') + '_samples.csv')
 
@@ -249,8 +242,7 @@ class DataHandler(object):
     #
     ############################################################################
     def __ensure_complete_measurements(self, measurements, biomarkers=None):
-        if biomarkers is None:
-            biomarkers = self.get_biomarker_set()
+        biomarkers = self.get_biomarker_set() if biomarkers is None else biomarkers
 
         for rid, visit in measurements.items():
             drop_rid = False
@@ -400,9 +392,7 @@ class DataHandler(object):
         biomarker_names -- the biomarkers to be read
         no_regression -- do not perform age regression
         '''
-        if biomarkers is None:
-            biomarkers = self.get_biomarker_set()
-
+        biomarkers = self.get_biomarker_set() if biomarkers is None else biomarkers
         biomarker_values = self.__get_biomarker_values_as_dict(measurements, biomarkers=biomarkers, no_regression=no_regression)
 
         # Update metadata with feature values
@@ -438,8 +428,7 @@ class DataHandler(object):
                   { <viscode> : ... }
           <rid> : ... }
         '''
-        if biomarkers is None:
-            biomarkers = self.get_biomarker_set()
+        biomarkers = self.get_biomarker_set() if biomarkers is None else biomarkers
 
         NO_REGRESSION_STR = '{0} no regression'
         print log.INFO, 'Collecting biomarker values...'
@@ -529,12 +518,45 @@ class DataHandler(object):
 
     ############################################################################
     #
+    # get_mmse_decline_as_dict()
+    #
+    ############################################################################
+    def get_mmse_decline_as_dict(self):
+        ''' Return all a dictionary that indicates for each RID the MMSE decline
+        of the subject between baseline and m24 visits.
+
+        Arguments:
+        measurements -- the measurements as a dictionary
+
+        Returns:
+        A dictionary with the following structure:
+        { <rid> : <decline>
+          ... }
+        '''
+        measurements = self.__get_metadata_as_dict(select_converters=False)
+        measurements = self.update_measurements_with_biomarker_values(measurements, biomarkers=['MMSE'])
+
+        declines = {}
+        for rid in measurements:
+            try:
+                mmse_bl = measurements[rid]['bl']['MMSE']
+                mmse_24 = measurements[rid]['m24']['MMSE']
+                decline = mmse_bl - mmse_24
+                declines.update({rid: decline})
+            except Exception:
+                # TODO: debug message
+                pass
+
+        return declines
+
+    ############################################################################
+    #
     # get_rcd_as_dict()
     #
     ############################################################################
-    def get_rcd_as_dict(self, measurements):
+    def get_rcd_as_dict(self):
         ''' Return all a dictionary that indicates for each RID if the subject
-        is classified as RCD (rapid cognitive decline.
+        is classified as RCD (rapid cognitive decline).
 
         Arguments:
         measurements -- the measurements as a dictionary
@@ -544,14 +566,16 @@ class DataHandler(object):
         { <rid> : [True|False]
           ... }
         '''
+        measurements = self.__get_metadata_as_dict(select_converters=False)
+        measurements = self.update_measurements_with_biomarker_values(measurements, biomarkers=['MMSE'])
+
         rcds = {}
         for rid in measurements:
             try:
                 mmse_bl = measurements[rid]['bl']['MMSE']
                 mmse_24 = measurements[rid]['m24']['MMSE']
-                # rcd = True if (mmse_24 - mmse_bl) < -7 else False
-                decline = mmse_bl - mmse_24
-                rcds.update({rid: decline})
+                rcd = True if (mmse_24 - mmse_bl) < -7 else False
+                rcds.update({rid: rcd})
             except Exception:
                 # TODO: debug message
                 pass

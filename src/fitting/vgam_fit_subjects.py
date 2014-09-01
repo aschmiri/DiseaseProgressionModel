@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from common import log as log
 from common import adni_plot as aplt
+from common import adni_tools as adni
 from vgam.datahandler import DataHandler
 from vgam.progressionmodel import MultiBiomarkerProgressionModel
 from vgam.modelfitter import ModelFitter
@@ -16,9 +17,11 @@ def main():
 
     # Define parameters for test
     # biomarkers = ['MMSE', 'CDRSB', 'Right Amygdala', 'Left Amygdala', 'Right Lateral Ventricle', 'Left Lateral Ventricle']
-    # biomarkers = ['MMSE', 'P_D1D2']
+    # biomarkers = ['MMSE']
+    # biomarkers = ['MMSE', 'CDRSB', 'P_D1D2', 'D1', 'D3']
+    biomarkers = adni.manifold_coordinate_names
     # biomarkers = ['Right Amygdala', 'Left Amygdala', 'Right Lateral Ventricle', 'Left Lateral Ventricle', 'Right Hippocampus', 'Left Hippocampus']
-    biomarkers = ['Right Amygdala', 'Left Amygdala', 'Right Lateral Ventricle', 'Left Lateral Ventricle']
+    # biomarkers = ['Right Amygdala', 'Left Amygdala', 'Right Lateral Ventricle', 'Left Lateral Ventricle']
     # viscodes = ['bl']
     viscodes = ['bl', 'm12', 'm24']
 
@@ -36,8 +39,7 @@ def main():
     main_estimate_dpi(measurements, viscodes, fitter)
 
     # Get RCDs
-    # measurements = data_handler.update_measurements_with_biomarker_values(measurements, biomarkers=['MMSE'])
-    # rcds = data_handler.get_rcd_as_dict(measurements)
+    # rcds = data_handler.get_mmse_decline_as_dict()
     # main_estimate_dpi_dpr(measurements, viscodes, fitter, rcds)
     # main_evaluate_scalings(measurements, viscodes, fitter, rcds)
 
