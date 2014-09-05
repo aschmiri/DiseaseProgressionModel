@@ -171,15 +171,15 @@ class ProgressionModel(object):
                 return self.mus[1] - delta_m * math.sqrt((self.progressions[1] - progression) / delta_p)
             elif self.extrapolator == 'exp':
                 # Exponential:
-                index = int(math.floor(len(self.mus) / 2))
-                range_m = math.fabs(self.mus[index] - self.mus[0])
+                range_m = math.fabs(self.mus[0] - self.get_mu(0))
 
                 if delta_m > 0:
-                    # return self.mus[0] - 1 + math.exp(delta_m / delta_p * (progression - self.progressions[0]))
                     return self.mus[0] - range_m + range_m * math.exp(delta_m / (delta_p * range_m) * (progression - self.progressions[0]))
                 else:
-                    # return self.mus[0] + 1 - math.exp(-delta_m / delta_p * (progression - self.progressions[0]))
                     return self.mus[0] + range_m - range_m * math.exp(-delta_m / (delta_p * range_m) * (progression - self.progressions[0]))
+
+                # sig_m = math.copysign(1, delta_m)
+                # return self.mus[0] - sig_m * (range_m - range_m * math.exp(math.fabs(delta_m) / (delta_p * range_m) * (progression - self.progressions[0])))
             else:
                 print log.ERROR, 'Unknown extrapolator {0}!'.format(self.extrapolator)
                 return 0
@@ -196,15 +196,15 @@ class ProgressionModel(object):
                 return self.mus[-2] + delta_m * math.sqrt((progression - self.progressions[-2]) / delta_p)
             elif self.extrapolator == 'exp':
                 # Exponential:
-                index = int(math.ceil(len(self.mus) / 2))
-                range_m = math.fabs(self.mus[index] - self.mus[-1])
+                range_m = math.fabs(self.mus[-1] - self.get_mu(0))
 
                 if delta_m > 0:
-                    # return self.mus[-1] + 1 - math.exp(-delta_m / delta_p * (progression - self.progressions[-1]))
                     return self.mus[-1] + range_m - range_m * math.exp(-delta_m / (delta_p * range_m) * (progression - self.progressions[-1]))
                 else:
-                    # return self.mus[-1] - 1 + math.exp(delta_m / delta_p * (progression - self.progressions[-1]))
                     return self.mus[-1] - range_m + range_m * math.exp(delta_m / (delta_p * range_m) * (progression - self.progressions[-1]))
+
+                # sig_m = math.copysign(1, delta_m)
+                # return self.mus[-1] - sig_m * (-range_m + range_m * math.exp(math.fabs(delta_m) / (delta_p * range_m) * (self.progressions[-1] - progression)))
             else:
                 print log.ERROR, 'Unknown extrapolator!'
                 return 0
