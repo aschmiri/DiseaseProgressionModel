@@ -18,11 +18,16 @@ def main():
     parser = argparse.ArgumentParser()
     parser = DataHandler.add_arguments(parser)
     parser.add_argument('-e', '--extrapolator', type=str, choices=['lin', 'sqrt', 'exp'], default='exp', help='the type of extrapolator')
-    parser.add_argument('-p', '--no_points', action='store_true', default=False, help='do not plot points')
-    parser.add_argument('-d', '--no_densities', action='store_true', default=False, help='do not plot densities')
+    parser.add_argument('--no_model', action='store_true', default=False, help='do not plot the fitted model')
+    parser.add_argument('--no_points', action='store_true', default=False, help='do not plot points')
+    parser.add_argument('--no_densities', action='store_true', default=False, help='do not plot densities')
+    parser.add_argument('--no_sample_lines', action='store_true', default=False, help='do not plot the sample lines')
+    parser.add_argument('--only_densities', action='store_true', default=False, help='only plot densities')
+    parser.add_argument('--no_extrapolation', action='store_true', default=False, help='do not extrapolate the model')
     parser.add_argument('--plot_mu', action='store_true', default=False, help='plot mu')
     parser.add_argument('--plot_errors', action='store_true', default=False, help='plot th errors')
     parser.add_argument('--save_file', action='store_true', default=False, help='save the plots as a file')
+    parser.add_argument('--output_file', type=str, default=None, help='filename of the output file')
     args = parser.parse_args()
 
     data_handler = DataHandler(args)
@@ -42,73 +47,96 @@ def plot_model(args, data_handler, biomarker):
     # Read model
     #
     pm = ProgressionModel(biomarker, model_file, extrapolator=args.extrapolator)
-    min_progression_extra = pm.min_progression - 0.3 * (pm.max_progression - pm.min_progression)
-    max_progression_extra = pm.max_progression + 0.3 * (pm.max_progression - pm.min_progression)
-    progression_linspace = np.linspace(min_progression_extra, max_progression_extra, 100)
+    progression_extrapolate = 0.3 * (pm.max_progression - pm.min_progression)
+    min_progression_extrapolate = pm.min_progression - progression_extrapolate
+    max_progression_extrapolate = pm.max_progression + progression_extrapolate
+    progression_linspace_ex1 = np.linspace(min_progression_extrapolate, pm.min_progression, 20)
+    progression_linspace_int = np.linspace(pm.min_progression, pm.max_progression, 60)
+    progression_linspace_ex2 = np.linspace(pm.max_progression, max_progression_extrapolate, 20)
+
+    # Calc min and max val in interval [-1.5 sigma, +1.5 sigma]
+    progression_linspace = np.linspace(min_progression_extrapolate, max_progression_extrapolate, 100)
+    min_val = float('inf')
+    max_val = float('-inf')
+    for std in [-1.5, 2.5]:
+        curve = pm.get_quantile_curve(progression_linspace, std)
+        min_val = min(min_val, np.min(curve))
+        max_val = max(max_val, np.max(curve))
 
     #
     # Setup plot
     #
-    fig = plt.figure(figsize=(12, 5), dpi=100)
-    if not args.no_densities:
+    figwidth = 6 if args.no_densities or args.only_densities else 12
+    fig = plt.figure(figsize=(figwidth, 5))
+    if args.only_densities:
+        ax2 = plt.subplot(1, 1, 1)
+    elif args.no_densities:
+        ax1 = plt.subplot(1, 1, 1)
+    else:
         ax1 = plt.subplot(1, 2, 1)
         ax2 = plt.subplot(1, 2, 2)
-    else:
-        ax1 = plt.subplot(1, 1, 1)
 
-    ax1.set_title('Percentile curves for {0}'.format(biomarker))
-    ax1.set_xlabel('Disease progression relative to point of conversion')
-    ax1.set_ylabel('Volume' if biomarker in adni.volume_names else 'Score')
-    ax1.set_xlim(min_progression_extra, max_progression_extra)
-    ax1.legend([mpl.patches.Rectangle((0, 0), 1, 1, fc=(0.8, 0.8, 0.0), linewidth=0),
-                mpl.patches.Rectangle((0, 0), 1, 1, fc=(1.0, 0.0, 0.0), linewidth=0)],
-               ['MCI', 'AD'], fontsize=10)
+    if not args.only_densities:
+        ax1.set_title('Percentile curves for {0}'.format(biomarker))
+        ax1.set_xlabel('Disease progression relative to point of conversion')
+        ax1.set_ylabel('Volume' if biomarker in adni.volume_names else 'Score')
+        ax1.set_xlim(min_progression_extrapolate, max_progression_extrapolate)
+        ax1.legend([mpl.patches.Rectangle((0, 0), 1, 1, fc=(0.8, 0.8, 0.0), linewidth=0),
+                    mpl.patches.Rectangle((0, 0), 1, 1, fc=(1.0, 0.0, 0.0), linewidth=0)],
+                   ['MCI', 'AD'], fontsize=10)
 
     #
-    # Plot the percentile curves
+    # Plot the percentile curves of the fitted model
     #
-    ax1.axvline(pm.min_progression, color='0.15', linestyle=':', alpha=0.8)
-    ax1.axvline(pm.max_progression, color='0.15', linestyle=':', alpha=0.8)
+    if not args.no_model and not args.only_densities:
+        ax1.axvline(pm.min_progression, color='0.15', linestyle=':', alpha=0.8)
+        ax1.axvline(pm.max_progression, color='0.15', linestyle=':', alpha=0.8)
 
-    stds = [-1.5, -1.0, -0.5, 0, +0.5, +1.0, +1.5]
-    greyvals = ['0.45', '0.3', '0.15', '0', '0.15', '0.3', '0.45']
-    min_vals = []
-    max_vals = []
-    for (greyval, std) in zip(greyvals, stds):
-        curve = pm.get_quantile_curve(progression_linspace, std)
-        min_vals.append(np.min(curve))
-        max_vals.append(np.max(curve))
-        ax1.plot(progression_linspace, curve, color=greyval)
+        stds = [-1.5, -1.0, -0.5, 0, +0.5, +1.0, +1.5]
+        greyvals = ['0.45', '0.3', '0.15', '0', '0.15', '0.3', '0.45']
+        for greyval, std in zip(greyvals, stds):
+            curve_int = pm.get_quantile_curve(progression_linspace_int, std)
+            ax1.plot(progression_linspace_int, curve_int, color=greyval)
 
-        label = '${0} \sigma$'.format(std)
-        ax1.text(pm.progressions[-1], curve[-1], label, fontsize=11)
+            if not args.no_extrapolation:
+                curve_ex1 = pm.get_quantile_curve(progression_linspace_ex1, std)
+                curve_ex2 = pm.get_quantile_curve(progression_linspace_ex2, std)
+                ax1.plot(progression_linspace_ex1, curve_ex1, '--', color=greyval)
+                ax1.plot(progression_linspace_ex2, curve_ex2, '--', color=greyval)
 
-    min_val = np.min(min_vals)
-    max_val = np.max(max_vals)
+            # TODO: label = '${0} \sigma$'.format(std)
+            # ax1.text(pm.progressions[-1], curve_2[-1], label, fontsize=11)
 
     #
     # Plot parameter mu
     #
-    if args.plot_mu:
+    if args.plot_mu and not args.only_densities:
         # Get second axis of plot 1
         ax1b = ax1.twinx()
 
         # Plot all progressions
-        ax1b.scatter(pm.all_progressions, pm.all_mus, color='b', marker='o', linewidths=0, alpha=0.2)
+        ax1b.scatter(pm.all_progressions, pm.all_mus, facecolor='b', marker='o', edgecolor='none', alpha=0.2)
         ax1b.text(pm.progressions[-1], pm.mus[-1], '$\mu$', color='b', fontsize=11)
 
         # Plot binned progressions
         ax1b.scatter(pm.progressions, pm.mus, color='b', marker='x')
 
         # Plot interpolated model
-        mus = [pm.get_mu(p) for p in progression_linspace]
-        ax1b.plot(progression_linspace, mus, color='b')
-        ax1b.set_xlim(min_progression_extra, max_progression_extra)
+        mus = [pm.get_mu(p) for p in progression_linspace_int]
+        ax1b.plot(progression_linspace_int, mus, color='b')
+
+        if not args.no_extrapolation:
+            mus = [pm.get_mu(p) for p in progression_linspace_ex1]
+            ax1b.plot(progression_linspace_ex1, mus, '--', color='b')
+            mus = [pm.get_mu(p) for p in progression_linspace_ex2]
+            ax1b.plot(progression_linspace_ex2, mus, '--', color='b')
+
+        ax1b.set_xlim(min_progression_extrapolate, max_progression_extrapolate)
 
     #
     # Plot errors
     #
-    if args.plot_errors:
+    if args.plot_errors and not args.only_densities:
         eval_file = model_file.replace('.csv', '_eval.csv')
         if not os.path.isfile(eval_file):
             log.ERROR, 'Evaluation file not found: {0}'.format(eval_file)
@@ -127,7 +155,7 @@ def plot_model(args, data_handler, biomarker):
     #
     # Plot points
     #
-    if not args.no_points:
+    if not args.no_points and not args.only_densities:
         samples_file = data_handler.get_samples_file(biomarker)
         if not os.path.isfile(samples_file):
             log.ERROR, 'Samples file not found: {0}'.format(samples_file)
@@ -138,31 +166,37 @@ def plot_model(args, data_handler, biomarker):
             diagn_points = [0.5 if p < 0 else 1.0 for p in progr_points]
 
             print log.INFO, 'Plotting {0} sample points...'.format(len(progr_points))
-            ax1.scatter(progr_points, value_points, c=diagn_points, vmin=0.0, vmax=1.0, linewidths=0, cmap=aplt.progression_cmap, alpha=0.25)
+            ax1.scatter(progr_points, value_points, c=diagn_points, edgecolor='none',
+                        vmin=0.0, vmax=1.0, cmap=aplt.progression_cmap, alpha=0.25)
 
     #
     # Plot PDFs
     #
+    progr_samples = [-2000, -1500, -1000, -500, 0, 500, 1000, 1500, 2000]
+    sample_cmap = cmx.ScalarMappable(
+        norm=colors.Normalize(vmin=-len(progr_samples) + 1, vmax=(len(progr_samples) - 1)),
+        cmap=plt.get_cmap(aplt.progression_cmap))
+
+    if not args.no_sample_lines and not args.only_densities:
+        for progr in progr_samples:
+            if not args.no_extrapolation or (progr > pm.min_progression and progr < pm.max_progression):
+                sample_color = sample_cmap.to_rgba(progr_samples.index(progr))
+                linestyle = '--' if progr < pm.min_progression or progr > pm.max_progression else '-'
+                ax1.axvline(progr, color=sample_color, linestyle=linestyle, alpha=0.3)
+
     if not args.no_densities:
         ax2.set_title('Probability density function for {0}'.format(biomarker))
         ax2.set_xlabel('Volume' if biomarker in adni.volume_names else 'Score')
         ax2.set_ylabel('Probability')
 
         values = np.linspace(min_val, max_val, 250)
-        progr_samples = [-2000, -1500, -1000, -500, 0, 500, 1000, 1500, 2000]
-
-        sample_cmap = cmx.ScalarMappable(
-            norm=colors.Normalize(vmin=-len(progr_samples) + 1, vmax=(len(progr_samples) - 1)),
-            cmap=plt.get_cmap(aplt.progression_cmap))
-
         for progr in progr_samples:
-            sample_color = sample_cmap.to_rgba(progr_samples.index(progr))
-            ax1.axvline(progr, color=sample_color, linestyle='--', alpha=0.3)
-            ax2.set_xlim(min_val, max_val)
-
-            linestyle = '--' if progr < pm.min_progression or progr > pm.max_progression else '-'
-            probs = pm.get_density_distribution(values, progr)
-            ax2.plot(values, probs, label=str(progr), color=sample_color, linestyle=linestyle)
+            if not args.no_extrapolation or (progr > pm.min_progression and progr < pm.max_progression):
+                sample_color = sample_cmap.to_rgba(progr_samples.index(progr))
+                linestyle = '--' if progr < pm.min_progression or progr > pm.max_progression else '-'
+                probs = pm.get_density_distribution(values, progr)
+                ax2.set_xlim(min_val, max_val)
+                ax2.plot(values, probs, label=str(progr), color=sample_color, linestyle=linestyle)
 
         handles2, labels2 = ax2.get_legend_handles_labels()
         ax2.legend(handles2, labels2, fontsize=10)
@@ -171,8 +205,11 @@ def plot_model(args, data_handler, biomarker):
     # Draw or save the plot
     #
     plt.tight_layout()
-    if args.save_file:
-        plot_filename = model_file.replace('.csv', '.pdf')
+    if args.save_file or args.output_file is not None:
+        if args.output_file is not None:
+            plot_filename = args.output_file
+        else:
+            model_file.replace('.csv', '.pdf')
         plt.savefig(plot_filename, dpi=100)
     else:
         plt.show()
