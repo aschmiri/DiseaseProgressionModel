@@ -14,8 +14,6 @@ if (length(args) == 0) {
 print(input_file)
 print(output_file)
 print(degrees_of_freedom)
-print(plot_file)
-print(densities_file)
 
 library(VGAM)
 
@@ -50,6 +48,8 @@ df <- write.csv(fit_frame, file = output_file)
 # Save probability densities to csv file
 #
 if (exists(densities_file)) {
+	print(densities_file)
+	
 	min_progression <- min(table[,1])
 	max_progression <- max(table[,1])
 	progression_step <- 10
@@ -71,6 +71,8 @@ if (exists(densities_file)) {
 # Save plot
 #
 if (exists(plot_file)) {
+	print(plot_file)
+	
 	w <- 12
 	h <- 8
 	if (save_plot == 0) {
