@@ -26,7 +26,7 @@ def main():
     viscodes = ['bl', 'm12', 'm24']
 
     # Collect data for test
-    data_handler = DataHandler(iteration=args.iteration)
+    data_handler = DataHandler.get_data_handler(args)
     measurements = data_handler.get_measurements_as_dict(biomarkers=biomarkers, complete=True)
 
     # Setup model

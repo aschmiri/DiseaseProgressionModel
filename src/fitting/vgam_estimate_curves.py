@@ -20,7 +20,7 @@ def main():
     args = parser.parse_args()
 
     # Get the data files and biomarkers
-    data_handler = DataHandler(args)
+    data_handler = DataHandler.get_data_handler(args)
 
     # Estimate curves
     generate_csv_files(args, data_handler)

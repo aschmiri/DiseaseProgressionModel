@@ -12,6 +12,7 @@ from common import adni_tools as adni
 from common import adni_plot as aplt
 from vgam.progressionmodel import ProgressionModel
 from vgam.datahandler import DataHandler
+from vgam.synthmodel import SynthModel
 
 
 def main():
@@ -25,12 +26,13 @@ def main():
     parser.add_argument('--only_densities', action='store_true', default=False, help='only plot densities')
     parser.add_argument('--no_extrapolation', action='store_true', default=False, help='do not extrapolate the model')
     parser.add_argument('--plot_mu', action='store_true', default=False, help='plot mu')
-    parser.add_argument('--plot_errors', action='store_true', default=False, help='plot th errors')
+    parser.add_argument('--plot_errors', action='store_true', default=False, help='plot the errors')
+    parser.add_argument('--plot_synth_model', action='store_true', default=False, help='plot density distributions for synthetic data')
     parser.add_argument('--save_file', action='store_true', default=False, help='save the plots as a file')
     parser.add_argument('--output_file', type=str, default=None, help='filename of the output file')
     args = parser.parse_args()
 
-    data_handler = DataHandler(args)
+    data_handler = DataHandler.get_data_handler(args)
     for biomarker in data_handler.get_biomarker_set():
         plot_model(args, data_handler, biomarker)
 
@@ -42,6 +44,7 @@ def plot_model(args, data_handler, biomarker):
         return
 
     print log.INFO, 'Generating plot for {0}...'.format(biomarker)
+    plot_synth_model = args.plot_synth_model and biomarker in SynthModel.get_biomarker_names()
 
     #
     # Read model
@@ -106,6 +109,10 @@ def plot_model(args, data_handler, biomarker):
 
             # TODO: label = '${0} \sigma$'.format(std)
             # ax1.text(pm.progressions[-1], curve_2[-1], label, fontsize=11)
+
+            if plot_synth_model:
+                curve_synth = [SynthModel.get_value(biomarker, p) for p in progression_linspace_int]
+                ax1.plot(progression_linspace_int, curve_synth, color='b')
 
     #
     # Plot parameter mu
@@ -197,6 +204,10 @@ def plot_model(args, data_handler, biomarker):
                 probs = pm.get_density_distribution(values, progr)
                 ax2.set_xlim(min_val, max_val)
                 ax2.plot(values, probs, label=str(progr), color=sample_color, linestyle=linestyle)
+
+                if plot_synth_model:
+                    probs = [SynthModel.get_probability(biomarker, progr, v) for v in values]
+                    ax2.plot(values, probs, color='b', linestyle='--')
 
         handles2, labels2 = ax2.get_legend_handles_labels()
         ax2.legend(handles2, labels2, fontsize=10)

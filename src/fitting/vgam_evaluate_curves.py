@@ -22,7 +22,7 @@ def main():
     args = parser.parse_args()
 
     # Collect data for test
-    data_handler = DataHandler(args)
+    data_handler = DataHandler.get_data_handler(args)
 
     # Compute error for each biomarker
     biomarkers = data_handler.get_biomarker_set()
