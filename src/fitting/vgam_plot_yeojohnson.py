@@ -4,7 +4,7 @@ A small program to plot the Yeo-Johnson transformation [1] and the corresponding
 probability density function.
 
 [1] I.-K. Yeo and R. A. Johnson, "A new family of power transformations to improve
-normality or symmetry," Biometrika, vol. 87, no. 4, pp. 954–959, Dec. 2000.
+normality or symmetry," Biometrika, vol. 87, no. 4, pp. 954-959, Dec. 2000.
 
 @author:     Alexander Schmidt-Richberg
 @copyright:  2014 Imperial College London. All rights reserved.
@@ -24,8 +24,8 @@ def main():
     plt.subplot(1, 2, 1)
     # plt.xlim(-2, 6)
     plt.ylim(-10, 30)
-    plt.xlabel('Response $b$')
-    plt.ylabel('Yeo-Johnson transformation $\psi(b,\lambda)$')
+    plt.xlabel('Response $y$')
+    plt.ylabel('Yeo-Johnson transformation $\psi(y,\lambda)$')
     plt.axhline(0, color='k')
     plt.axvline(0, color='k')
     Y = np.arange(-5, 10, 0.01)
@@ -35,8 +35,8 @@ def main():
     plt.subplot(1, 2, 2)
     plt.xlim(-2, 6)
     # plt.ylim(-0.01, 1)
-    plt.xlabel('Response $b$')
-    plt.ylabel('Probability $g_B(b)$')
+    plt.xlabel('Response $y$')
+    plt.ylabel('Probability $g_Y(y)$')
     plt.axhline(0, color='k')
     plt.axvline(0, color='k')
     Y = np.arange(-5, 10, 0.01)
