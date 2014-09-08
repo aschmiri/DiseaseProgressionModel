@@ -14,7 +14,7 @@ from vgam.modelfitter import ModelFitter
 def main():
     parser = argparse.ArgumentParser(description='Estimate model curves for biomarkers using VGAM.')
     parser = DataHandler.add_arguments(parser)
-    parser.add_argument('-n', '--nr_threads', type=int, default=4, help='number of threads')
+    parser.add_argument('-n', '--nr_threads', type=int, default=1, help='number of threads')
     parser.add_argument('-d', '--degrees_of_freedom', type=int, default=2, help='degrees of freedom for the LMS method')
     parser.add_argument('--no_regression', action='store_true', default=False, help='do not perform age regression of biomarker values')
     args = parser.parse_args()
