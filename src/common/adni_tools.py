@@ -18,6 +18,7 @@ else:
     mni_folder = '/vol/medic01/users/aschmidt/projects/Data/mni_icbm152_nlin_asym_09a'
     mni_atlas = os.path.join(mni_folder, 'mni_icbm152_t1_tal_nlin_asym_09a_brain_scaled.nii')
 
+eval_folder = os.path.join(project_folder, 'eval')
 param_folder = os.path.join(project_folder, 'parameters')
 query_list = os.path.join(project_folder, 'lists/query_ADNI.csv')
 
