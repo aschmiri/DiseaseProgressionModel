@@ -20,22 +20,22 @@ class SynthModel(object):
                                'slope': 0.0005,
                                'offset': 0,
                                'noise': 'gaussian',
-                               'noise_std': 0.5}})
+                               'gaussian_std': 0.5}})
     _models.update({'synth2': {'shape': 'exp',
                                'slope': 0.0005,
                                'offset': 0,
                                'noise': 'gaussian',
-                               'noise_std': 1.0}})
+                               'gaussian_std': 1.0}})
     _models.update({'synth3': {'shape': 'exp',
-                               'slope': 0.001,
-                               'offset': 1000,
-                               'noise': 'gaussian',
-                               'noise_std': 0.5}})
-    _models.update({'synth4': {'shape': 'exp',
-                               'slope': 0.001,
-                               'offset': 1000,
-                               'noise': 'gaussian',
-                               'noise_std': 1.0}})
+                               'slope': 0.0005,
+                               'offset': (-1000),
+                               'noise': 'gamma',
+                               'gamma_alpha': 10}})
+    _models.update({'synth4': {'shape': 'lin',
+                               'slope': 0.0012,
+                               'offset': (-3000),
+                               'noise': 'gamma',
+                               'gamma_alpha': 10}})
 
     ############################################################################
     #
@@ -60,56 +60,61 @@ class SynthModel(object):
     #
     ############################################################################
     @staticmethod
-    def get_random_progress(uniform_progress=False):
-        if uniform_progress:
-            return random.randint(-SynthModel.PROGRESS_RANGE, SynthModel.PROGRESS_RANGE)
+    def get_random_progress(uniform_progression=False):
+        if uniform_progression:
+            return int(random.uniform(-SynthModel.PROGRESS_RANGE, SynthModel.PROGRESS_RANGE))
         else:
-            vol = random.random()
-            if vol < 0.5:
-                return int(-SynthModel.PROGRESS_RANGE * (1 - math.sqrt(2 * vol)))
-            else:
-                return int(SynthModel.PROGRESS_RANGE * (1 - math.sqrt(2 * (1 - vol))))
+            return int(random.triangular(-SynthModel.PROGRESS_RANGE, SynthModel.PROGRESS_RANGE, 0))
 
     ############################################################################
     #
-    # get_noisy_value()
+    # get_distributed_value()
     #
     ############################################################################
     @staticmethod
-    def get_noisy_value(biomarker, progress):
-        return SynthModel.get_value(biomarker, progress) + SynthModel.get_noise(biomarker)
+    def get_distributed_value(biomarker, progress):
+        if SynthModel._models[biomarker]['noise'] == 'gaussian':
+            median = SynthModel.get_median(biomarker, progress)
+            std = SynthModel._models[biomarker]['gaussian_std']
+            return median + random.gauss(0, std)
+        elif SynthModel._models[biomarker]['noise'] == 'gamma':
+            alpha = SynthModel._models[biomarker]['gamma_alpha']
+            median = SynthModel.get_median(biomarker, progress)
+            beta = median / alpha * (3 * alpha + 0.2) / (3 * alpha - 0.8)
+            return random.gammavariate(alpha, beta)
 
     ############################################################################
     #
-    # get_value()
+    # get_median()
     #
     ############################################################################
     @staticmethod
-    def get_value(biomarker, progress):
-        if SynthModel._models[biomarker]['shape'] == 'exp':
+    def get_median(biomarker, progress):
+        if SynthModel._models[biomarker]['shape'] == 'lin':
+            slope = SynthModel._models[biomarker]['slope']
+            offset = SynthModel._models[biomarker]['offset']
+            return slope * (progress - offset)
+        elif SynthModel._models[biomarker]['shape'] == 'exp':
             slope = SynthModel._models[biomarker]['slope']
             offset = SynthModel._models[biomarker]['offset']
             return np.exp(slope * (progress - offset))
 
     ############################################################################
     #
-    # get_random_value()
-    #
-    ############################################################################
-    @staticmethod
-    def get_noise(biomarker):
-        if SynthModel._models[biomarker]['noise'] == 'gaussian':
-            std = SynthModel._models[biomarker]['noise_std']
-            return random.gauss(0, std)
-
-    ############################################################################
-    #
-    # get_random_value()
+    # get_probability()
     #
     ############################################################################
     @staticmethod
     def get_probability(biomarker, progress, value):
         if SynthModel._models[biomarker]['noise'] == 'gaussian':
-            std = SynthModel._models[biomarker]['noise_std']
-            offset = value - SynthModel.get_value(biomarker, progress)
-            return np.exp(-0.5 * (offset / std) ** 2) / (std * math.sqrt(2 * math.pi))
+            x = value - SynthModel.get_median(biomarker, progress)
+            std = SynthModel._models[biomarker]['gaussian_std']
+            return np.exp(-0.5 * (x / std) ** 2) / (std * math.sqrt(2 * math.pi))
+        elif SynthModel._models[biomarker]['noise'] == 'gamma':
+            if value < 0:
+                return 0
+            else:
+                alpha = SynthModel._models[biomarker]['gamma_alpha']
+                median = SynthModel.get_median(biomarker, progress)
+                beta = median / alpha * (3 * alpha + 0.2) / (3 * alpha - 0.8)
+                return (value ** (alpha - 1) * math.exp(-value / beta)) / (math.gamma(alpha) * beta ** alpha)
