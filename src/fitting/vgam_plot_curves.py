@@ -61,7 +61,7 @@ def plot_model(args, data_handler, biomarker):
     progression_linspace = np.linspace(min_progression_extrapolate, max_progression_extrapolate, 100)
     min_val = float('inf')
     max_val = float('-inf')
-    for std in [-1.5, 2.5]:
+    for std in [-1.0, 1.0]:
         curve = pm.get_quantile_curve(progression_linspace, std)
         min_val = min(min_val, np.min(curve))
         max_val = max(max_val, np.max(curve))
@@ -110,9 +110,10 @@ def plot_model(args, data_handler, biomarker):
             # TODO: label = '${0} \sigma$'.format(std)
             # ax1.text(pm.progressions[-1], curve_2[-1], label, fontsize=11)
 
-            if plot_synth_model:
-                curve_synth = [SynthModel.get_value(biomarker, p) for p in progression_linspace_int]
-                ax1.plot(progression_linspace_int, curve_synth, color='b')
+        # Plot synthetic model curve
+        if plot_synth_model:
+            curve_synth = [SynthModel.get_median(biomarker, p) for p in progression_linspace_int]
+            ax1.plot(progression_linspace_int, curve_synth, color='b')
 
     #
     # Plot parameter mu
