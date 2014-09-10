@@ -16,6 +16,11 @@ class SynthModel(object):
     '''
     PROGRESS_RANGE = 2000
     _models = {}
+    _models.update({'synth0': {'shape': 'exp',
+                               'slope': 0.0005,
+                               'offset': 0,
+                               'noise': 'gaussian',
+                               'gaussian_std': 0.1}})
     _models.update({'synth1': {'shape': 'exp',
                                'slope': 0.0005,
                                'offset': 0,
