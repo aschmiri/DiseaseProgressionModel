@@ -612,10 +612,12 @@ class SynthDataHandler(DataHandler):
 
         Arguments:
         args -- command line arguments with:
-        args.iteration -- the iteration of the fitting
         '''
         # Set biomarker sets
-        self._single_biomarker = None
+        if args is None:
+            self._single_biomarker = None
+        else:
+            self._single_biomarker = args.biomarker_name
         self._biomarker_sets = {'synth': SynthModel.get_biomarker_names()}
 
         # Set data folders
@@ -632,8 +634,6 @@ class SynthDataHandler(DataHandler):
         # Set iteration
         if iteration is not None:
             self._iteration = iteration
-        elif args is not None:
-            self._iteration = args.iteration
         else:
             self._iteration = 0
 
