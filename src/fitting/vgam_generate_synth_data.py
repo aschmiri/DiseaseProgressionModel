@@ -4,6 +4,7 @@ import argparse
 import csv
 from common import log as log
 from common import adni_tools as adni
+from vgam.datahandler import SynthDataHandler
 from vgam.synthmodel import SynthModel
 
 
@@ -15,6 +16,7 @@ EXEC_REMOVE = 'rm'
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('-b', '--biomarker_name', default=None, help='name of the biomarker to be plotted')
     parser.add_argument('-n', '--number_of_subjects', type=int, default=400, help='the number of subjects in the synthetic sample pool')
     parser.add_argument('-u', '--uniform_progression', action='store_true', help='use an uniform progression distribution')
     args = parser.parse_args()
@@ -23,7 +25,8 @@ def main():
     out_file = os.path.join(adni.project_folder, 'lists/synthdata.csv')
 
     # Determine structures to segment
-    biomarkers = SynthModel.get_biomarker_names()
+    data_handler = SynthDataHandler(args)
+    biomarkers = data_handler.get_biomarker_set()
 
     # Estimate volumes
     with open(out_file, 'wb') as csvfile:
