@@ -27,7 +27,7 @@ class DataHandler(object):
     def add_arguments(parser):
         parser.add_argument('method', choices=['cog', 'reg', 'long', 'cons', 'graph', 'mbl', 'synth', 'all'])
         parser.add_argument('-i', '--iteration', type=int, default=0, help='the refinement iteration')
-        parser.add_argument('-b', '--biomarker_name', default=None, help='name of the biomarker to be plotted')
+        parser.add_argument('-b', '--biomarkers_name', nargs='+', default=None, help='name of the biomarker to be plotted')
         parser.add_argument('--trans', type=str, default='sym', help='the transformation model, e.g. ffd, svffd, sym, or ic (regbased only)')
         parser.add_argument('--spacing', type=str, default='5', help='the transformation spacing (regbased only)')
         return parser
@@ -62,9 +62,9 @@ class DataHandler(object):
         '''
         # Set biomarker sets
         if args is None:
-            self._single_biomarker = None
+            self._biomarker_subset = None
         else:
-            self._single_biomarker = args.biomarker_name
+            self._biomarker_subset = args.biomarkers_name
         self._biomarker_sets = {'cog': adni.cog_score_names,
                                 'reg': adni.volume_names,
                                 'long': adni.volume_names,
@@ -127,8 +127,8 @@ class DataHandler(object):
     ############################################################################
     def get_biomarker_set(self, method=None):
         ''' Get the right set of biomarkers for the given method.'''
-        if self._single_biomarker is not None:
-            return [self._single_biomarker]
+        if self._biomarker_subset is not None:
+            return self._biomarker_subset
         method = self._method if method is None else method
         return self._biomarker_sets[method]
 
@@ -615,9 +615,9 @@ class SynthDataHandler(DataHandler):
         '''
         # Set biomarker sets
         if args is None:
-            self._single_biomarker = None
+            self._biomarker_subset = None
         else:
-            self._single_biomarker = args.biomarker_name
+            self._biomarker_subset = args.biomarkers_name
         self._biomarker_sets = {'synth': SynthModel.get_biomarker_names()}
 
         # Set data folders
@@ -636,6 +636,32 @@ class SynthDataHandler(DataHandler):
             self._iteration = iteration
         else:
             self._iteration = 0
+
+    ############################################################################
+    #
+    # get_model_file()
+    #
+    ############################################################################
+    def get_model_file(self, biomarker, iteration=None, num_samples=None, sampling=None, run=None):
+        ''' Get the right model file for the given biomarker. '''
+        model_file = DataHandler.get_model_file(self, biomarker, iteration=iteration)
+        num_samples_str = '_{0}'.format(num_samples) if num_samples is not None else ''
+        sampling_str = '_{0}'.format(sampling) if sampling is not None else ''
+        run_str = '_{0}'.format(run) if run is not None else ''
+        return model_file.replace('.csv', '{0}{1}{2}.csv'.format(num_samples_str, sampling_str, run_str))
+
+    ############################################################################
+    #
+    # get_samples_file()
+    #
+    ############################################################################
+    def get_samples_file(self, biomarker, iteration=None, num_samples=None, sampling=None, run=None):
+        ''' Get the right model file for the given biomarker. '''
+        samples_file = DataHandler.get_samples_file(self, biomarker, iteration=iteration)
+        num_samples_str = '_{0}'.format(num_samples) if num_samples is not None else ''
+        sampling_str = '_{0}'.format(sampling) if sampling is not None else ''
+        run_str = '_{0}'.format(run) if run is not None else ''
+        return samples_file.replace('.csv', '{0}{1}{2}.csv'.format(num_samples_str, sampling_str, run_str))
 
     ############################################################################
     #

@@ -2,8 +2,8 @@
 import os.path
 import argparse
 import pickle
-import numpy as np
 from subprocess import call
+import numpy as np
 import matplotlib.pyplot as plt
 from common import log as log
 from common import adni_tools as adni
@@ -14,7 +14,7 @@ from vgam.progressionmodel import ProgressionModel
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-b', '--biomarker_name', default=None, help='name of the biomarker to be plotted')
+    parser.add_argument('-b', '--biomarkers_name', nargs='+', default=None, help='name of the biomarkers to be evaluated')
     parser.add_argument('--recompute_errors', action='store_true', help='recompute the errors of the models')
     parser.add_argument('--recompute_models', action='store_true', help='recompute the models with new samples')
     parser.add_argument('--experiment_range', type=int, nargs=3, default=[100, 2000, 100], help='the range for the number of samples tested')
@@ -26,17 +26,12 @@ def main():
 
     data_handler = SynthDataHandler(args)
 
-    if args.recompute_errors:
-        errors = compute_errors(args, data_handler)
-        save_errors(args, errors)
-    else:
-        errors = read_errors(args)
-
+    errors = get_errors(args, data_handler)
     plot_errors(args, data_handler, errors)
     analyse_errors(args, data_handler, errors)
 
 
-def compute_errors(args, data_handler):
+def get_errors(args, data_handler):
     errors = {}
     for biomarker in data_handler.get_biomarker_set():
         errors.update({biomarker: {}})
@@ -55,30 +50,36 @@ def evaluate_experiment(args, data_handler, biomarker, sampling, num_samples):
 
     errors_experiment = []
     for run in xrange(args.number_of_runs):
-        model_file = generate_models(args, data_handler, biomarker, sampling, num_samples, run)
-        errors_experiment.append(evaluate_model(args, model_file, biomarker))
+        model_file = data_handler.get_model_file(biomarker, num_samples=num_samples, sampling=sampling, run=run)
+        error_file = model_file.replace('.csv', '.p')
+
+        if os.path.isfile(error_file) and not args.recompute_errors:
+            print log.SKIP, 'Skipping error computation for {0} samples {1}, run {2}'.format(num_samples, sampling, run)
+            error_experiment = pickle.load(open(error_file, 'rb'))
+        else:
+            if os.path.isfile(model_file) and not args.recompute_models:
+                print log.SKIP, 'Skipping model generation for {0} samples {1}, run {2}'.format(num_samples, sampling, run)
+            else:
+                generate_model(args, data_handler, biomarker, sampling, num_samples, run)
+            error_experiment = evaluate_model(args, model_file, biomarker)
+            pickle.dump(error_experiment, open(error_file, 'wb'))
+        errors_experiment.append(error_experiment)
 
     return errors_experiment
 
 
-def generate_models(args, data_handler, biomarker, sampling, num_samples, run):
-    experiment_ending = '_{0}_{1}_{2}.csv'.format(num_samples, sampling, run)
+def generate_model(args, data_handler, biomarker, sampling, num_samples, run):
     model_file = data_handler.get_model_file(biomarker)
-    model_file_experiment = model_file.replace('.csv', experiment_ending)
+    model_file_experiment = data_handler.get_model_file(biomarker, num_samples=num_samples, sampling=sampling, run=run)
     samples_file = data_handler.get_samples_file(biomarker)
-    samples_file_experiment = samples_file.replace('.csv', experiment_ending)
+    samples_file_experiment = data_handler.get_samples_file(biomarker, num_samples=num_samples, sampling=sampling, run=run)
 
-    if os.path.isfile(model_file_experiment) and os.path.isfile(samples_file_experiment) and not args.recompute_models:
-        print log.SKIP, 'Skipping model generation for {0} samples {1}, run {2}'.format(num_samples, sampling, run)
-    else:
-        exec_folder = os.path.join(adni.project_folder, 'src', 'fitting')
-        sampling_arg = '--uniform_progression' if sampling == 'uniform' else ''
-        call('{0}/vgam_generate_synth_data.py -b {1} -n {2} {3}'.format(exec_folder, biomarker, num_samples, sampling_arg), shell=True)
-        call('{0}/vgam_estimate_curves.py synth -b {1}'.format(exec_folder, biomarker), shell=True)
-        call(['mv', model_file, model_file_experiment])
-        call(['mv', samples_file, samples_file_experiment])
-
-    return model_file_experiment
+    exec_folder = os.path.join(adni.project_folder, 'src', 'fitting')
+    sampling_arg = '--uniform_progression' if sampling == 'uniform' else ''
+    call('{0}/vgam_generate_synth_data.py -b {1} -n {2} {3}'.format(exec_folder, biomarker, num_samples, sampling_arg), shell=True)
+    call('{0}/vgam_estimate_curves.py synth -b {1}'.format(exec_folder, biomarker), shell=True)
+    call(['mv', model_file, model_file_experiment])
+    call(['mv', samples_file, samples_file_experiment])
 
 
 def evaluate_model(args, model_file, biomarker):
@@ -107,24 +108,6 @@ def evaluate_model(args, model_file, biomarker):
     error *= (values[1] - values[0]) / len(progressions)
 
     return error
-
-
-def read_errors(args):
-    if args.biomarker_name is None:
-        file_name = 'eval_synth_model.p'
-    else:
-        file_name = 'eval_synth_model_{0}.p'.format(args.biomarker_name)
-    evaluation_file = os.path.join(adni.eval_folder, file_name)
-    return pickle.load(open(evaluation_file, 'rb'))
-
-
-def save_errors(args, errors):
-    if args.biomarker_name is None:
-        file_name = 'eval_synth_model.p'
-    else:
-        file_name = 'eval_synth_model_{0}.p'.format(args.biomarker_name)
-    evaluation_file = os.path.join(adni.eval_folder, file_name)
-    pickle.dump(errors, open(evaluation_file, 'wb'))
 
 
 def plot_errors(args, data_handler, errors):

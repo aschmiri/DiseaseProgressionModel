@@ -52,6 +52,13 @@ class SynthModel(object):
                                'offset': (-3000),
                                'noise': 'gamma',
                                'gamma_alpha': 10}})
+    _models.update({'synth5': {'shape': 'sigmoid',
+                               'slope': (-0.001),
+                               'min': 0,
+                               'max': 20,
+                               'offset': 300,
+                               'noise': 'gaussian',
+                               'gaussian_std': 2.0}})
 
     ############################################################################
     #
@@ -114,6 +121,12 @@ class SynthModel(object):
             slope = SynthModel._models[biomarker]['slope']
             offset = SynthModel._models[biomarker]['offset']
             return np.exp(slope * (progress - offset))
+        elif SynthModel._models[biomarker]['shape'] == 'sigmoid':
+            slope = SynthModel._models[biomarker]['slope']
+            offset = SynthModel._models[biomarker]['offset']
+            min_val = SynthModel._models[biomarker]['min']
+            max_val = SynthModel._models[biomarker]['max']
+            return min_val + (max_val - min_val) / (1.0 + np.exp(slope * (progress - offset)))
 
     ############################################################################
     #

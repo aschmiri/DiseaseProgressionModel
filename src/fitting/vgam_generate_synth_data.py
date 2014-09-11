@@ -16,7 +16,7 @@ EXEC_REMOVE = 'rm'
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-b', '--biomarker_name', default=None, help='name of the biomarker to be plotted')
+    parser.add_argument('-b', '--biomarkers_name', default=None, nargs='+', help='name of the biomarkers for which data is to be generated')
     parser.add_argument('-n', '--number_of_subjects', type=int, default=400, help='the number of subjects in the synthetic sample pool')
     parser.add_argument('-u', '--uniform_progression', action='store_true', help='use an uniform progression distribution')
     args = parser.parse_args()
