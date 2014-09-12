@@ -138,7 +138,6 @@ def plot_errors(args, data_handler, errors):
                          linestyle=linestyle[sampling], color=color[biomarker],
                          label='{0} {1}'.format(biomarker, sampling))
 
-    plt.xlim(90, 1010)
     plt.legend()
     plt.show()
 
