@@ -35,7 +35,7 @@ def get_errors(args, data_handler):
     errors = {}
     for biomarker in data_handler.get_biomarker_set():
         errors.update({biomarker: {}})
-        for sampling in ['triangular', 'uniform']:
+        for sampling in ['triangular', 'uniform', 'longitudinal']:
             errors[biomarker].update({sampling: {}})
             for num_samples in xrange(args.experiment_range[0],
                                       args.experiment_range[1],
@@ -75,11 +75,15 @@ def generate_model(args, data_handler, biomarker, sampling, num_samples, run):
     samples_file_experiment = data_handler.get_samples_file(biomarker, num_samples=num_samples, sampling=sampling, run=run)
 
     exec_folder = os.path.join(adni.project_folder, 'src', 'fitting')
-    sampling_arg = '--uniform_progression' if sampling == 'uniform' else ''
-    call('{0}/vgam_generate_synth_data.py -b {1} -n {2} {3}'.format(exec_folder, biomarker, num_samples, sampling_arg), shell=True)
-    call('{0}/vgam_estimate_curves.py synth -b {1}'.format(exec_folder, biomarker), shell=True)
-    call(['mv', model_file, model_file_experiment])
-    call(['mv', samples_file, samples_file_experiment])
+    while not os.path.isfile(model_file_experiment):
+        call('{0}/vgam_generate_synth_data.py -b {1} -n {2} --sampling {3}'.format(exec_folder, biomarker, num_samples, sampling), shell=True)
+        call('{0}/vgam_estimate_curves.py synth -b {1}'.format(exec_folder, biomarker), shell=True)
+
+        if os.path.isfile(model_file) and os.path.isfile(samples_file):
+            call(['mv', model_file, model_file_experiment])
+            call(['mv', samples_file, samples_file_experiment])
+        else:
+            print log.WARNING, 'Failed to generate model, retrying...'
 
 
 def evaluate_model(args, model_file, biomarker):
@@ -114,15 +118,15 @@ def plot_errors(args, data_handler, errors):
     print log.INFO, 'Plotting error bars...'
 
     plt.figure()
-    linestyle = {'triangular': '-', 'uniform': '--'}
-    color = {'synth0': 'c', 'synth1': 'b', 'synth2': 'g', 'synth3': 'r', 'synth4': 'k'}
+    linestyle = {'longitudinal': '-', 'triangular': '--', 'uniform': ':'}
+    color = {'synth_hipp': 'c', 'synth_brain': 'b', 'synth_mmse': 'g', 'synth_cdr_sb': 'r'}
 
     experiments = range(args.experiment_range[0],
                         args.experiment_range[1],
                         args.experiment_range[2])
 
     for biomarker in data_handler.get_biomarker_set():
-        for sampling in ['triangular', 'uniform']:
+        for sampling in ['triangular', 'uniform', 'longitudinal']:
             curve_median = []
             curve_err_1 = []
             curve_err_2 = []
@@ -148,19 +152,26 @@ def analyse_errors(args, data_handler, errors):
                         args.experiment_range[2])
 
     # Compute mean error uniform vs. triangular
-    mean_difference = 0.0
+    mean_difference_lon = 0.0
+    mean_difference_tri = 0.0
     for biomarker in data_handler.get_biomarker_set():
         error_curve_uniform = []
         error_curve_triangu = []
+        error_curve_longitu = []
         for experiment in experiments:
             error_curve_uniform.append(errors[biomarker]['uniform'][experiment])
             error_curve_triangu.append(errors[biomarker]['triangular'][experiment])
+            error_curve_longitu.append(errors[biomarker]['longitudinal'][experiment])
 
-        mean_difference += np.mean(np.array(error_curve_triangu) -
-                                   np.array(error_curve_uniform))
-    mean_difference /= len(data_handler.get_biomarker_set())
+        mean_difference_lon += np.mean(np.array(error_curve_longitu) -
+                                       np.array(error_curve_uniform))
+        mean_difference_tri += np.mean(np.array(error_curve_triangu) -
+                                       np.array(error_curve_uniform))
+    mean_difference_lon /= len(data_handler.get_biomarker_set())
+    mean_difference_tri /= len(data_handler.get_biomarker_set())
 
-    print log.RESULT, 'Mean difference uniform vs. triangular: {0}'.format(mean_difference)
+    print log.RESULT, 'Mean difference uniform vs. triangular: {0}'.format(mean_difference_tri)
+    print log.RESULT, 'Mean difference uniform vs. longitudinal: {0}'.format(mean_difference_lon)
 
 
 if __name__ == '__main__':

@@ -8,6 +8,8 @@ A class to provide modelling functionality for synthetic examples.
 import math
 import random
 import numpy as np
+from common import log as log
+from scipy import stats
 
 
 class SynthModel(object):
@@ -84,11 +86,17 @@ class SynthModel(object):
     #
     ############################################################################
     @staticmethod
-    def get_random_progress(uniform_progression=False):
-        if uniform_progression:
-            return int(random.uniform(-SynthModel.PROGRESS_RANGE, SynthModel.PROGRESS_RANGE))
+    def get_random_progress(sampling='uniform', sample_range=None):
+        sample_range = SynthModel.PROGRESS_RANGE if sample_range is None else sample_range
+        if sampling == 'uniform':
+            return int(random.uniform(-sample_range, sample_range))
+        elif sampling == 'triangular':
+            return int(random.triangular(-sample_range, sample_range, 0))
+        elif sampling == 'longitudinal':
+            return int(random.uniform(-sample_range, 0))
         else:
-            return int(random.triangular(-SynthModel.PROGRESS_RANGE, SynthModel.PROGRESS_RANGE, 0))
+            print log.ERROR, 'Unknown sampling: {0}'.format(sampling)
+            return None
 
     ############################################################################
     #
@@ -96,14 +104,20 @@ class SynthModel(object):
     #
     ############################################################################
     @staticmethod
-    def get_distributed_value(biomarker, progress, fixed_sigma=None):
+    def get_distributed_value(biomarker, progress, fixed_sigma=None, cdf=None):
         if SynthModel._models[biomarker]['noise'] == 'gaussian':
             median = SynthModel.get_median(biomarker, progress)
             sigma = fixed_sigma if fixed_sigma is not None else SynthModel.get_sigma(biomarker, progress)
-            return median + random.gauss(0.0, sigma)
+            if cdf is None:
+                return median + random.gauss(0.0, sigma)
+            else:
+                return stats.norm.ppf(cdf, loc=median, scale=sigma)
         elif SynthModel._models[biomarker]['noise'] == 'gamma':
             k, theta = SynthModel._get_gamma_parameters(biomarker, progress)
-            return SynthModel._transorm_coordinates(biomarker, random.gammavariate(k, theta))
+            if cdf is None:
+                return SynthModel._transorm_coordinates(biomarker, random.gammavariate(k, theta))
+            else:
+                return SynthModel._transorm_coordinates(biomarker, stats.gamma.ppf(cdf, k, scale=theta))
 
     ############################################################################
     #
@@ -163,19 +177,27 @@ class SynthModel(object):
     @staticmethod
     def get_probability(biomarker, progress, value):
         if SynthModel._models[biomarker]['noise'] == 'gaussian':
-            x = value - SynthModel.get_median(biomarker, progress)
             sigma = SynthModel.get_sigma(biomarker, progress)
-            return np.exp(-0.5 * (x / sigma) ** 2) / (sigma * math.sqrt(2 * math.pi))
+            return stats.norm.pdf(value, scale=sigma, loc=SynthModel.get_median(biomarker, progress))
         elif SynthModel._models[biomarker]['noise'] == 'gamma':
-            if value < 0:
-                return 0
-            else:
-                k, theta = SynthModel._get_gamma_parameters(biomarker, progress)
-                try:
-                    value = SynthModel._transorm_coordinates(biomarker, value)
-                    return (value ** (k - 1) * math.exp(-value / theta)) / (math.gamma(k) * theta ** k)
-                except:
-                    return 0.0
+            k, theta = SynthModel._get_gamma_parameters(biomarker, progress)
+            value = SynthModel._transorm_coordinates(biomarker, value)
+            return stats.gamma.pdf(value, k, scale=theta)
+
+    ############################################################################
+    #
+    # get_cumulated_probability()
+    #
+    ############################################################################
+    @staticmethod
+    def get_cumulated_probability(biomarker, progress, value):
+        if SynthModel._models[biomarker]['noise'] == 'gaussian':
+            sigma = SynthModel.get_sigma(biomarker, progress)
+            return stats.norm.cdf(value, scale=sigma, loc=SynthModel.get_median(biomarker, progress))
+        elif SynthModel._models[biomarker]['noise'] == 'gamma':
+            k, theta = SynthModel._get_gamma_parameters(biomarker, progress)
+            value = SynthModel._transorm_coordinates(biomarker, value)
+            return stats.gamma.cdf(value, k, scale=theta)
 
     ############################################################################
     #
