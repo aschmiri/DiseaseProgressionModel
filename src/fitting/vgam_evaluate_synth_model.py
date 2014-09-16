@@ -22,24 +22,34 @@ def main():
     parser.add_argument('--number_of_progression_steps', type=int, default=10, help='the number of progression steps')
     parser.add_argument('--number_of_value_steps', type=int, default=1000, help='the number of value steps')
     parser.add_argument('--progression_range', type=int, default=2000, help='the width of progression range window used for testing')
+    parser.add_argument('--output_file', type=str, default=None, help='filename of the output image with the plot')
     args = parser.parse_args()
 
     data_handler = SynthDataHandler(args)
 
+    # Experiment 1
     errors = get_errors(args, data_handler)
-    plot_errors(args, data_handler, errors)
+    plot_errorbars(args, data_handler, errors)
     analyse_errors(args, data_handler, errors)
 
+    # Experiment 2
+    num_samples = 1000
+    errors = get_errors(args, data_handler, experiments=[num_samples])
+    plot_boxplots(args, data_handler, errors, num_samples)
 
-def get_errors(args, data_handler):
+
+def get_errors(args, data_handler, experiments=None):
+    if experiments is None:
+        experiments = range(args.experiment_range[0],
+                            args.experiment_range[1],
+                            args.experiment_range[2])
+
     errors = {}
     for biomarker in data_handler.get_biomarker_set():
         errors.update({biomarker: {}})
-        for sampling in ['triangular', 'uniform', 'longitudinal']:
+        for sampling in ['longitudinal', 'triangular', 'uniform']:
             errors[biomarker].update({sampling: {}})
-            for num_samples in xrange(args.experiment_range[0],
-                                      args.experiment_range[1],
-                                      args.experiment_range[2]):
+            for num_samples in experiments:
                 e = evaluate_experiment(args, data_handler, biomarker, sampling, num_samples)
                 errors[biomarker][sampling].update({num_samples: e})
     return errors
@@ -51,7 +61,8 @@ def evaluate_experiment(args, data_handler, biomarker, sampling, num_samples):
     errors_experiment = []
     for run in xrange(args.number_of_runs):
         model_file = data_handler.get_model_file(biomarker, num_samples=num_samples, sampling=sampling, run=run)
-        error_file = model_file.replace('.csv', '.p')
+        error_folder = adni.make_dir(adni.eval_folder, biomarker)
+        error_file = os.path.join(error_folder, os.path.basename(model_file).replace('.csv', '.p'))
 
         if os.path.isfile(error_file) and not args.recompute_errors:
             print log.SKIP, 'Skipping error computation for {0} samples {1}, run {2}'.format(num_samples, sampling, run)
@@ -114,19 +125,19 @@ def evaluate_model(args, model_file, biomarker):
     return error
 
 
-def plot_errors(args, data_handler, errors):
+def plot_errorbars(args, data_handler, errors):
     print log.INFO, 'Plotting error bars...'
+    fig = plt.figure()
 
-    plt.figure()
     linestyle = {'longitudinal': '-', 'triangular': '--', 'uniform': ':'}
-    color = {'synth_hipp': 'c', 'synth_brain': 'b', 'synth_mmse': 'g', 'synth_cdr_sb': 'r'}
+    color = {'synth_hipp': 'c', 'synth_brain': 'b', 'synth_mmse': 'g', 'synth_cdrsb': 'r'}
 
     experiments = range(args.experiment_range[0],
                         args.experiment_range[1],
                         args.experiment_range[2])
 
     for biomarker in data_handler.get_biomarker_set():
-        for sampling in ['triangular', 'uniform', 'longitudinal']:
+        for sampling in ['longitudinal', 'triangular', 'uniform']:
             curve_median = []
             curve_err_1 = []
             curve_err_2 = []
@@ -144,6 +155,41 @@ def plot_errors(args, data_handler, errors):
 
     plt.legend()
     plt.show()
+
+    # Show or save plot
+    if args.output_file is not None:
+        plt.savefig(args.output_file)
+    else:
+        plt.show()
+    plt.close(fig)
+
+
+def plot_boxplots(args, data_handler, errors, num_samples):
+    print log.INFO, 'Plotting error bars...'
+    fig = plt.figure()
+
+    data = []
+    labels = []
+    for biomarker in data_handler.get_biomarker_set():
+        for sampling in ['longitudinal', 'triangular', 'uniform']:
+            data.append(errors[biomarker][sampling][num_samples])
+            labels.append('{0} {1}'.format(biomarker, sampling))
+
+    plt.boxplot(data)
+    plt.xticks(np.arange(len(labels)) + 1, labels)
+    plt.title('Comparison of different sampling methods for {0} samples'.format(num_samples))
+    plt.grid(True, axis='y', linestyle='--', which='major', color='lightgrey', alpha=0.7)
+    plt.legend()
+
+    for x in range(3, len(data), 3):
+        plt.axvline(x + 0.5, color='lightgrey', alpha=0.7)
+
+    # Show or save plot
+    if args.output_file is not None:
+        plt.savefig(args.output_file)
+    else:
+        plt.show()
+    plt.close(fig)
 
 
 def analyse_errors(args, data_handler, errors):
