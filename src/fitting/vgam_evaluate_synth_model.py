@@ -12,14 +12,15 @@ import fitting.vgam_evaluation as ve
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('experiment', type=str, choices=['ex1', 'ex2'], help='the experiment to run')
+    parser.add_argument('-e', '--experiment', type=str, choices=['ex1', 'ex2'], default='ex1', help='the experiment to run')
+    parser.add_argument('-m', '--metric', type=str, choices=['area', 'peakdist', 'maxdist'], default='area', help='the metric to be evaluated')
     parser.add_argument('-b', '--biomarkers_name', nargs='+', default=None, help='name of the biomarkers to be evaluated')
     parser.add_argument('--recompute_errors', action='store_true', help='recompute the errors of the models')
     parser.add_argument('--recompute_models', action='store_true', help='recompute the models with new samples')
     parser.add_argument('--experiment_range', type=int, nargs=3, default=[100, 2000, 100], help='the range for the number of samples tested')
     parser.add_argument('--number_of_runs', type=int, default=100, help='the number of repeated runs')
-    parser.add_argument('--number_of_progression_steps', type=int, default=10, help='the number of progression steps')
-    parser.add_argument('--number_of_value_steps', type=int, default=1000, help='the number of value steps')
+    parser.add_argument('--number_of_value_steps', type=int, default=100, help='the number of value steps')
+    parser.add_argument('--number_of_progression_steps', type=int, default=100, help='the number of progression steps')
     parser.add_argument('--progression_range', type=int, default=2000, help='the width of progression range window used for testing')
     parser.add_argument('--output_file', type=str, default=None, help='filename of the output image with the plot')
     args = parser.parse_args()
@@ -64,7 +65,8 @@ def run_experiment(args, data_handler, biomarker, sampling, num_samples):
     for run in xrange(args.number_of_runs):
         model_file = data_handler.get_model_file(biomarker, num_samples=num_samples, sampling=sampling, run=run)
         error_folder = adni.make_dir(adni.eval_folder, biomarker)
-        error_file = os.path.join(error_folder, os.path.basename(model_file).replace('.csv', '.p'))
+        error_file_ending = '_{0}.p'.format(args.metric)
+        error_file = os.path.join(error_folder, os.path.basename(model_file).replace('.csv', error_file_ending))
 
         if os.path.isfile(error_file) and not args.recompute_errors:
             print log.SKIP, 'Skipping error computation for {0} samples {1}, run {2}'.format(num_samples, sampling, run)

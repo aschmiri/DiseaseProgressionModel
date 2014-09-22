@@ -35,8 +35,7 @@ def generate_model(args, data_handler, biomarker, num_samples=1000, sampling='lo
     return model_file_experiment
 
 
-def evaluate_synth_model(args, model_file, biomarker):
-
+def evaluate_synth_model(args, model_file, biomarker, metric='area'):
     # Define progression steps
     pm = ProgressionModel(biomarker, model_file)
     progressions = np.linspace(-args.progression_range,
@@ -54,11 +53,30 @@ def evaluate_synth_model(args, model_file, biomarker):
 
     # Get mean error
     error = 0
-    for progr in progressions:
-        probs_fit = pm.get_density_distribution(values, progr)
-        probs_model = [SynthModel.get_probability(biomarker, progr, v) for v in values]
-        error += np.sum(np.abs(np.array(probs_fit) - np.array(probs_model)))
-    error *= (values[1] - values[0]) / len(progressions)
+    if metric == 'area':
+        for progr in progressions:
+            probs_model = [SynthModel.get_probability(biomarker, progr, v) for v in values]
+            probs_fit = pm.get_density_distribution(values, progr)
+            error += np.sum(np.abs(np.array(probs_fit) - np.array(probs_model)))
+        error *= (values[1] - values[0]) / len(progressions)
+    elif metric == 'peakdist':
+        for progr in progressions:
+            probs_model = [SynthModel.get_probability(biomarker, progr, v) for v in values]
+            probs_fit = pm.get_density_distribution(values, progr)
+            peak_model = values[np.argsort(probs_model)[-1]]
+            peak_fit = values[np.argsort(probs_fit)[-1]]
+            error += np.abs(peak_fit - peak_model)
+        error /= len(progressions)
+    elif metric == 'maxdist':
+        for value in values:
+            probs_model = [SynthModel.get_probability(biomarker, p, value) for p in progressions]
+            probs_fit = [pm.get_density_distribution([value], p) for p in progressions]
+            max_model = progressions[np.argsort(probs_model)[-1]]
+            max_fit = progressions[np.argsort(probs_fit)[-1]]
+            error += np.abs(max_fit - max_model)
+        error /= len(values)
+    else:
+        print log.ERROR, 'Metric unknown: {0}'.format(metric)
 
     return error
 
