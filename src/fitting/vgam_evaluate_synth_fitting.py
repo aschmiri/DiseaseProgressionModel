@@ -10,7 +10,7 @@ from vgam.datahandler import SynthDataHandler
 from vgam.synthmodel import SynthModel
 from vgam.progressionmodel import MultiBiomarkerProgressionModel
 from vgam.modelfitter import ModelFitter
-import fitting.vgam_evaluate_synth as ve
+import fitting.vgam_evaluation as ve
 
 
 def main():
@@ -18,6 +18,7 @@ def main():
     parser.add_argument('-n', '--number_of_test_samples', type=int, default=100, help='the number of test samples')
     parser.add_argument('--recompute_errors', action='store_true', help='recompute the errors of the models')
     parser.add_argument('--recompute_models', action='store_true', help='recompute the models with new samples')
+    parser.add_argument('--recompute_test_data', action='store_true', help='recompute the test samples')
     parser.add_argument('--number_of_training_samples', type=int, default=1000, help='the number of training samples')
     parser.add_argument('--output_file', type=str, default=None, help='filename of the output image with the plot')
     args = parser.parse_args()
@@ -59,8 +60,8 @@ def get_errors(args, data_handler, biomarkers, viscode_sets):
         errors = []
         for viscodes in viscode_sets:
             for biomarker in biomarkers:
-                errors.append(ve.test_fitting(fitter, test_data, [biomarker], viscodes))
-            errors.append(ve.test_fitting(fitter, test_data, biomarkers, viscodes))
+                errors.append(ve.evaluate_synth_fitting(fitter, test_data, [biomarker], viscodes))
+            errors.append(ve.evaluate_synth_fitting(fitter, test_data, biomarkers, viscodes))
 
         # Save results
         print log.INFO, 'Saving test results to {0}...'.format(evaluation_file)
@@ -75,24 +76,24 @@ def plot_errors(args, errors, biomarkers, viscode_sets):
     num_tests = len(biomarkers) + 1
 
     # Define figure and grid
-    fig, ax1 = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(15, 5))
     top = 3000
     bottom = -50
-    ax1.set_ylim(bottom, top)
-    ax1.yaxis.grid(True, linestyle=':', which='major', color='k', alpha=0.4)
+    ax.set_ylim(bottom, top)
+    ve.setup_axes(plt, ax)
     for i in xrange(1, len(viscode_sets)):
-        ax1.axvline(i * num_tests + 0.5, linestyle='-', color='k', alpha=0.4)
+        ax.axvline(i * num_tests + 0.5, linestyle='-', color='k', alpha=0.4)
 
     # Set labels
     biomarker_strings = {'synth_brain': '$s^{brain}$', 'synth_hipp': '$s^{hipp}$', 'synth_mmse': '$s^{MMSE}$', 'synth_cdrsb': '$s^{CDRSB}$'}
-    ax1.set_axisbelow(True)
-    ax1.set_title('DPI estimation using different biomarker settings')
-    ax1.set_ylabel('Fitting error')
-    ax1.set_xticklabels(([biomarker_strings[b] for b in biomarkers] + ['All']) * num_viscode_sets)
+    ax.set_axisbelow(True)
+    ax.set_title('DPI estimation using different biomarker settings')
+    ax.set_ylabel('Fitting error')
+    ax.set_xticklabels(([biomarker_strings[b] for b in biomarkers] + ['All']) * num_viscode_sets)
     for i in xrange(len(viscode_sets)):
-        ax1.text(i * num_tests + 0.5 * (num_tests + 1), -300,
-                 '{0} timepoint{1}'.format(len(viscode_sets[i]), '' if len(viscode_sets[i]) == 1 else 's'),
-                 horizontalalignment='center')
+        ax.text(i * num_tests + 0.5 * (num_tests + 1), -300,
+                '{0} timepoint{1}'.format(len(viscode_sets[i]), '' if len(viscode_sets[i]) == 1 else 's'),
+                horizontalalignment='center')
 
     # Write mean errors as text
     pos = np.arange(len(errors)) + 1
@@ -100,8 +101,8 @@ def plot_errors(args, errors, biomarkers, viscode_sets):
     upperLabels = [str(np.round(s, 2)) for s in medians]
     weights = (['semibold'] * len(biomarkers) + ['bold']) * num_viscode_sets
     for tick in range(len(errors)):
-        ax1.text(pos[tick], 0.95 * top, upperLabels[tick],
-                 horizontalalignment='center', size='x-small', weight=weights[tick])
+        ax.text(pos[tick], 0.95 * top, upperLabels[tick],
+                horizontalalignment='center', size='x-small', weight=weights[tick])
 
     # Plot boxplots
     boxplot = plt.boxplot(errors, patch_artist=True)

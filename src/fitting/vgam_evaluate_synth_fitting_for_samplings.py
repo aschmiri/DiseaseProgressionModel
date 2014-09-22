@@ -10,15 +10,16 @@ from vgam.datahandler import SynthDataHandler
 from vgam.synthmodel import SynthModel
 from vgam.progressionmodel import ProgressionModel
 from vgam.modelfitter import ModelFitter
-import fitting.vgam_evaluate_synth as ve
+import fitting.vgam_evaluation as ve
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-n', '--number_of_test_samples', type=int, default=100, help='the number of test samples')
-    parser.add_argument('--number_of_runs', type=int, default=10, help='the number of repeated runs')
+    parser.add_argument('--number_of_runs', type=int, default=100, help='the number of repeated runs')
     parser.add_argument('--recompute_errors', action='store_true', help='recompute the errors of the models')
     parser.add_argument('--recompute_models', action='store_true', help='recompute the models with new samples')
+    parser.add_argument('--recompute_test_data', action='store_true', help='recompute the test samples')
     parser.add_argument('--number_of_training_samples', type=int, default=1000, help='the number of training samples')
     parser.add_argument('--output_file', type=str, default=None, help='filename of the output image with the plot')
     args = parser.parse_args()
@@ -56,7 +57,7 @@ def evaluate_experiment(args, data_handler, biomarker, sampling, num_samples):
 
         if os.path.isfile(error_file) and not args.recompute_errors:
             print log.SKIP, 'Skipping error computation for {0} samples {1}, run {2}'.format(num_samples, sampling, run)
-            error_experiment = pickle.load(open(error_file, 'rb'))
+            errors_run = pickle.load(open(error_file, 'rb'))
         else:
             # Generate model
             ve.generate_model(args, data_handler, biomarker, num_samples=num_samples, sampling=sampling, run=run)
@@ -66,16 +67,17 @@ def evaluate_experiment(args, data_handler, biomarker, sampling, num_samples):
 
             # Generate test data
             test_data = ve.generate_test_data([biomarker], args.number_of_test_samples, 1)
-            error_experiment = ve.test_fitting(fitter, test_data, [biomarker])
-            pickle.dump(error_experiment, open(error_file, 'wb'))
-        errors_experiment.append(error_experiment)
+            errors_run = ve.evaluate_synth_fitting(fitter, test_data, [biomarker])
+            pickle.dump(errors_run, open(error_file, 'wb'))
+        errors_experiment.append(np.mean(errors_run))
 
     return errors_experiment
 
 
 def plot_boxplots(args, data_handler, errors, num_samples):
     print log.INFO, 'Plotting error bars...'
-    fig = plt.figure()
+    fig, ax = plt.subplots(figsize=(15, 5))
+    ve.setup_axes(plt, ax)
 
     biomarkers = data_handler.get_biomarker_set()
     samplings = ['longitudinal', 'triangular', 'uniform']
@@ -95,7 +97,6 @@ def plot_boxplots(args, data_handler, errors, num_samples):
     boxplot = plt.boxplot(data, patch_artist=True)
     plt.xticks(np.arange(len(labels)) + 1, labels)
     plt.title('Comparison of different sampling methods for {0} samples'.format(num_samples))
-    plt.grid(True, axis='y', linestyle='--', which='major', color='k', alpha=0.4)
 
     for x in range(3, len(data), 3):
         plt.axvline(x + 0.5, color='k', alpha=0.4)

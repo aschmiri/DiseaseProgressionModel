@@ -7,11 +7,12 @@ import matplotlib.pyplot as plt
 from common import log as log
 from common import adni_tools as adni
 from vgam.datahandler import SynthDataHandler
-import fitting.vgam_evaluate_synth as ve
+import fitting.vgam_evaluation as ve
 
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('experiment', type=str, choices=['ex1', 'ex2'], help='the experiment to run')
     parser.add_argument('-b', '--biomarkers_name', nargs='+', default=None, help='name of the biomarkers to be evaluated')
     parser.add_argument('--recompute_errors', action='store_true', help='recompute the errors of the models')
     parser.add_argument('--recompute_models', action='store_true', help='recompute the models with new samples')
@@ -27,14 +28,16 @@ def main():
     data_handler = SynthDataHandler(args)
 
     # Experiment 1
-    errors = get_errors(args, data_handler)
-    plot_errorbars(args, data_handler, errors)
-    analyse_errors(args, data_handler, errors)
+    if args.experiment == 'ex1':
+        errors = get_errors(args, data_handler)
+        plot_errorbars(args, data_handler, errors)
+        analyse_errors(args, data_handler, errors)
 
     # Experiment 2
-    num_samples = 1000
-    errors = get_errors(args, data_handler, experiments=[num_samples])
-    plot_boxplots(args, data_handler, errors, num_samples)
+    if args.experiment == 'ex2':
+        num_samples = 1000
+        errors = get_errors(args, data_handler, experiments=[num_samples])
+        plot_boxplots(args, data_handler, errors, num_samples)
 
 
 def get_errors(args, data_handler, experiments=None):
@@ -55,7 +58,7 @@ def get_errors(args, data_handler, experiments=None):
 
 
 def run_experiment(args, data_handler, biomarker, sampling, num_samples):
-    print log.INFO, 'Evaluating synthetic models with {0} samples...'.format(num_samples)
+    print log.INFO, 'Evaluating {0} model with {1} training samples...'.format(biomarker, num_samples)
 
     errors_experiment = []
     for run in xrange(args.number_of_runs):
@@ -68,7 +71,7 @@ def run_experiment(args, data_handler, biomarker, sampling, num_samples):
             error_experiment = pickle.load(open(error_file, 'rb'))
         else:
             ve.generate_model(args, data_handler, biomarker, num_samples=num_samples, sampling=sampling, run=run)
-            error_experiment = ve.evaluate_model(args, model_file, biomarker)
+            error_experiment = ve.evaluate_synth_model(args, model_file, biomarker)
             pickle.dump(error_experiment, open(error_file, 'wb'))
         errors_experiment.append(error_experiment)
 
@@ -77,7 +80,8 @@ def run_experiment(args, data_handler, biomarker, sampling, num_samples):
 
 def plot_errorbars(args, data_handler, errors):
     print log.INFO, 'Plotting error bars...'
-    fig = plt.figure()
+    fig, ax = plt.subplots(figsize=(15, 5))
+    ve.setup_axes(plt, ax)
 
     linestyle = {'longitudinal': '-', 'triangular': '--', 'uniform': ':'}
     color = {'synth_hipp': 'c', 'synth_brain': 'b', 'synth_mmse': 'g', 'synth_cdrsb': 'r'}
@@ -104,7 +108,6 @@ def plot_errorbars(args, data_handler, errors):
                          label='{0} {1}'.format(biomarker, sampling))
 
     plt.legend()
-    plt.show()
 
     # Show or save plot
     if args.output_file is not None:
@@ -116,7 +119,8 @@ def plot_errorbars(args, data_handler, errors):
 
 def plot_boxplots(args, data_handler, errors, num_samples):
     print log.INFO, 'Plotting error bars...'
-    fig = plt.figure()
+    fig, ax = plt.subplots(figsize=(15, 5))
+    ve.setup_axes(plt, ax)
 
     biomarkers = data_handler.get_biomarker_set()
     samplings = ['longitudinal', 'triangular', 'uniform']
@@ -136,7 +140,6 @@ def plot_boxplots(args, data_handler, errors, num_samples):
     boxplot = plt.boxplot(data, patch_artist=True)
     plt.xticks(np.arange(len(labels)) + 1, labels)
     plt.title('Comparison of different sampling methods for {0} samples'.format(num_samples))
-    plt.grid(True, axis='y', linestyle='--', which='major', color='k', alpha=0.4)
 
     for x in range(3, len(data), 3):
         plt.axvline(x + 0.5, color='k', alpha=0.4)

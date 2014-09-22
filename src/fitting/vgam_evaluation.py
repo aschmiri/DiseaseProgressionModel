@@ -1,6 +1,7 @@
 #! /usr/bin/env python2.7
 import os.path
 from subprocess import call
+import pickle
 import numpy as np
 from common import log as log
 from common import adni_tools as adni
@@ -34,7 +35,7 @@ def generate_model(args, data_handler, biomarker, num_samples=1000, sampling='lo
     return model_file_experiment
 
 
-def evaluate_model(args, model_file, biomarker):
+def evaluate_synth_model(args, model_file, biomarker):
 
     # Define progression steps
     pm = ProgressionModel(biomarker, model_file)
@@ -62,31 +63,37 @@ def evaluate_model(args, model_file, biomarker):
     return error
 
 
-def generate_test_data(biomarkers, num_test_samples, number_of_visits):
+def generate_test_data(args, biomarkers, num_test_samples, number_of_visits):
     print log.INFO, 'Generating test set with {0} samples...'.format(num_test_samples)
+    biomarkers_str = '_'.join(biomarkers)
+    test_data_file = os.path.join(adni.eval_folder, 'test_data_{0}_{1}_{2}.p'.format(biomarkers_str, num_test_samples, number_of_visits))
 
-    test_data = {}
-    for rid in xrange(num_test_samples):
-        test_data.update({rid: {}})
+    if os.path.isfile(test_data_file) and not args.recompute_test_data:
+        test_data = {}
+        for rid in xrange(num_test_samples):
+            test_data.update({rid: {}})
 
-        base_progress = SynthModel.get_random_progress(sampling='uniform')
-        for viscode in xrange(number_of_visits):
-            test_data[rid].update({viscode: {}})
+            base_progress = SynthModel.get_random_progress(sampling='uniform')
+            for viscode in xrange(number_of_visits):
+                test_data[rid].update({viscode: {}})
 
-            scantime = viscode * 180
-            test_data[rid][viscode].update({'scantime': scantime})
+                scantime = viscode * 180
+                test_data[rid][viscode].update({'scantime': scantime})
 
-            visit_progress = base_progress + scantime
-            test_data[rid][viscode].update({'progress': visit_progress})
+                visit_progress = base_progress + scantime
+                test_data[rid][viscode].update({'progress': visit_progress})
 
-            for biomarker in biomarkers:
-                value = SynthModel.get_distributed_value(biomarker, visit_progress)
-                test_data[rid][viscode].update({biomarker: value})
+                for biomarker in biomarkers:
+                    value = SynthModel.get_distributed_value(biomarker, visit_progress)
+                    test_data[rid][viscode].update({biomarker: value})
+        pickle.dump(test_data, open(test_data_file, 'wb'))
+    else:
+        test_data = pickle.load(open(test_data_file, 'rb'))
 
     return test_data
 
 
-def test_fitting(fitter, test_data, biomarkers, viscodes=[0]):
+def evaluate_synth_fitting(fitter, test_data, biomarkers, viscodes=[0]):
     print log.INFO, 'Testing biomarkers {0} with viscodes {1}...'.format(biomarkers, viscodes)
     dpis = []
     progresses = []
@@ -114,6 +121,28 @@ def test_fitting(fitter, test_data, biomarkers, viscodes=[0]):
     print log.RESULT, 'Mean error: {0}, RMS error: {1}'.format(mean_error, rms_error)
 
     return errors
+
+
+def setup_axes(plt, ax):
+    ax.spines['right'].set_color('none')
+    ax.spines['top'].set_color('none')
+    ax.spines['left'].set_color('none')
+    ax.xaxis.grid(True, linestyle=':', which='major', color='lightgrey', alpha=0.5)
+    ax.yaxis.grid(True, linestyle=':', which='major', color='lightgrey', alpha=0.5)
+    ax.tick_params(axis='both', which='both', bottom='on', top='off', left='off', right='off')
+
+    plt.setp(ax.get_yticklabels(), rotation=45, fontsize=10)
+
+
+def get_metric_unit(biomarker):
+    if biomarker in adni.volume_names + ['synth_hipp', 'synth_brain']:
+        return 'Volume'
+    if biomarker in adni.cog_score_names + ['synth_mmse', 'synth_cdrsb']:
+        return 'Score'
+    if biomarker in adni.manifold_coordinate_names:
+        return 'Value'
+    else:
+        return None
 
 
 def set_boxplot_color(boxplot, index, color):
