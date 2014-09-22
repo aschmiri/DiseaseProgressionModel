@@ -13,6 +13,7 @@ from common import adni_plot as aplt
 from vgam.progressionmodel import ProgressionModel
 from vgam.datahandler import DataHandler
 from vgam.synthmodel import SynthModel
+import fitting.vgam_evaluation as ve
 
 
 def main():
@@ -21,6 +22,7 @@ def main():
     parser.add_argument('-e', '--extrapolator', type=str, choices=['lin', 'sqrt', 'exp'], default='exp', help='the type of extrapolator')
     parser.add_argument('--no_model', action='store_true', default=False, help='do not plot the fitted model')
     parser.add_argument('--no_points', action='store_true', default=False, help='do not plot points')
+    parser.add_argument('--points_alpha', type=float, default=0.25, help='alpha value of the plotted points')
     parser.add_argument('--no_densities', action='store_true', default=False, help='do not plot densities')
     parser.add_argument('--no_sample_lines', action='store_true', default=False, help='do not plot the sample lines')
     parser.add_argument('--only_densities', action='store_true', default=False, help='only plot densities')
@@ -73,20 +75,21 @@ def plot_model(args, data_handler, biomarker):
     fig = plt.figure(figsize=(figwidth, 5))
     if args.only_densities:
         ax2 = plt.subplot(1, 1, 1)
+        ve.setup_axes(plt, ax2)
     elif args.no_densities:
         ax1 = plt.subplot(1, 1, 1)
+        ve.setup_axes(plt, ax1)
     else:
         ax1 = plt.subplot(1, 2, 1)
         ax2 = plt.subplot(1, 2, 2)
+        ve.setup_axes(plt, ax1)
+        ve.setup_axes(plt, ax2)
 
     if not args.only_densities:
         ax1.set_title('Percentile curves for {0}'.format(biomarker))
         ax1.set_xlabel('Disease progression relative to point of conversion')
-        ax1.set_ylabel('Volume' if biomarker in adni.volume_names else 'Score')
+        ax1.set_ylabel(ve.get_metric_unit(biomarker))
         ax1.set_xlim(min_progression_extrapolate, max_progression_extrapolate)
-        ax1.legend([mpl.patches.Rectangle((0, 0), 1, 1, fc=(0.8, 0.8, 0.0), linewidth=0),
-                    mpl.patches.Rectangle((0, 0), 1, 1, fc=(1.0, 0.0, 0.0), linewidth=0)],
-                   ['MCI', 'AD'], fontsize=10)
 
     #
     # Plot the percentile curves of the fitted model
@@ -96,7 +99,7 @@ def plot_model(args, data_handler, biomarker):
         ax1.axvline(pm.max_progression, color='0.15', linestyle=':', alpha=0.8)
 
         stds = [-1.5, -1.0, -0.5, 0, +0.5, +1.0, +1.5]
-        greyvals = ['0.45', '0.3', '0.15', '0', '0.15', '0.3', '0.45']
+        greyvals = ['0.6', '0.4', '0.2', '0', '0.2', '0.4', '0.6']
         for greyval, std in zip(greyvals, stds):
             curve_int = pm.get_quantile_curve(progression_linspace_int, std)
             ax1.plot(progression_linspace_int, curve_int, color=greyval)
@@ -110,10 +113,16 @@ def plot_model(args, data_handler, biomarker):
             # TODO: label = '${0} \sigma$'.format(std)
             # ax1.text(pm.progressions[-1], curve_2[-1], label, fontsize=11)
 
-        # Plot synthetic model curve
-        if plot_synth_model:
-            curve_synth = [SynthModel.get_median(biomarker, p) for p in progression_linspace_int]
-            ax1.plot(progression_linspace_int, curve_synth, color='b')
+    #
+    # Plot synthetic model curve
+    #
+    if plot_synth_model:
+        progression_linspace_synth = np.linspace(-2500, 2500, 100)
+        quantiles = [0.1, 0.25, 0.5, 0.75, 0.9]
+        alphas = [0.4, 0.7, 1.0, 0.7, 0.4]
+        for quantile, alpha in zip(quantiles, alphas):
+            curve_synth = [SynthModel.get_distributed_value(biomarker, p, cdf=quantile) for p in progression_linspace_synth]
+            ax1.plot(progression_linspace_synth, curve_synth, color='b', alpha=alpha)
 
     #
     # Plot parameter mu
@@ -147,7 +156,7 @@ def plot_model(args, data_handler, biomarker):
     if args.plot_errors and not args.only_densities:
         eval_file = model_file.replace('.csv', '_eval.csv')
         if not os.path.isfile(eval_file):
-            log.ERROR, 'Evaluation file not found: {0}'.format(eval_file)
+            print log.ERROR, 'Evaluation file not found: {0}'.format(eval_file)
         else:
             m = mlab.csv2rec(eval_file)
             progressions = m['progression']
@@ -166,7 +175,7 @@ def plot_model(args, data_handler, biomarker):
     if not args.no_points and not args.only_densities:
         samples_file = data_handler.get_samples_file(biomarker)
         if not os.path.isfile(samples_file):
-            log.ERROR, 'Samples file not found: {0}'.format(samples_file)
+            print log.ERROR, 'Samples file not found: {0}'.format(samples_file)
         else:
             m = mlab.csv2rec(samples_file)
             progr_points = m['progress']
@@ -175,7 +184,10 @@ def plot_model(args, data_handler, biomarker):
 
             print log.INFO, 'Plotting {0} sample points...'.format(len(progr_points))
             ax1.scatter(progr_points, value_points, c=diagn_points, edgecolor='none',
-                        vmin=0.0, vmax=1.0, cmap=aplt.progression_cmap, alpha=0.25)
+                        vmin=0.0, vmax=1.0, cmap=aplt.progression_cmap, alpha=args.points_alpha)
+            ax1.legend([mpl.patches.Rectangle((0, 0), 1, 1, fc=(0.8, 0.8, 0.0), linewidth=0),
+                        mpl.patches.Rectangle((0, 0), 1, 1, fc=(1.0, 0.0, 0.0), linewidth=0)],
+                       ['MCI', 'AD'], fontsize=10)
 
     #
     # Plot PDFs
@@ -221,11 +233,12 @@ def plot_model(args, data_handler, biomarker):
         if args.output_file is not None:
             plot_filename = args.output_file
         else:
-            model_file.replace('.csv', '.pdf')
+            plot_filename = model_file.replace('.csv', '.pdf')
         plt.savefig(plot_filename, dpi=100)
     else:
         plt.show()
     plt.close(fig)
+
 
 if __name__ == '__main__':
     main()
