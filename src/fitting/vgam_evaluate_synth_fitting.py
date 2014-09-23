@@ -36,7 +36,7 @@ def main():
 
 
 def get_errors(args, data_handler, biomarkers, viscode_sets):
-    evaluation_file = os.path.join(adni.eval_folder, 'eval_synth_fitting_e.p')
+    evaluation_file = os.path.join(adni.eval_folder, 'eval_synth_fitting.p')
     if os.path.isfile(evaluation_file) and not args.recompute_errors:
         # Read test results from file
         print log.INFO, 'Reading test results from {0}...'.format(evaluation_file)

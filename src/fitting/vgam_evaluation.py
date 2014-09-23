@@ -81,10 +81,14 @@ def evaluate_synth_model(args, model_file, biomarker, metric='area'):
     return error
 
 
-def generate_test_data(args, biomarkers, num_test_samples, number_of_visits):
+def generate_test_data(args, biomarkers, num_test_samples, number_of_visits, run=None):
     print log.INFO, 'Generating test set with {0} samples...'.format(num_test_samples)
     biomarkers_str = '_'.join(biomarkers)
-    test_data_file = os.path.join(adni.eval_folder, 'test_data_{0}_{1}_{2}.p'.format(biomarkers_str, num_test_samples, number_of_visits))
+    if run is None:
+        test_data_filename = 'test_data_{0}_{1}_{2}.p'.format(biomarkers_str, num_test_samples, number_of_visits)
+    else:
+        test_data_filename = 'test_data_{0}_{1}_{2}_{3}.p'.format(biomarkers_str, num_test_samples, number_of_visits, run)
+    test_data_file = os.path.join(adni.eval_folder, test_data_filename)
 
     if os.path.isfile(test_data_file) and not args.recompute_test_data:
         test_data = {}

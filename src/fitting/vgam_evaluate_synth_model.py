@@ -126,7 +126,14 @@ def plot_boxplots(args, data_handler, errors, num_samples):
 
     biomarkers = data_handler.get_biomarker_set()
     samplings = ['longitudinal', 'triangular', 'uniform']
-    biomarker_strings = {'synth_brain': '$s^{brain}$', 'synth_hipp': '$s^{hipp}$', 'synth_mmse': '$s^{MMSE}$', 'synth_cdrsb': '$s^{CDRSB}$'}
+    biomarker_strings = {'synth_brain': '$\mathcal{M}^{brain}$',
+                         'synth_hipp': '$\mathcal{M}^{hipp}$',
+                         'synth_mmse': '$\mathcal{M}^{MMSE}$',
+                         'synth_cdrsb': '$\mathcal{M}^{CDRSB}$'}
+    ylabels = {'area': 'Mean area between PDFs',
+               'peakdist': 'Distance between peaks',
+               'maxdist': 'Distance between progression maxima'}
+
     data = []
     labels = []
     for biomarker in biomarkers:
@@ -142,6 +149,7 @@ def plot_boxplots(args, data_handler, errors, num_samples):
     boxplot = plt.boxplot(data, patch_artist=True)
     plt.xticks(np.arange(len(labels)) + 1, labels)
     plt.title('Comparison of different sampling methods for {0} samples'.format(num_samples))
+    plt.ylabel(ylabels[args.metric])
 
     for x in range(3, len(data), 3):
         plt.axvline(x + 0.5, color='k', alpha=0.4)

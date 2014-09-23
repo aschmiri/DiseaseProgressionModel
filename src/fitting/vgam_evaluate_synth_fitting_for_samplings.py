@@ -66,7 +66,7 @@ def evaluate_experiment(args, data_handler, biomarker, sampling, num_samples):
             fitter = ModelFitter(ProgressionModel(biomarker, model_file))
 
             # Generate test data
-            test_data = ve.generate_test_data([biomarker], args.number_of_test_samples, 1)
+            test_data = ve.generate_test_data([biomarker], args.number_of_test_samples, 1, run=run)
             errors_run = ve.evaluate_synth_fitting(fitter, test_data, [biomarker])
             pickle.dump(errors_run, open(error_file, 'wb'))
         errors_experiment.append(np.mean(errors_run))
