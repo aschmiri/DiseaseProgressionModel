@@ -9,9 +9,9 @@ from vgam.synthmodel import SynthModel
 from vgam.progressionmodel import ProgressionModel
 
 
-def generate_model(args, data_handler, biomarker, num_samples=1000, sampling='longitudinal', run=0):
-    model_file_experiment = data_handler.get_model_file(biomarker, num_samples=num_samples, sampling=sampling, run=run)
-    samples_file_experiment = data_handler.get_samples_file(biomarker, num_samples=num_samples, sampling=sampling, run=run)
+def generate_model(args, data_handler, biomarker, num_samples=1000, sampling='longitudinal', rate_sigma=0.0, run=0):
+    model_file_experiment = data_handler.get_model_file(biomarker, num_samples=num_samples, sampling=sampling, rate_sigma=rate_sigma, run=run)
+    samples_file_experiment = data_handler.get_samples_file(biomarker, num_samples=num_samples, sampling=sampling, rate_sigma=rate_sigma, run=run)
 
     if os.path.isfile(model_file_experiment) and os.path.isfile(samples_file_experiment) and not args.recompute_models:
         print log.SKIP, 'Skipping model generation for {0} samples {1}, run {2}'.format(num_samples, sampling, run)
@@ -22,8 +22,13 @@ def generate_model(args, data_handler, biomarker, num_samples=1000, sampling='lo
             call(['rm', model_file_experiment])
 
         while not os.path.isfile(model_file_experiment):
-            call('{0}/vgam_generate_synth_data.py -b {1} -n {2} --sampling {3}'.format(exec_folder, biomarker, num_samples, sampling), shell=True)
-            call('{0}/vgam_estimate_curves.py synth -b {1}'.format(exec_folder, biomarker), shell=True)
+            biomarker_str = ' -b {0}'.format(biomarker) if biomarker is not None else ''
+            num_samples_str = ' -n {0}'.format(num_samples) if num_samples is not None else ''
+            sampling_str = ' --sampling {0}'.format(sampling)
+            rate_sigma_str = ' --rate_sigma {0}'.format(rate_sigma) if rate_sigma is not None and rate_sigma > 0.0 else ''
+
+            call('{0}/vgam_generate_synth_data.py {1}{2}{3}{4}'.format(exec_folder, biomarker_str, num_samples_str, sampling_str, rate_sigma_str), shell=True)
+            call('{0}/vgam_estimate_curves.py synth {1}'.format(exec_folder, biomarker_str), shell=True)
 
             model_file = data_handler.get_model_file(biomarker)
             samples_file = data_handler.get_samples_file(biomarker)
@@ -38,9 +43,9 @@ def generate_model(args, data_handler, biomarker, num_samples=1000, sampling='lo
 def evaluate_synth_model(args, model_file, biomarker, metric='area'):
     # Define progression steps
     pm = ProgressionModel(biomarker, model_file)
-    progressions = np.linspace(-args.progression_range,
-                               args.progression_range,
-                               args.number_of_progression_steps)
+    progressions = np.linspace(args.progression_linspace[0],
+                               args.progression_linspace[1],
+                               args.progression_linspace[2])
 
     # Define value steps
     min_val = float('inf')

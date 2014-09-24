@@ -12,16 +12,15 @@ import fitting.vgam_evaluation as ve
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-e', '--experiment', type=str, choices=['ex1', 'ex2'], default='ex1', help='the experiment to run')
+    parser.add_argument('-e', '--experiment', type=str, choices=['ex1', 'ex2', 'ex3'], default='ex1', help='the experiment to run')
     parser.add_argument('-m', '--metric', type=str, choices=['area', 'peakdist', 'maxdist'], default='area', help='the metric to be evaluated')
     parser.add_argument('-b', '--biomarkers_name', nargs='+', default=None, help='name of the biomarkers to be evaluated')
     parser.add_argument('--recompute_errors', action='store_true', help='recompute the errors of the models')
     parser.add_argument('--recompute_models', action='store_true', help='recompute the models with new samples')
-    parser.add_argument('--experiment_range', type=int, nargs=3, default=[100, 2000, 100], help='the range for the number of samples tested')
+    parser.add_argument('--sample_numbers_range', type=int, nargs=3, default=[100, 2000, 100], help='the range for the number of samples tested')
+    parser.add_argument('--progression_linspace', type=int, nargs=3, default=[-2000, 2000, 100], help='the width of progression range window used for testing')
     parser.add_argument('--number_of_runs', type=int, default=100, help='the number of repeated runs')
     parser.add_argument('--number_of_value_steps', type=int, default=100, help='the number of value steps')
-    parser.add_argument('--number_of_progression_steps', type=int, default=100, help='the number of progression steps')
-    parser.add_argument('--progression_range', type=int, default=2000, help='the width of progression range window used for testing')
     parser.add_argument('--output_file', type=str, default=None, help='filename of the output image with the plot')
     args = parser.parse_args()
 
@@ -30,49 +29,71 @@ def main():
 
     # Experiment 1
     if args.experiment == 'ex1':
-        errors = get_errors(args, data_handler)
+        sample_numbers = range(args.sample_numbers_range[0],
+                               args.sample_numbers_range[1],
+                               args.sample_numbers_range[2])
+        errors = get_errors_samplings(args, data_handler, sample_numbers)
         plot_errorbars(args, data_handler, errors)
         analyse_errors(args, data_handler, errors)
 
     # Experiment 2
     if args.experiment == 'ex2':
         num_samples = 1000
-        errors = get_errors(args, data_handler, experiments=[num_samples])
-        plot_boxplots(args, data_handler, errors, num_samples)
+        errors = get_errors_samplings(args, data_handler, [num_samples])
+        plot_boxplots_samplings(args, data_handler, errors, num_samples)
+
+    # Experiment 3
+    if args.experiment == 'ex3':
+        rate_sigmas = [0.0, 0.1]
+        errors = get_errors_noisy_rates(args, data_handler, rate_sigmas)
+        plot_boxplots_noisy_rates(args, data_handler, errors, rate_sigmas)
 
 
-def get_errors(args, data_handler, experiments=None):
-    if experiments is None:
-        experiments = range(args.experiment_range[0],
-                            args.experiment_range[1],
-                            args.experiment_range[2])
-
+def get_errors_samplings(args, data_handler, sample_numbers):
     errors = {}
     for biomarker in data_handler.get_biomarker_set():
         errors.update({biomarker: {}})
         for sampling in ['longitudinal', 'triangular', 'uniform']:
             errors[biomarker].update({sampling: {}})
-            for num_samples in experiments:
-                e = run_experiment(args, data_handler, biomarker, sampling, num_samples)
+            for num_samples in sample_numbers:
+                e = run_experiment(args, data_handler, biomarker, sampling, num_samples=num_samples)
                 errors[biomarker][sampling].update({num_samples: e})
     return errors
 
 
-def run_experiment(args, data_handler, biomarker, sampling, num_samples):
-    print log.INFO, 'Evaluating {0} model with {1} training samples...'.format(biomarker, num_samples)
+def get_errors_noisy_rates(args, data_handler, rate_sigmas):
+    errors = {}
+    for biomarker in data_handler.get_biomarker_set():
+        errors.update({biomarker: {}})
+        for rate_sigma in rate_sigmas:
+            e = run_experiment(args, data_handler, biomarker, 'longitudinal', rate_sigma=rate_sigma)
+            errors[biomarker].update({rate_sigma: e})
+    return errors
+
+
+def run_experiment(args, data_handler, biomarker, sampling, num_samples=1000, rate_sigma=None):
+    print log.INFO, 'Evaluating {0} model (sigma {1}) with {2} training samples...'.format(biomarker, rate_sigma, num_samples)
 
     errors_experiment = []
     for run in xrange(args.number_of_runs):
-        model_file = data_handler.get_model_file(biomarker, num_samples=num_samples, sampling=sampling, run=run)
+        model_file = data_handler.get_model_file(biomarker,
+                                                 num_samples=num_samples,
+                                                 sampling=sampling,
+                                                 rate_sigma=rate_sigma,
+                                                 run=run)
         error_folder = adni.make_dir(adni.eval_folder, biomarker)
         error_file_ending = '_{0}.p'.format(args.metric)
         error_file = os.path.join(error_folder, os.path.basename(model_file).replace('.csv', error_file_ending))
 
         if os.path.isfile(error_file) and not args.recompute_errors:
-            print log.SKIP, 'Skipping error computation for {0} samples {1}, run {2}'.format(num_samples, sampling, run)
+            print log.SKIP, 'Skipping error computation for {0} samples {1}, sigma {2}, run {3}'.format(num_samples, sampling, rate_sigma, run)
             error_experiment = pickle.load(open(error_file, 'rb'))
         else:
-            ve.generate_model(args, data_handler, biomarker, num_samples=num_samples, sampling=sampling, run=run)
+            ve.generate_model(args, data_handler, biomarker,
+                              num_samples=num_samples,
+                              sampling=sampling,
+                              rate_sigma=rate_sigma,
+                              run=run)
             error_experiment = ve.evaluate_synth_model(args, model_file, biomarker)
             pickle.dump(error_experiment, open(error_file, 'wb'))
         errors_experiment.append(error_experiment)
@@ -88,16 +109,16 @@ def plot_errorbars(args, data_handler, errors):
     linestyle = {'longitudinal': '-', 'triangular': '--', 'uniform': ':'}
     color = {'synth_hipp': 'c', 'synth_brain': 'b', 'synth_mmse': 'g', 'synth_cdrsb': 'r'}
 
-    experiments = range(args.experiment_range[0],
-                        args.experiment_range[1],
-                        args.experiment_range[2])
+    sample_numbers = range(args.sample_numbers_range[0],
+                           args.sample_numbers_range[1],
+                           args.sample_numbers_range[2])
 
     for biomarker in data_handler.get_biomarker_set():
         for sampling in ['longitudinal', 'triangular', 'uniform']:
             curve_median = []
             curve_err_1 = []
             curve_err_2 = []
-            for experiment in experiments:
+            for experiment in sample_numbers:
                 errors_experiment = errors[biomarker][sampling][experiment]
 
                 median = np.median(errors_experiment)
@@ -105,7 +126,7 @@ def plot_errorbars(args, data_handler, errors):
                 curve_err_1.append(median - np.percentile(errors_experiment, 25))
                 curve_err_2.append(np.percentile(errors_experiment, 75) - median)
 
-            plt.errorbar(experiments, curve_median, yerr=[curve_err_1, curve_err_2],
+            plt.errorbar(sample_numbers, curve_median, yerr=[curve_err_1, curve_err_2],
                          linestyle=linestyle[sampling], color=color[biomarker],
                          label='{0} {1}'.format(biomarker, sampling))
 
@@ -119,7 +140,7 @@ def plot_errorbars(args, data_handler, errors):
     plt.close(fig)
 
 
-def plot_boxplots(args, data_handler, errors, num_samples):
+def plot_boxplots_samplings(args, data_handler, errors, num_samples):
     print log.INFO, 'Plotting error bars...'
     fig, ax = plt.subplots(figsize=(15, 5))
     ve.setup_axes(plt, ax)
@@ -148,7 +169,51 @@ def plot_boxplots(args, data_handler, errors, num_samples):
 
     boxplot = plt.boxplot(data, patch_artist=True)
     plt.xticks(np.arange(len(labels)) + 1, labels)
-    plt.title('Comparison of different sampling methods for {0} samples'.format(num_samples))
+    plt.title('Comparison of different sampling methods ({0} training samples)'.format(num_samples))
+    plt.ylabel(ylabels[args.metric])
+
+    for x in range(3, len(data), 3):
+        plt.axvline(x + 0.5, color='k', alpha=0.4)
+    for i in range(len(data)):
+        ve.set_boxplot_color(boxplot, i, (0, 0, 0))
+
+    # Show or save plot
+    if args.output_file is not None:
+        plt.savefig(args.output_file)
+    else:
+        plt.show()
+    plt.close(fig)
+
+
+def plot_boxplots_noisy_rates(args, data_handler, errors, rate_sigmas):
+    print log.INFO, 'Plotting error bars...'
+    fig, ax = plt.subplots(figsize=(15, 5))
+    ve.setup_axes(plt, ax)
+
+    biomarkers = data_handler.get_biomarker_set()
+    biomarker_strings = {'synth_brain': '$\mathcal{M}^{brain}$',
+                         'synth_hipp': '$\mathcal{M}^{hipp}$',
+                         'synth_mmse': '$\mathcal{M}^{MMSE}$',
+                         'synth_cdrsb': '$\mathcal{M}^{CDRSB}$'}
+    ylabels = {'area': 'Mean area between PDFs',
+               'peakdist': 'Distance between peaks',
+               'maxdist': 'Distance between progression maxima'}
+
+    data = []
+    labels = []
+    for biomarker in biomarkers:
+        for rate_sigma in rate_sigmas:
+            data.append(errors[biomarker][rate_sigma])
+            labels.append('$\sigma={0}$'.format(rate_sigma))
+
+    for i, biomarker in enumerate(biomarkers):
+        plt.text((i + 0.5) * len(rate_sigmas) + 0.5, -0.03,
+                 biomarker_strings[biomarker],
+                 horizontalalignment='center')
+
+    boxplot = plt.boxplot(data, patch_artist=True)
+    plt.xticks(np.arange(len(labels)) + 1, labels)
+    plt.title('Influence of noise on the progression rate on the model generation (1000 training samples)')
     plt.ylabel(ylabels[args.metric])
 
     for x in range(3, len(data), 3):
@@ -165,9 +230,9 @@ def plot_boxplots(args, data_handler, errors, num_samples):
 
 
 def analyse_errors(args, data_handler, errors):
-    experiments = range(args.experiment_range[0],
-                        args.experiment_range[1],
-                        args.experiment_range[2])
+    sample_numbers = range(args.sample_numbers_range[0],
+                           args.sample_numbers_range[1],
+                           args.sample_numbers_range[2])
 
     # Compute mean error uniform vs. triangular
     mean_difference_lon = 0.0
@@ -176,15 +241,15 @@ def analyse_errors(args, data_handler, errors):
         error_curve_uniform = []
         error_curve_triangu = []
         error_curve_longitu = []
-        for experiment in experiments:
-            error_curve_uniform.append(errors[biomarker]['uniform'][experiment])
-            error_curve_triangu.append(errors[biomarker]['triangular'][experiment])
-            error_curve_longitu.append(errors[biomarker]['longitudinal'][experiment])
+        for num_samples in sample_numbers:
+            error_curve_uniform.append(errors[biomarker]['uniform'][num_samples])
+            error_curve_triangu.append(errors[biomarker]['triangular'][num_samples])
+            error_curve_longitu.append(errors[biomarker]['longitudinal'][num_samples])
 
-        mean_difference_lon += np.mean(np.array(error_curve_longitu) -
-                                       np.array(error_curve_uniform))
-        mean_difference_tri += np.mean(np.array(error_curve_triangu) -
-                                       np.array(error_curve_uniform))
+        mean_difference_lon += np.mean(np.abs(np.array(error_curve_longitu) -
+                                              np.array(error_curve_uniform)))
+        mean_difference_tri += np.mean(np.abs(np.array(error_curve_triangu) -
+                                              np.array(error_curve_uniform)))
     mean_difference_lon /= len(data_handler.get_biomarker_set())
     mean_difference_tri /= len(data_handler.get_biomarker_set())
 
