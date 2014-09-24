@@ -52,7 +52,7 @@ def main_estimate_dpi(measurements, viscodes, fitter):
         print log.INFO, 'Estimating DPI for subject {0}...'.format(rid)
         try:
             progress = measurements[rid]['bl']['progress']
-        except Exception:
+        except KeyError:
             continue
 
         if not set(viscodes).issubset(set(measurements[rid].keys())):
@@ -88,7 +88,7 @@ def main_estimate_dpi_dpr(measurements, viscodes, fitter, rcds):
         try:
             progress = measurements[rid]['bl']['progress']
             rcd = rcds[rid]
-        except:
+        except KeyError:
             continue
 
         if not set(viscodes).issubset(set(measurements[rid].keys())):
@@ -105,7 +105,6 @@ def main_estimate_dpi_dpr(measurements, viscodes, fitter, rcds):
             dpis.append(dpi)
             dprs.append(dpr)
             progresses.append(progress)
-            # rcdnum.append(1 if rcds[rid] else 0)
             rcdnum.append(rcd)
 
     rms_error = np.sqrt(np.sum(np.square(np.array(progresses) - np.array(dpis))) / len(dpis))
@@ -116,7 +115,7 @@ def main_estimate_dpi_dpr(measurements, viscodes, fitter, rcds):
     plot_rcds(dpis, dprs, rcdnum)
 
 
-def main_evaluate_scalings(measurements, viscodes, fitter, rcds):
+def main_evaluate_scalings(measurements, fitter, rcds):
     measurements = fitter.get_scaled_measurements(measurements)
 
     # Test all available subjects

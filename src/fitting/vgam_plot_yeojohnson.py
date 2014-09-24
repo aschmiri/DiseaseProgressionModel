@@ -10,6 +10,7 @@ normality or symmetry," Biometrika, vol. 87, no. 4, pp. 954-959, Dec. 2000.
 @copyright:  2014 Imperial College London. All rights reserved.
 @contact:    a.schmidt-richberg@imperial.ac.uk
 '''
+import math
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
@@ -51,45 +52,45 @@ def yeojohnson(y, lmbda, mu, sigma):
     ymu = float(y) / mu
     if ymu < 0:
         if lmbda == 2:
-            return -np.log(-ymu + 1) / sigma
+            return -math.log(-ymu + 1) / sigma
         else:
-            return -(np.power(-ymu + 1, 2 - lmbda) - 1) / ((2 - lmbda) * sigma)
+            return -(math.pow(-ymu + 1, 2 - lmbda) - 1) / ((2 - lmbda) * sigma)
     else:
         if lmbda == 0:
-            return np.log(ymu + 1) / sigma
+            return math.log(ymu + 1) / sigma
         else:
-            return (np.power(ymu + 1, lmbda) - 1) / (lmbda * sigma)
+            return (math.pow(ymu + 1, lmbda) - 1) / (lmbda * sigma)
 
 
 def yeojohnson_inv(phi, lmbda, mu, sigma):
     if phi < 0:
         if lmbda == 2:
-            return mu * (1 - np.exp(-phi * sigma))
+            return mu * (1 - math.exp(-phi * sigma))
         else:
-            return mu * (1 - np.power(-(2 - lmbda) * sigma * phi + 1, 1 / ((2 - lmbda) * sigma)))
+            return mu * (1 - math.pow(-(2 - lmbda) * sigma * phi + 1, 1 / ((2 - lmbda) * sigma)))
     else:
         if lmbda == 0:
-            return mu * (np.exp(phi * sigma) - 1)
+            return mu * (math.exp(phi * sigma) - 1)
         else:
-            return mu * (np.power(phi * sigma * lmbda + 1, 1 / (lmbda * sigma)) - 1)
+            return mu * (math.pow(phi * sigma * lmbda + 1, 1 / (lmbda * sigma)) - 1)
 
 
 def std_normal_dist(x):
-    return np.exp(-0.5 * np.square(x)) / np.sqrt(2 * np.pi)
+    return np.exp(-0.5 * x * x) / np.sqrt(2 * np.pi)
 
 
 def yeojohnson_density(y, lmbda, mu, sigma):
     return (1 / sigma) * \
         std_normal_dist((yeojohnson(y, lmbda, 1, 1) - mu) / sigma) * \
-        np.power(np.abs(y) + 1, np.sign(y) * (lmbda - 1))
+        math.pow(math.fabs(y) + 1, math.copysign(1, y) * (lmbda - 1))
 
 
 def boxcox(y, lmbda, mu, sigma):
     ymu = float(y) / mu
     if lmbda == 0:
-        return np.log(ymu) / sigma
+        return math.log(ymu) / sigma
     else:
-        return (np.power(ymu, lmbda) - 1) / (lmbda * sigma)
+        return (math.pow(ymu, lmbda) - 1) / (lmbda * sigma)
 
 
 def plot(X, transformation, lambdas, mu, sigma):

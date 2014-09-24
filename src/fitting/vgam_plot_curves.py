@@ -71,13 +71,15 @@ def plot_model(args, data_handler, biomarker):
     #
     # Setup plot
     #
-    figwidth = 6 if args.no_densities or args.only_densities else 12
-    fig = plt.figure(figsize=(figwidth, 5))
+    figure_width = 6 if args.no_densities or args.only_densities else 12
+    fig = plt.figure(figsize=(figure_width, 5))
     if args.only_densities:
+        ax1 = None
         ax2 = plt.subplot(1, 1, 1)
         ve.setup_axes(plt, ax2)
     elif args.no_densities:
         ax1 = plt.subplot(1, 1, 1)
+        ax2 = None
         ve.setup_axes(plt, ax1)
     else:
         ax1 = plt.subplot(1, 2, 1)
@@ -99,16 +101,16 @@ def plot_model(args, data_handler, biomarker):
         ax1.axvline(pm.max_progression, color='0.15', linestyle=':', alpha=0.8)
 
         stds = [-1.5, -1.0, -0.5, 0, +0.5, +1.0, +1.5]
-        greyvals = ['0.6', '0.4', '0.2', '0', '0.2', '0.4', '0.6']
-        for greyval, std in zip(greyvals, stds):
+        grey_values = ['0.6', '0.4', '0.2', '0', '0.2', '0.4', '0.6']
+        for grey_value, std in zip(grey_values, stds):
             curve_int = pm.get_quantile_curve(progression_linspace_int, std)
-            ax1.plot(progression_linspace_int, curve_int, color=greyval)
+            ax1.plot(progression_linspace_int, curve_int, color=grey_value)
 
             if not args.no_extrapolation:
                 curve_ex1 = pm.get_quantile_curve(progression_linspace_ex1, std)
                 curve_ex2 = pm.get_quantile_curve(progression_linspace_ex2, std)
-                ax1.plot(progression_linspace_ex1, curve_ex1, '--', color=greyval)
-                ax1.plot(progression_linspace_ex2, curve_ex2, '--', color=greyval)
+                ax1.plot(progression_linspace_ex1, curve_ex1, '--', color=grey_value)
+                ax1.plot(progression_linspace_ex2, curve_ex2, '--', color=grey_value)
 
             # TODO: label = '${0} \sigma$'.format(std)
             # ax1.text(pm.progressions[-1], curve_2[-1], label, fontsize=11)
@@ -199,7 +201,7 @@ def plot_model(args, data_handler, biomarker):
 
     if not args.no_sample_lines and not args.only_densities:
         for progr in progr_samples:
-            if not args.no_extrapolation or (progr > pm.min_progression and progr < pm.max_progression):
+            if not args.no_extrapolation or pm.min_progression < progr < pm.max_progression:
                 sample_color = sample_cmap.to_rgba(progr_samples.index(progr))
                 linestyle = '--' if progr < pm.min_progression or progr > pm.max_progression else '-'
                 ax1.axvline(progr, color=sample_color, linestyle=linestyle, alpha=0.3)
@@ -211,7 +213,7 @@ def plot_model(args, data_handler, biomarker):
 
         values = np.linspace(min_val, max_val, 250)
         for progr in progr_samples:
-            if not args.no_extrapolation or (progr > pm.min_progression and progr < pm.max_progression):
+            if not args.no_extrapolation or pm.min_progression < progr < pm.max_progression:
                 sample_color = sample_cmap.to_rgba(progr_samples.index(progr))
                 linestyle = '--' if progr < pm.min_progression or progr > pm.max_progression else '-'
                 probs = pm.get_density_distribution(values, progr)

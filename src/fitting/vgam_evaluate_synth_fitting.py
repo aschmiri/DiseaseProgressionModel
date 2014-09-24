@@ -54,7 +54,7 @@ def get_errors(args, data_handler, biomarkers, viscode_sets):
 
         # Generate test data and test different biomarker constellations
         num_visits = max([max(vs) for vs in viscode_sets]) + 1
-        test_data = ve.generate_test_data(biomarkers, args.number_of_test_samples, num_visits)
+        test_data = ve.generate_test_data(args, biomarkers, args.number_of_test_samples, num_visits)
 
         # Compute the errors
         errors = []
@@ -96,12 +96,12 @@ def plot_errors(args, errors, biomarkers, viscode_sets):
                 horizontalalignment='center')
 
     # Write mean errors as text
-    pos = np.arange(len(errors)) + 1
+    pos = np.arange(1, len(errors) + 1)
     medians = [np.median(e) for e in errors]
-    upperLabels = [str(np.round(s, 2)) for s in medians]
+    upper_labels = [str(np.round(s, 2)) for s in medians]
     weights = (['semibold'] * len(biomarkers) + ['bold']) * num_viscode_sets
     for tick in range(len(errors)):
-        ax.text(pos[tick], 0.95 * top, upperLabels[tick],
+        ax.text(pos[tick], 0.95 * top, upper_labels[tick],
                 horizontalalignment='center', size='x-small', weight=weights[tick])
 
     # Plot boxplots

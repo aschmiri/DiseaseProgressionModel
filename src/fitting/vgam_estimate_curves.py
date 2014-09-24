@@ -28,6 +28,14 @@ def main():
 
 
 def generate_csv_files(args, data_handler):
+    """
+    Generate the CSV file used to call the R script
+
+    :param args:
+    :param data_handler:
+    """
+    assert isinstance(data_handler, DataHandler)
+
     biomarkers = data_handler.get_biomarker_set()
     measurements = data_handler.get_measurements_as_dict()
 
@@ -58,18 +66,35 @@ def generate_csv_files(args, data_handler):
                         writer.writerow([rid, progression, value])
                         subjects.add(rid)
                         num_samples += 1
-                except:
+                except KeyError:
                     pass
 
         print log.RESULT, 'Collected {0} samples from {1} subjects.'.format(num_samples, len(subjects))
 
 
 def estimate_model_all_biomarkers(args, data_handler):
+    """
+    Estim
+
+    :param args: the command line arguments
+    :param data_handler: the data handler
+    """
+    assert isinstance(data_handler, DataHandler)
+
     biomarkers = data_handler.get_biomarker_set()
     jl.Parallel(n_jobs=args.nr_threads)(jl.delayed(estimate_model)(args, data_handler, biomarker) for biomarker in biomarkers)
 
 
 def estimate_model(args, data_handler, biomarker):
+    """
+    Estimate a model using VGAM
+
+    :param args: the command line arguments
+    :param data_handler: the data handler
+    :param biomarker: a list of biomarkers
+    """
+    assert isinstance(data_handler, DataHandler)
+
     print log.INFO, 'Fitting curve to {0}...'.format(biomarker)
     r_file = os.path.join(adni.project_folder, 'src/fitting/vgam_estimate_curves.R')
 

@@ -33,7 +33,7 @@ def main():
                                args.sample_numbers_range[1],
                                args.sample_numbers_range[2])
         errors = get_errors_samplings(args, data_handler, sample_numbers)
-        plot_errorbars(args, data_handler, errors)
+        plot_error_bars(args, data_handler, errors)
         analyse_errors(args, data_handler, errors)
 
     # Experiment 2
@@ -44,12 +44,14 @@ def main():
 
     # Experiment 3
     if args.experiment == 'ex3':
-        rate_sigmas = [0.0, 0.1]
+        rate_sigmas = [0.0, 0.1, 0.2]
         errors = get_errors_noisy_rates(args, data_handler, rate_sigmas)
         plot_boxplots_noisy_rates(args, data_handler, errors, rate_sigmas)
 
 
 def get_errors_samplings(args, data_handler, sample_numbers):
+    assert isinstance(data_handler, SynthDataHandler)
+
     errors = {}
     for biomarker in data_handler.get_biomarker_set():
         errors.update({biomarker: {}})
@@ -62,6 +64,8 @@ def get_errors_samplings(args, data_handler, sample_numbers):
 
 
 def get_errors_noisy_rates(args, data_handler, rate_sigmas):
+    assert isinstance(data_handler, SynthDataHandler)
+
     errors = {}
     for biomarker in data_handler.get_biomarker_set():
         errors.update({biomarker: {}})
@@ -72,10 +76,12 @@ def get_errors_noisy_rates(args, data_handler, rate_sigmas):
 
 
 def run_experiment(args, data_handler, biomarker, sampling, num_samples=1000, rate_sigma=None):
+    assert isinstance(data_handler, SynthDataHandler)
     print log.INFO, 'Evaluating {0} model (sigma {1}) with {2} training samples...'.format(biomarker, rate_sigma, num_samples)
 
     errors_experiment = []
     for run in xrange(args.number_of_runs):
+
         model_file = data_handler.get_model_file(biomarker,
                                                  num_samples=num_samples,
                                                  sampling=sampling,
@@ -101,8 +107,10 @@ def run_experiment(args, data_handler, biomarker, sampling, num_samples=1000, ra
     return errors_experiment
 
 
-def plot_errorbars(args, data_handler, errors):
+def plot_error_bars(args, data_handler, errors):
+    assert isinstance(data_handler, SynthDataHandler)
     print log.INFO, 'Plotting error bars...'
+
     fig, ax = plt.subplots(figsize=(15, 5))
     ve.setup_axes(plt, ax)
 
@@ -141,7 +149,9 @@ def plot_errorbars(args, data_handler, errors):
 
 
 def plot_boxplots_samplings(args, data_handler, errors, num_samples):
+    assert isinstance(data_handler, SynthDataHandler)
     print log.INFO, 'Plotting error bars...'
+
     fig, ax = plt.subplots(figsize=(15, 5))
     ve.setup_axes(plt, ax)
 
@@ -186,7 +196,9 @@ def plot_boxplots_samplings(args, data_handler, errors, num_samples):
 
 
 def plot_boxplots_noisy_rates(args, data_handler, errors, rate_sigmas):
+    assert isinstance(data_handler, SynthDataHandler)
     print log.INFO, 'Plotting error bars...'
+
     fig, ax = plt.subplots(figsize=(15, 5))
     ve.setup_axes(plt, ax)
 
@@ -230,6 +242,8 @@ def plot_boxplots_noisy_rates(args, data_handler, errors, rate_sigmas):
 
 
 def analyse_errors(args, data_handler, errors):
+    assert isinstance(data_handler, SynthDataHandler)
+
     sample_numbers = range(args.sample_numbers_range[0],
                            args.sample_numbers_range[1],
                            args.sample_numbers_range[2])

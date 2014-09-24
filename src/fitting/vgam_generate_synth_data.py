@@ -27,7 +27,7 @@ def main():
     args = parser.parse_args()
 
     print log.INFO, 'Generating synthetic data with {0} samples...'.format(args.number_of_samples)
-    out_file = os.path.join(adni.project_folder, 'lists/synthdata.csv')
+    out_file = os.path.join(adni.project_folder, 'lists/synth_data.csv')
 
     # Determine structures to segment
     data_handler = SynthDataHandler(args)
@@ -53,7 +53,7 @@ def main():
                 cdfs = {}
                 for biomarker in biomarkers:
                     base_sample = SynthModel.get_distributed_value(biomarker, base_progress)
-                    cdfs.update({biomarker: SynthModel.get_cumulated_probability(biomarker, base_progress, base_sample)})
+                    cdfs.update({biomarker: SynthModel.get_cumulative_probability(biomarker, base_progress, base_sample)})
 
                 # Get samples with same noise for all biomarkers
                 for sample_index in range(args.samples_per_subject):

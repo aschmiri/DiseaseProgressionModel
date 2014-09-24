@@ -1,10 +1,10 @@
-'''
+"""
 A class to provide modelling functionality for synthetic examples.
 
 @author:     Alexander Schmidt-Richberg
 @copyright:  2014 Imperial College London. All rights reserved.
 @contact:    a.schmidt-richberg@imperial.ac.uk
-'''
+"""
 import math
 import random
 import numpy as np
@@ -13,9 +13,9 @@ from scipy import stats
 
 
 class SynthModel(object):
-    '''
+    """
     A class to simulate synthetic models.
-    '''
+    """
     PROGRESS_RANGE = 2000
 
     _models = {}
@@ -25,7 +25,7 @@ class SynthModel(object):
     _models.update({'synth_cdrsb': {'shape': 'exp',
                                     'exp_asymptote': 0,
                                     'exp_a': 3.2,
-                                    'exp_b': np.log(7.9 / 3.2) / float(365 * 6),
+                                    'exp_b': math.log(7.9 / 3.2) / float(365 * 6),
                                     'offset': 365 * -3,
                                     'noise': 'gamma',
                                     'noise_sigma_mci': 0.9,
@@ -37,7 +37,7 @@ class SynthModel(object):
     _models.update({'synth_mmse': {'shape': 'exp',
                                    'exp_asymptote': 30,
                                    'exp_a': 6.8 * -1,
-                                   'exp_b': np.log(11.6 / 6.8) / float(365 * 6),
+                                   'exp_b': math.log(11.6 / 6.8) / float(365 * 6),
                                    'offset': 365 * -3,
                                    'noise': 'gamma',
                                    'noise_sigma_mci': 2.6,
@@ -115,9 +115,9 @@ class SynthModel(object):
         elif SynthModel._models[biomarker]['noise'] == 'gamma':
             k, theta = SynthModel._get_gamma_parameters(biomarker, progress)
             if cdf is None:
-                return SynthModel._transorm_coordinates(biomarker, random.gammavariate(k, theta))
+                return SynthModel._transform_coordinates(biomarker, random.gammavariate(k, theta))
             else:
-                return SynthModel._transorm_coordinates(biomarker, stats.gamma.ppf(cdf, k, scale=theta))
+                return SynthModel._transform_coordinates(biomarker, stats.gamma.ppf(cdf, k, scale=theta))
 
     ############################################################################
     #
@@ -155,18 +155,18 @@ class SynthModel(object):
     ############################################################################
     @staticmethod
     def get_sigma(biomarker, progress):
-        '''
+        """
         Get an interpolated value for sigma as an exponential function, such that
           sigma(-3 * 365) = noise_sigma_mci
           sigma(3 * 365) = noise_sigma_ad
-        '''
+        """
         sigma_mci = SynthModel._models[biomarker]['noise_sigma_mci']
         sigma_ad = SynthModel._models[biomarker]['noise_sigma_ad']
         offset = SynthModel._models[biomarker]['offset']
         if sigma_mci == sigma_ad:
             return sigma_mci
         else:
-            b = np.log(sigma_ad / sigma_mci) / float(6 * 365)
+            b = math.log(sigma_ad / sigma_mci) / float(6 * 365)
             return sigma_mci * np.exp(b * (progress - offset))
 
     ############################################################################
@@ -181,22 +181,22 @@ class SynthModel(object):
             return stats.norm.pdf(value, scale=sigma, loc=SynthModel.get_median(biomarker, progress))
         elif SynthModel._models[biomarker]['noise'] == 'gamma':
             k, theta = SynthModel._get_gamma_parameters(biomarker, progress)
-            value = SynthModel._transorm_coordinates(biomarker, value)
+            value = SynthModel._transform_coordinates(biomarker, value)
             return stats.gamma.pdf(value, k, scale=theta)
 
     ############################################################################
     #
-    # get_cumulated_probability()
+    # get_cumulative_probability()
     #
     ############################################################################
     @staticmethod
-    def get_cumulated_probability(biomarker, progress, value):
+    def get_cumulative_probability(biomarker, progress, value):
         if SynthModel._models[biomarker]['noise'] == 'gaussian':
             sigma = SynthModel.get_sigma(biomarker, progress)
             return stats.norm.cdf(value, scale=sigma, loc=SynthModel.get_median(biomarker, progress))
         elif SynthModel._models[biomarker]['noise'] == 'gamma':
             k, theta = SynthModel._get_gamma_parameters(biomarker, progress)
-            value = SynthModel._transorm_coordinates(biomarker, value)
+            value = SynthModel._transform_coordinates(biomarker, value)
             return stats.gamma.cdf(value, k, scale=theta)
 
     ############################################################################
@@ -206,19 +206,19 @@ class SynthModel(object):
     ############################################################################
     @staticmethod
     def _get_gamma_parameters(biomarker, progress):
-        '''
+        """
         Get the values of k and theta for the given biomarker and progress.
         It is calculated based on median and standard deviation sigma using:
           theta = sqrt(sigma^2/k)
         and
           median = k * theta * (3 * k - 0.8) / (3 * k + 0.2)
-        '''
+        """
         if SynthModel._models[biomarker]['noise'] is not 'gamma':
-            print log.ERROR, 'Noise model is not gamma destributed!'
+            print log.ERROR, 'Noise model is not gamma distributed!'
             return None, None
         else:
             median = SynthModel.get_median(biomarker, progress)
-            median = SynthModel._transorm_coordinates(biomarker, median)
+            median = SynthModel._transform_coordinates(biomarker, median)
             sigma = SynthModel.get_sigma(biomarker, progress)
 
             # Get k from polynomial roots
@@ -226,17 +226,22 @@ class SynthModel(object):
             s2 = sigma * sigma
             p = [9 * s2, -9 * m2, -(4.8 * s2 + 1.2 * m2), -0.04 * m2, 0.64 * s2]
             roots = np.roots(p)
+            k = None
             for root in roots:
-                r = np.real(root)
-                if r > 0 and np.imag(r) == 0.0:
-                    k = r
+                root_real = np.real(root)
+                if root_real > 0 and np.imag(root_real) == 0.0:
+                    k = root_real
                     break
 
-            # Get theta
-            theta = (median / k) * (3 * k + 0.2) / (3 * k - 0.8)
+            if k is not None:
+                # Get theta
+                theta = (median / k) * (3 * k + 0.2) / (3 * k - 0.8)
 
-            # Return results
-            return k, theta
+                # Return results
+                return k, theta
+            else:
+                print log.ERROR, 'Failed to determine gamma parameters!'
+                return None, None
 
     ############################################################################
     #
@@ -244,7 +249,7 @@ class SynthModel(object):
     #
     ############################################################################
     @staticmethod
-    def _transorm_coordinates(biomarker, value):
+    def _transform_coordinates(biomarker, value):
         if SynthModel._models[biomarker]['shape'] == 'exp':
             asymptote = SynthModel._models[biomarker]['exp_asymptote']
             a = SynthModel._models[biomarker]['exp_a']

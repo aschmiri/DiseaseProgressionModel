@@ -89,10 +89,10 @@ def sort_biomarkers(data_handler, biomarkers):
             errors.append(float('inf'))
 
     print log.RESULT, 'Sorted biomarkers:'
-    maxlen = np.max([len(biomarker) for biomarker in biomarkers])
+    max_length = np.max([len(biomarker) for biomarker in biomarkers])
     idx = np.argsort(errors)
     for i in idx:
-        print log.RESULT, ('{0:>' + str(maxlen) + '}  {1}').format(biomarkers[i], errors[i])
+        print log.RESULT, ('{0:>' + str(max_length) + '}  {1}').format(biomarkers[i], errors[i])
     print log.RESULT, 'Mean error: {0}'.format(np.mean(errors))
 
 if __name__ == '__main__':

@@ -1,10 +1,10 @@
-'''
+"""
 A class to provide progression modelling functionality.
 
 @author:     Alexander Schmidt-Richberg
 @copyright:  2014 Imperial College London. All rights reserved.
 @contact:    a.schmidt-richberg@imperial.ac.uk
-'''
+"""
 import os.path
 import datetime
 import csv
@@ -15,9 +15,9 @@ from vgam.synthmodel import SynthModel
 
 
 class DataHandler(object):
-    '''
+    """
     TODO: classdocs
-    '''
+    """
     ############################################################################
     #
     # add_arguments()
@@ -50,7 +50,7 @@ class DataHandler(object):
     #
     ############################################################################
     def __init__(self, args=None, iteration=None):
-        '''
+        """
         Initialise the right data files for the given arguments.
 
         Arguments:
@@ -59,7 +59,7 @@ class DataHandler(object):
         args.iteration -- the iteration of the fitting
         args.trans -- the transformation if method == 'reg'
         args.spacing -- the spacing if method == 'reg'
-        '''
+        """
         # Set biomarker sets
         if args is None:
             self._biomarker_subset = None
@@ -92,7 +92,7 @@ class DataHandler(object):
         self._data_files = {'meta': os.path.join(adni.project_folder, 'lists/metadata.csv'),
                             'cog': os.path.join(adni.project_folder, 'lists/metadata.csv'),
                             'mbl': os.path.join(adni.project_folder, 'lists/manifold_features.csv'),
-                            'reg': os.path.join(adni.project_folder, 'lists/volumes_segbased_' + trans + '_' + spacing + 'mm.csv'),
+                            'reg': os.path.join(adni.project_folder, 'lists/volumes_segbased_{0}_{1}mm.csv'.format(trans, spacing)),
                             'long': os.path.join(adni.project_folder, 'lists/volumes_segbased_longitudinal.csv'),
                             'cons': os.path.join(adni.project_folder, 'lists/volumes_segbased_consistent.csv'),
                             'graph': os.path.join(adni.project_folder, 'lists/volumes_segbased_graphcut.csv')}
@@ -126,7 +126,7 @@ class DataHandler(object):
     #
     ############################################################################
     def get_biomarker_set(self, method=None):
-        ''' Get the right set of biomarkers for the given method.'''
+        """ Get the right set of biomarkers for the given method."""
         if self._biomarker_subset is not None:
             return self._biomarker_subset
         method = self._method if method is None else method
@@ -138,7 +138,7 @@ class DataHandler(object):
     #
     ############################################################################
     def get_data_file(self, method=None):
-        ''' Get the right data file for the given method. '''
+        """ Get the right data file for the given method. """
         method = self._method if method is None else method
         return self._data_files[method]
 
@@ -148,7 +148,7 @@ class DataHandler(object):
     #
     ############################################################################
     def get_data_file_for_biomarker(self, biomarker):
-        ''' Get the right data file for the given biomarker. '''
+        """ Get the right data file for the given biomarker. """
         return self._data_files[self._get_method_for_biomarker(biomarker)]
 
     ############################################################################
@@ -157,7 +157,7 @@ class DataHandler(object):
     #
     ############################################################################
     def get_model_folder(self, method=None, previous_iteration=False):
-        ''' Get the right data file for the given method and iteration. '''
+        """ Get the right data file for the given method and iteration. """
         method = self._method if method is None else method
         iteration = self._iteration - 1 if previous_iteration else self._iteration
         iteration_folder = 'it_{0}'.format(iteration)
@@ -169,7 +169,7 @@ class DataHandler(object):
     #
     ############################################################################
     def get_model_folder_for_biomarker(self, biomarker, iteration=None):
-        ''' Get the right data folders for the given biomarker. '''
+        """ Get the right data folders for the given biomarker. """
         iteration = self._iteration if iteration is None else iteration
         base_folder = self._model_folders[self._get_method_for_biomarker(biomarker)]
         iteration_folder = 'it_{0}'.format(iteration)
@@ -181,7 +181,7 @@ class DataHandler(object):
     #
     ############################################################################
     def get_model_file(self, biomarker, iteration=None):
-        ''' Get the right model file for the given biomarker. '''
+        """ Get the right model file for the given biomarker. """
         iteration = self._iteration if iteration is None else iteration
         model_folder = self.get_model_folder_for_biomarker(biomarker, iteration=iteration)
         return os.path.join(model_folder, biomarker.replace(' ', '_') + '_model.csv')
@@ -192,7 +192,7 @@ class DataHandler(object):
     #
     ############################################################################
     def get_samples_file(self, biomarker, iteration=None):
-        ''' Get the right model file for the given biomarker. '''
+        """ Get the right model file for the given biomarker. """
         iteration = self._iteration if iteration is None else iteration
         model_folder = self.get_model_folder_for_biomarker(biomarker, iteration=iteration)
         return os.path.join(model_folder, biomarker.replace(' ', '_') + '_samples.csv')
@@ -222,7 +222,7 @@ class DataHandler(object):
     #
     ############################################################################
     def get_measurements_as_dict(self, biomarkers=None, select_converters=True, no_regression=False, complete=False):
-        ''' Return all subjects measurements as a dictionary.
+        """ Return all subjects measurements as a dictionary.
 
         Arguments:
         select_converters -- only select MCI -> AD converters
@@ -239,7 +239,7 @@ class DataHandler(object):
                                 ... }
                   { <viscode> : ... }
           <rid> : ... }
-        '''
+        """
         # Read data from lists
         measurements = self._get_metadata_as_dict(select_converters=select_converters)
         measurements = self.update_measurements_with_biomarker_values(measurements, biomarkers=biomarkers, no_regression=no_regression)
@@ -275,7 +275,7 @@ class DataHandler(object):
     #
     ############################################################################
     def _get_metadata_as_dict(self, select_converters=True):
-        ''' Return all subjects metadata as a dictionary.
+        """ Return all subjects metadata as a dictionary.
 
         Arguments:
         data_file -- the names of the csv file containing the data
@@ -290,7 +290,7 @@ class DataHandler(object):
                                 { progress : <days relative to conversion> } }
                   { <viscode> : ... }
           <rid> : ... }
-        '''
+        """
         print log.INFO, 'Collecting metadata...'
         metadata = {}
 
@@ -301,8 +301,8 @@ class DataHandler(object):
 
         #
         # Get all measurements from CSV file
-        with open(data_file, 'rb') as csvfile:
-            rows = csv.DictReader(csvfile)
+        with open(data_file, 'rb') as csv_file:
+            rows = csv.DictReader(csv_file)
             for row in rows:
                 # Get rid
                 rid = int(row['RID'])
@@ -374,6 +374,8 @@ class DataHandler(object):
                 if data_diagnosis[-1] == 1.0 and data_diagnosis[0] == 0.5:
                     valid_rids.append(rid)
                     scantime_prev = data_scantime[0]
+
+                    time_convert = None
                     for diagnosis, scantime in zip(data_diagnosis, data_scantime):
                         if diagnosis == 1.0:
                             time_convert = scantime_prev + (scantime - scantime_prev) / 2
@@ -397,14 +399,14 @@ class DataHandler(object):
     #
     ############################################################################
     def update_measurements_with_biomarker_values(self, measurements, biomarkers=None, no_regression=False):
-        ''' Update the metadata dictionary with the biomarker values.
+        """ Update the metadata dictionary with the biomarker values.
 
         Arguments:
         metadata -- the metadata
         data_file -- the data file containing the biomarker values
         biomarker_names -- the biomarkers to be read
         no_regression -- do not perform age regression
-        '''
+        """
         biomarkers = self.get_biomarker_set() if biomarkers is None else biomarkers
         biomarker_values = self._get_biomarker_values_as_dict(measurements, biomarkers=biomarkers, no_regression=no_regression)
 
@@ -415,7 +417,7 @@ class DataHandler(object):
                     try:
                         value = biomarker_values[rid][viscode][biomarker]
                         measurements[rid][viscode].update({biomarker: value})
-                    except:
+                    except KeyError:
                         # TODO: Debug message
                         pass
 
@@ -427,7 +429,7 @@ class DataHandler(object):
     #
     ############################################################################
     def _get_biomarker_values_as_dict(self, metadata, biomarkers=None, no_regression=False):
-        ''' Return all measurements as a dictionary.
+        """ Return all measurements as a dictionary.
 
         Arguments:
         data_file -- the names of the csv file containing the data
@@ -440,10 +442,10 @@ class DataHandler(object):
                                 { <biomarker2> : <value> } ... }
                   { <viscode> : ... }
           <rid> : ... }
-        '''
+        """
         biomarkers = self.get_biomarker_set() if biomarkers is None else biomarkers
 
-        NO_REGRESSION_STR = '{0} no regression'
+        no_regression_str = '{0} no regression'
         print log.INFO, 'Collecting biomarker values...'
         values = {}
 
@@ -479,7 +481,7 @@ class DataHandler(object):
                         if no_regression:
                             values[rid][viscode].update({biomarker: value})
                         else:
-                            values[rid][viscode].update({NO_REGRESSION_STR.format(biomarker): value})
+                            values[rid][viscode].update({no_regression_str.format(biomarker): value})
 
         if not no_regression:
             print log.INFO, 'Performing age regression...'
@@ -493,11 +495,11 @@ class DataHandler(object):
                         # Get age
                         try:
                             age = metadata[rid][viscode]['AGE.scan']
-                        except:
+                        except KeyError:
                             age = None
 
-                        if age is not None and NO_REGRESSION_STR.format(biomarker) in visits[viscode]:
-                            value = visits[viscode][NO_REGRESSION_STR.format(biomarker)]
+                        if age is not None and no_regression_str.format(biomarker) in visits[viscode]:
+                            value = visits[viscode][no_regression_str.format(biomarker)]
                             if value is not None:
                                 ages.append(age)
                                 vals.append(value)
@@ -505,9 +507,9 @@ class DataHandler(object):
                                 viscodes.append(viscode)
 
                 if len(ages) > 1:
-                    regressed_vals = self._age_regression(ages, vals)
+                    regressed_values = self._age_regression(ages, vals)
 
-                    for rid, viscode, value in zip(rids, viscodes, regressed_vals):
+                    for rid, viscode, value in zip(rids, viscodes, regressed_values):
                         values[rid][viscode].update({biomarker: value})
 
         return values
@@ -517,8 +519,9 @@ class DataHandler(object):
     # _age_regression()
     #
     ############################################################################
-    def _age_regression(self, timepoints, values):
-        ''' Perform age regression. '''
+    @staticmethod
+    def _age_regression(timepoints, values):
+        """ Perform age regression. """
         timepoints = np.array(timepoints)
         values = np.array(values)
         mean_val = np.mean(values)
@@ -534,8 +537,9 @@ class DataHandler(object):
     # get_mmse_decline_as_dict()
     #
     ############################################################################
+    @property
     def get_mmse_decline_as_dict(self):
-        ''' Return all a dictionary that indicates for each RID the MMSE decline
+        """ Return all a dictionary that indicates for each RID the MMSE decline
         of the subject between baseline and m24 visits.
 
         Arguments:
@@ -545,7 +549,7 @@ class DataHandler(object):
         A dictionary with the following structure:
         { <rid> : <decline>
           ... }
-        '''
+        """
         measurements = self._get_metadata_as_dict(select_converters=False)
         measurements = self.update_measurements_with_biomarker_values(measurements, biomarkers=['MMSE'])
 
@@ -556,7 +560,7 @@ class DataHandler(object):
                 mmse_24 = measurements[rid]['m24']['MMSE']
                 decline = mmse_bl - mmse_24
                 declines.update({rid: decline})
-            except Exception:
+            except KeyError:
                 # TODO: debug message
                 pass
 
@@ -567,8 +571,9 @@ class DataHandler(object):
     # get_rcd_as_dict()
     #
     ############################################################################
+    @property
     def get_rcd_as_dict(self):
-        ''' Return all a dictionary that indicates for each RID if the subject
+        """ Return all a dictionary that indicates for each RID if the subject
         is classified as RCD (rapid cognitive decline).
 
         Arguments:
@@ -578,7 +583,7 @@ class DataHandler(object):
         A dictionary with the following structure:
         { <rid> : [True|False]
           ... }
-        '''
+        """
         measurements = self._get_metadata_as_dict(select_converters=False)
         measurements = self.update_measurements_with_biomarker_values(measurements, biomarkers=['MMSE'])
 
@@ -589,7 +594,7 @@ class DataHandler(object):
                 mmse_24 = measurements[rid]['m24']['MMSE']
                 rcd = True if (mmse_24 - mmse_bl) < -7 else False
                 rcds.update({rid: rcd})
-            except Exception:
+            except KeyError:
                 # TODO: debug message
                 pass
 
@@ -597,9 +602,9 @@ class DataHandler(object):
 
 
 class SynthDataHandler(DataHandler):
-    '''
-    TODO: classdocs
-    '''
+    """
+    TODO:
+    """
 
     ############################################################################
     #
@@ -607,31 +612,23 @@ class SynthDataHandler(DataHandler):
     #
     ############################################################################
     def __init__(self, args=None, iteration=None):
-        '''
-        Initialise the right data files for the given arguments.
+        """
+            Initialise the right data files for the given arguments.
 
-        Arguments:
-        args -- command line arguments with:
-        '''
-        # Set biomarker sets
+            Arguments:
+            args -- command line arguments with:
+            """
+        super(SynthDataHandler, self).__init__()
         if args is None:
             self._biomarker_subset = None
         else:
             self._biomarker_subset = args.biomarkers_name
         self._biomarker_sets = {'synth': SynthModel.get_biomarker_names()}
-
-        # Set data folders
         self._model_folders = {'synth': os.path.join(adni.project_folder, 'models', 'synth')}
-
-        # Set data files
-        self._data_files = {'meta': os.path.join(adni.project_folder, 'lists/synthdata.csv'),
-                            'synth': os.path.join(adni.project_folder, 'lists/synthdata.csv')}
-
-        # Set method
+        self._data_files = {'meta': os.path.join(adni.project_folder, 'lists/synth_data.csv'),
+                            'synth': os.path.join(adni.project_folder, 'lists/synth_data.csv')}
         self._method = 'synth'
         self._volume_method = 'synth'
-
-        # Set iteration
         if iteration is not None:
             self._iteration = iteration
         else:
@@ -643,7 +640,7 @@ class SynthDataHandler(DataHandler):
     #
     ############################################################################
     def get_model_file(self, biomarker, iteration=None, num_samples=None, sampling=None, rate_sigma=None, run=None):
-        ''' Get the right model file for the given biomarker. '''
+        """ Get the right model file for the given biomarker. """
         model_file = DataHandler.get_model_file(self, biomarker, iteration=iteration)
         num_samples_str = '_{0}'.format(num_samples) if num_samples is not None else ''
         sampling_str = '_{0}'.format(sampling) if sampling is not None else ''
@@ -657,7 +654,7 @@ class SynthDataHandler(DataHandler):
     #
     ############################################################################
     def get_samples_file(self, biomarker, iteration=None, num_samples=None, sampling=None, rate_sigma=None, run=None):
-        ''' Get the right model file for the given biomarker. '''
+        """ Get the right model file for the given biomarker. """
         samples_file = DataHandler.get_samples_file(self, biomarker, iteration=iteration)
         num_samples_str = '_{0}'.format(num_samples) if num_samples is not None else ''
         sampling_str = '_{0}'.format(sampling) if sampling is not None else ''
@@ -671,7 +668,7 @@ class SynthDataHandler(DataHandler):
     #
     ############################################################################
     def _get_metadata_as_dict(self, select_converters=True):
-        ''' Return all subjects metadata as a dictionary.
+        """ Return all subjects metadata as a dictionary.
 
         Arguments:
         data_file -- the names of the csv file containing the data
@@ -686,7 +683,7 @@ class SynthDataHandler(DataHandler):
                                 { progress : <days relative to conversion> } }
                   { <viscode> : ... }
           <rid> : ... }
-        '''
+        """
         print log.INFO, 'Collecting metadata...'
         metadata = {}
 
@@ -697,8 +694,8 @@ class SynthDataHandler(DataHandler):
 
         #
         # Get all measurements from CSV file
-        with open(data_file, 'rb') as csvfile:
-            rows = csv.DictReader(csvfile)
+        with open(data_file, 'rb') as csv_file:
+            rows = csv.DictReader(csv_file)
             for row in rows:
                 # Get rid
                 rid = int(row['RID'])
@@ -737,7 +734,7 @@ class SynthDataHandler(DataHandler):
     #
     ############################################################################
     def _get_biomarker_values_as_dict(self, metadata, biomarkers=None, no_regression=False):
-        ''' Return all measurements as a dictionary.
+        """ Return all measurements as a dictionary.
 
         Arguments:
         data_file -- the names of the csv file containing the data
@@ -750,7 +747,7 @@ class SynthDataHandler(DataHandler):
                                 { <biomarker2> : <value> } ... }
                   { <viscode> : ... }
           <rid> : ... }
-        '''
+        """
         biomarkers = self.get_biomarker_set() if biomarkers is None else biomarkers
 
         print log.INFO, 'Collecting biomarker values...'

@@ -1,10 +1,10 @@
-'''
+"""
 A class to provide progression modelling functionality.
 
 @author:     Alexander Schmidt-Richberg
 @copyright:  2014 Imperial College London. All rights reserved.
 @contact:    a.schmidt-richberg@imperial.ac.uk
-'''
+"""
 import math
 import numpy as np
 import matplotlib.mlab as mlab
@@ -12,9 +12,9 @@ from common import log as log
 
 
 class MultiBiomarkerProgressionModel(object):
-    '''
+    """
     TODO: classdocs
-    '''
+    """
     models = {}
 
     ################################################################################
@@ -22,7 +22,7 @@ class MultiBiomarkerProgressionModel(object):
     # add_model()
     #
     ################################################################################
-    def add_model(self, biomarker, model_file, extrapolator='exp'):
+    def add_model(self, biomarker, model_file):
         model = ProgressionModel(biomarker, model_file)
         self.models.update({biomarker: model})
 
@@ -45,15 +45,14 @@ class MultiBiomarkerProgressionModel(object):
             if biomarker in values:
                 value = values[biomarker]
                 probability *= self.models[biomarker].get_probability_value(value, progression)
-        # probability /= len(self.models)
 
         return probability
 
 
 class ProgressionModel(object):
-    '''
+    """
     TODO: classdocs
-    '''
+    """
 
     ############################################################################
     #
@@ -61,19 +60,19 @@ class ProgressionModel(object):
     #
     ############################################################################
     def __init__(self, biomarker, model_file, extrapolator='exp'):
-        '''
+        """
         Initialise the progression model with a data file
-        '''
+        """
         self.biomarker = biomarker
         self.extrapolator = extrapolator
-        self.__intitialise_model(model_file)
+        self.__initialise_model(model_file)
 
     ############################################################################
     #
-    # __intitialise_model()
+    # __initialise_model()
     #
     ############################################################################
-    def __intitialise_model(self, model_file):
+    def __initialise_model(self, model_file):
         r = mlab.csv2rec(model_file)
         r_sorted = np.sort(r, order=r.dtype.names[2])
         progrs = r_sorted[r.dtype.names[2]]
@@ -105,7 +104,7 @@ class ProgressionModel(object):
     #
     ############################################################################
     def get_value_range(self, std_range=1.5):
-        ''' Get the value range estimated by the model in a given std range. '''
+        """ Get the value range estimated by the model in a given std range. """
         min_curve = self.get_quantile_curve(self.progressions, -std_range)
         max_curve = self.get_quantile_curve(self.progressions, std_range)
         return np.min(min_curve), np.max(max_curve)
@@ -228,7 +227,8 @@ class ProgressionModel(object):
     # __compute_binned_data()
     #
     ############################################################################
-    def __compute_binned_data(self, data_x, data_y, bin_size=92):
+    @staticmethod
+    def __compute_binned_data(data_x, data_y, bin_size=92):
         bins_x = []
         bins_y = []
 
@@ -236,7 +236,7 @@ class ProgressionModel(object):
             bin_x = []
             bin_y = []
             for x, y in zip(data_x, data_y):
-                if x >= curr_x and x < curr_x + bin_size:
+                if curr_x <= x < curr_x + bin_size:
                     bin_x.append(x)
                     bin_y.append(y)
 
@@ -254,10 +254,11 @@ class ProgressionModel(object):
     # __yeojohnson_density()
     #
     ############################################################################
-    def __yeojohnson_density(self, y, lmbda, mu, sigma):
-        ''' Return the probability of a value y given lambda, mu and sigma'''
+    @staticmethod
+    def __yeojohnson_density(y, lmbda, mu, sigma):
+        """ Return the probability of a value y given lambda, mu and sigma"""
         return (1 / sigma) * \
-            self.__std_normal_dist((self.__yeojohnson(y, lmbda) - mu) / sigma) * \
+            ProgressionModel.__std_normal_dist((ProgressionModel.__yeojohnson(y, lmbda) - mu) / sigma) * \
             math.pow(math.fabs(y) + 1, math.copysign(1, y) * (lmbda - 1))
 
     ############################################################################
@@ -265,7 +266,8 @@ class ProgressionModel(object):
     # __yeojohnson()
     #
     ############################################################################
-    def __yeojohnson(self, y, lmbda):
+    @staticmethod
+    def __yeojohnson(y, lmbda):
         if y < 0:
             if lmbda == 2:
                 return -math.log(-y + 1)
@@ -273,7 +275,7 @@ class ProgressionModel(object):
                 return -(math.pow(-y + 1, 2 - lmbda) - 1) / (2 - lmbda)
         else:
             if lmbda == 0:
-                return np.log(y + 1)
+                return math.log(y + 1)
             else:
                 return (math.pow(y + 1, lmbda) - 1) / lmbda
 
@@ -282,7 +284,8 @@ class ProgressionModel(object):
     # __std_normal_dist()
     #
     ############################################################################
-    def __std_normal_dist(self, x):
+    @staticmethod
+    def __std_normal_dist(x):
         return math.exp(-0.5 * x ** 2) / math.sqrt(2 * math.pi)
 
     ############################################################################
@@ -290,16 +293,18 @@ class ProgressionModel(object):
     # __yeojohnson_quantile()
     #
     ############################################################################
-    def __yeojohnson_quantile(self, lmbda, mu, sigma, q):
-        ''' Return the value of quantile q'''
-        return self.__yeojohnson_inverse(mu + sigma * q, lmbda)
+    @staticmethod
+    def __yeojohnson_quantile(lmbda, mu, sigma, q):
+        """ Return the value of quantile q"""
+        return ProgressionModel.__yeojohnson_inverse(mu + sigma * q, lmbda)
 
     ############################################################################
     #
     # __yeojohnson_inverse()
     #
     ############################################################################
-    def __yeojohnson_inverse(self, x, lmbda):
+    @staticmethod
+    def __yeojohnson_inverse(x, lmbda):
         if x < 0:
             if lmbda == 2:
                 return 1 - math.exp(-x)

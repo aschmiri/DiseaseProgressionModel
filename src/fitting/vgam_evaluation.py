@@ -3,15 +3,19 @@ import os.path
 from subprocess import call
 import pickle
 import numpy as np
+import matplotlib as mpl
 from common import log as log
 from common import adni_tools as adni
 from vgam.synthmodel import SynthModel
 from vgam.progressionmodel import ProgressionModel
+from vgam.modelfitter import ModelFitter
 
 
 def generate_model(args, data_handler, biomarker, num_samples=1000, sampling='longitudinal', rate_sigma=0.0, run=0):
-    model_file_experiment = data_handler.get_model_file(biomarker, num_samples=num_samples, sampling=sampling, rate_sigma=rate_sigma, run=run)
-    samples_file_experiment = data_handler.get_samples_file(biomarker, num_samples=num_samples, sampling=sampling, rate_sigma=rate_sigma, run=run)
+    model_file_experiment = data_handler.get_model_file(biomarker, num_samples=num_samples, sampling=sampling,
+                                                        rate_sigma=rate_sigma, run=run)
+    samples_file_experiment = data_handler.get_samples_file(biomarker, num_samples=num_samples, sampling=sampling,
+                                                            rate_sigma=rate_sigma, run=run)
 
     if os.path.isfile(model_file_experiment) and os.path.isfile(samples_file_experiment) and not args.recompute_models:
         print log.SKIP, 'Skipping model generation for {0} samples {1}, run {2}'.format(num_samples, sampling, run)
@@ -25,9 +29,11 @@ def generate_model(args, data_handler, biomarker, num_samples=1000, sampling='lo
             biomarker_str = ' -b {0}'.format(biomarker) if biomarker is not None else ''
             num_samples_str = ' -n {0}'.format(num_samples) if num_samples is not None else ''
             sampling_str = ' --sampling {0}'.format(sampling)
-            rate_sigma_str = ' --rate_sigma {0}'.format(rate_sigma) if rate_sigma is not None and rate_sigma > 0.0 else ''
+            rate_sigma_str = ' --rate_sigma {0}'.format(
+                rate_sigma) if rate_sigma is not None and rate_sigma > 0.0 else ''
 
-            call('{0}/vgam_generate_synth_data.py {1}{2}{3}{4}'.format(exec_folder, biomarker_str, num_samples_str, sampling_str, rate_sigma_str), shell=True)
+            call('{0}/vgam_generate_synth_data.py {1}{2}{3}{4}'.format(exec_folder, biomarker_str, num_samples_str,
+                                                                       sampling_str, rate_sigma_str), shell=True)
             call('{0}/vgam_estimate_curves.py synth {1}'.format(exec_folder, biomarker_str), shell=True)
 
             model_file = data_handler.get_model_file(biomarker)
@@ -92,7 +98,8 @@ def generate_test_data(args, biomarkers, num_test_samples, number_of_visits, run
     if run is None:
         test_data_filename = 'test_data_{0}_{1}_{2}.p'.format(biomarkers_str, num_test_samples, number_of_visits)
     else:
-        test_data_filename = 'test_data_{0}_{1}_{2}_{3}.p'.format(biomarkers_str, num_test_samples, number_of_visits, run)
+        test_data_filename = 'test_data_{0}_{1}_{2}_{3}.p'.format(biomarkers_str, num_test_samples, number_of_visits,
+                                                                  run)
     test_data_file = os.path.join(adni.eval_folder, test_data_filename)
 
     if os.path.isfile(test_data_file) and not args.recompute_test_data:
@@ -120,7 +127,10 @@ def generate_test_data(args, biomarkers, num_test_samples, number_of_visits, run
     return test_data
 
 
-def evaluate_synth_fitting(fitter, test_data, biomarkers, viscodes=[0]):
+def evaluate_synth_fitting(fitter, test_data, biomarkers, viscodes=None):
+    assert isinstance(fitter, ModelFitter)
+    viscodes = [0] if viscodes is None else viscodes
+
     print log.INFO, 'Testing biomarkers {0} with viscodes {1}...'.format(biomarkers, viscodes)
     dpis = []
     progresses = []
@@ -151,6 +161,8 @@ def evaluate_synth_fitting(fitter, test_data, biomarkers, viscodes=[0]):
 
 
 def setup_axes(plt, ax):
+    assert isinstance(ax, mpl.axes.Axes)
+
     ax.spines['right'].set_color('none')
     ax.spines['top'].set_color('none')
     ax.spines['left'].set_color('none')
