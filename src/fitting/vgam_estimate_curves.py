@@ -58,7 +58,7 @@ def generate_csv_files(args, data_handler):
                         writer.writerow([rid, progression, value])
                         subjects.add(rid)
                         num_samples += 1
-                except Exception:
+                except:
                     pass
 
         print log.RESULT, 'Collected {0} samples from {1} subjects.'.format(num_samples, len(subjects))

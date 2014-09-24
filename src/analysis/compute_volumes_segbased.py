@@ -184,11 +184,12 @@ def get_volumes_regbased(args, rid, viscode, study, filename):
 
 def get_volumes_longitudinal(rid, viscode, study, filename):
     print log.INFO, 'Reading volumes for subject {0} ({1})...'.format(rid, viscode)
-    if viscode == 'bl':
-        seg = adni.find_alternative_file(os.path.join(adni.data_folder, study, 'native/seg_138regions_baseline', 'EM-' + filename))
-    else:
-        seg = adni.find_alternative_file(os.path.join('/vol/medic02/users/cl6311/data/ADNI/ADNI_followup/seg/EM/', 'EM-' + filename))
-
+    #if viscode == 'bl':
+    #    seg = adni.find_alternative_file(os.path.join(adni.data_folder, study, 'native/seg_138regions_baseline', 'EM-' + filename))
+    #else:
+    #    seg = adni.find_alternative_file(os.path.join('/vol/medic02/users/cl6311/data/ADNI/ADNI_followup/seg/EM/', 'EM-' + filename))
+    seg = adni.find_alternative_file(os.path.join('/vol/medic02/users/cl6311/ADNI_condor/results/','MALPEM-' + filename))
+    
     # Get volumes of the cortical structures
     if seg is None:
         return []

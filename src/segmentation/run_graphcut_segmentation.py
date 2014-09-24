@@ -17,8 +17,8 @@ EXEC_SCALE = 'imiImageShiftScale'
 def main():
     parser = argparse.ArgumentParser(description='Perform the LEAP graphcut segmentation.')
     parser.add_argument('-n', '--nr_threads', dest='nr_threads', type=int, default=1)
-    parser.add_argument('-l', '--lambda', dest='lmbda', type=float, default=15)
-    parser.add_argument('-a', '--alpha', dest='alpha', type=float, default=0.2)
+    parser.add_argument('-l', '--lambda', dest='lmbda', type=float, default=15)  # TODO Test 50?
+    parser.add_argument('-a', '--alpha', dest='alpha', type=float, default=0.2)  # TODO Ventricles 0.5
     parser.add_argument('-m', '--min_percentage', dest='min_percentage', type=float, default=0.84)
     parser.add_argument('--study', type=str, default='ALL', help='the study, should be ADNI1, ADNI2, or ADNIGO')
     parser.add_argument('--min_scans', type=int, default=1, help='the minimal number of scans per subject')
@@ -27,7 +27,7 @@ def main():
     parser.add_argument('--all_structures', action='store_true', default=False, help='segment all 138 structures')
     args = parser.parse_args()
 
-    file_collection = adni.get_baseline_and_followups_as_collection()
+    file_collection = adni.get_baseline_and_followups_as_dict()
 
     print log.INFO, 'Assembling list of subjects...'
     pairs_collection = {}
