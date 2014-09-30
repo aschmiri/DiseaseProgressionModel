@@ -2,8 +2,8 @@
 import os.path
 import argparse
 import csv
-import subprocess
 import joblib as jl
+from subprocess import call
 from common import log as log
 from common import adni_tools as adni
 from vgam.datahandler import DataHandler
@@ -103,16 +103,24 @@ def estimate_model(args, data_handler, biomarker):
     if os.path.isfile(model_file) and not args.recompute_models:
         print log.SKIP, 'Model for {0} already exists.'.format(biomarker)
     else:
+        # Clean old model
+        if os.path.isfile(model_file):
+            call(['rm', model_file])
+
+        # Estiamte model
         print log.INFO, 'Fitting curve to {0}...'.format(biomarker)
         r_file = os.path.join(adni.project_folder, 'src/fitting/vgam_estimate_curves.R')
-
         samples_file = data_handler.get_samples_file(biomarker)
         stdout_file = samples_file.replace('_samples.csv', '_stdout.Rout')
 
         command = "R CMD BATCH \"--args input_file='%s' output_file='%s' degrees_of_freedom=%i \" %s %s" \
                   % (samples_file, model_file, int(args.degrees_of_freedom), r_file, stdout_file)
 
-        subprocess.call(command, shell=True)
+        call(command, shell=True)
+
+        # Check if model was generated
+        if not os.path.isfile(model_file):
+            log.ERROR, 'Failed to generate model for {0}!'.format(biomarker)
 
 
 if __name__ == '__main__':
