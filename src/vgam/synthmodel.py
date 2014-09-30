@@ -1,9 +1,9 @@
 """
 A class to provide modelling functionality for synthetic examples.
 
-@author:     Alexander Schmidt-Richberg
-@copyright:  2014 Imperial College London. All rights reserved.
-@contact:    a.schmidt-richberg@imperial.ac.uk
+:author:     Alexander Schmidt-Richberg
+:copyright:  2014 Imperial College London. All rights reserved.
+:contact:    a.schmidt-richberg@imperial.ac.uk
 """
 import math
 import random

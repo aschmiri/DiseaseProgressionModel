@@ -100,7 +100,7 @@ def run_experiment(args, data_handler, biomarker, sampling, num_samples=1000, ra
                               sampling=sampling,
                               rate_sigma=rate_sigma,
                               run=run)
-            error_experiment = ve.evaluate_synth_model(args, model_file, biomarker)
+            error_experiment = ve.evaluate_synth_model(args, model_file, biomarker, metric=args.metric)
             pickle.dump(error_experiment, open(error_file, 'wb'))
         errors_experiment.append(error_experiment)
 
@@ -142,7 +142,7 @@ def plot_error_bars(args, data_handler, errors):
 
     # Show or save plot
     if args.output_file is not None:
-        plt.savefig(args.output_file)
+        plt.savefig(args.output_file, transparent=True)
     else:
         plt.show()
     plt.close(fig)
@@ -189,7 +189,7 @@ def plot_boxplots_samplings(args, data_handler, errors, num_samples):
 
     # Show or save plot
     if args.output_file is not None:
-        plt.savefig(args.output_file)
+        plt.savefig(args.output_file, transparent=True)
     else:
         plt.show()
     plt.close(fig)
@@ -235,7 +235,7 @@ def plot_boxplots_noisy_rates(args, data_handler, errors, rate_sigmas):
 
     # Show or save plot
     if args.output_file is not None:
-        plt.savefig(args.output_file)
+        plt.savefig(args.output_file, transparent=True)
     else:
         plt.show()
     plt.close(fig)

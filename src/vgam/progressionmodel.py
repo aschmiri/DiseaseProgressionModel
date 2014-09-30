@@ -1,9 +1,9 @@
 """
 A class to provide progression modelling functionality.
 
-@author:     Alexander Schmidt-Richberg
-@copyright:  2014 Imperial College London. All rights reserved.
-@contact:    a.schmidt-richberg@imperial.ac.uk
+:author:     Alexander Schmidt-Richberg
+:copyright:  2014 Imperial College London. All rights reserved.
+:contact:    a.schmidt-richberg@imperial.ac.uk
 """
 import math
 import numpy as np

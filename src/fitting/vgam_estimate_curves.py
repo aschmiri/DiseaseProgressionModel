@@ -29,15 +29,16 @@ def main():
 
 def generate_csv_files(args, data_handler):
     """
-    Generate the CSV file used to call the R script
+    Generate the CSV file used to call the R script.
 
-    :param args:
-    :param data_handler:
+    :param Namespace args:
+    :param DataHandler data_handler:
     """
+    assert isinstance(args, argparse.Namespace)
     assert isinstance(data_handler, DataHandler)
 
     biomarkers = data_handler.get_biomarker_set()
-    measurements = data_handler.get_measurements_as_dict()
+    measurements = data_handler.get_measurements_as_dict(select_training_set=True)
 
     if args.iteration > 0:
         scaling_biomarkers = ['CDRSB']
@@ -74,11 +75,12 @@ def generate_csv_files(args, data_handler):
 
 def estimate_model_all_biomarkers(args, data_handler):
     """
-    Estim
+    Estimate all models using VGAM.
 
-    :param args: the command line arguments
-    :param data_handler: the data handler
+    :param Namespace args: the command line arguments
+    :param DataHandler data_handler: the data handler
     """
+    assert isinstance(args, argparse.Namespace)
     assert isinstance(data_handler, DataHandler)
 
     biomarkers = data_handler.get_biomarker_set()
@@ -87,12 +89,13 @@ def estimate_model_all_biomarkers(args, data_handler):
 
 def estimate_model(args, data_handler, biomarker):
     """
-    Estimate a model using VGAM
+    Estimate a model using VGAM.
 
-    :param args: the command line arguments
-    :param data_handler: the data handler
-    :param biomarker: a list of biomarkers
+    :param Namespace args: the command line arguments
+    :param DataHandler data_handler: the data handler
+    :param list biomarker: a list of biomarkers
     """
+    assert isinstance(args, argparse.Namespace)
     assert isinstance(data_handler, DataHandler)
 
     print log.INFO, 'Fitting curve to {0}...'.format(biomarker)

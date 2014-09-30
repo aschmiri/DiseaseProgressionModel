@@ -236,7 +236,7 @@ def plot_model(args, data_handler, biomarker):
             plot_filename = args.output_file
         else:
             plot_filename = model_file.replace('.csv', '.pdf')
-        plt.savefig(plot_filename, dpi=100)
+        plt.savefig(plot_filename, transparent=True)
     else:
         plt.show()
     plt.close(fig)

@@ -105,7 +105,7 @@ def plot_boxplots(args, data_handler, errors, num_samples):
 
     # Show or save plot
     if args.output_file is not None:
-        plt.savefig(args.output_file)
+        plt.savefig(args.output_file, transparent=True)
     else:
         plt.show()
     plt.close(fig)

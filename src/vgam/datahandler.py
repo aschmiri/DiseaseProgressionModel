@@ -1,9 +1,9 @@
 """
 A class to provide progression modelling functionality.
 
-@author:     Alexander Schmidt-Richberg
-@copyright:  2014 Imperial College London. All rights reserved.
-@contact:    a.schmidt-richberg@imperial.ac.uk
+:author:     Alexander Schmidt-Richberg
+:copyright:  2014 Imperial College London. All rights reserved.
+:contact:    a.schmidt-richberg@imperial.ac.uk
 """
 import os.path
 import datetime
@@ -53,12 +53,11 @@ class DataHandler(object):
         """
         Initialise the right data files for the given arguments.
 
-        Arguments:
-        args -- command line arguments with:
-        args.method -- the method, choice of ['cog', 'reg', 'long', 'cons', 'graph', 'mbl']
-        args.iteration -- the iteration of the fitting
-        args.trans -- the transformation if method == 'reg'
-        args.spacing -- the spacing if method == 'reg'
+        :param args: command line arguments with:
+        :param str args.method: the method, choice of ['cog', 'reg', 'long', 'cons', 'graph', 'mbl']
+        :param int args.iteration: the iteration of the fitting
+        :param str args.trans: the transformation if method == 'reg'
+        :param str args.spacing: the spacing if method == 'reg'
         """
         # Set biomarker sets
         if args is None:
@@ -221,15 +220,20 @@ class DataHandler(object):
     # get_measurements_as_dict()
     #
     ############################################################################
-    def get_measurements_as_dict(self, biomarkers=None, select_converters=True, no_regression=False, complete=False):
+    def get_measurements_as_dict(self, biomarkers=None,
+                                 select_training_set=False, select_test_set=False,
+                                 select_complete=False, no_regression=False,):
         """ Return all subjects measurements as a dictionary.
 
         Arguments:
-        select_converters -- only select MCI -> AD converters
-        no_regression -- do not perform age regression
+        :param list biomarkers: list of biomarkers
+        :param bool select_training_set: only select MCI -> AD converters
+        :param bool select_test_set: select the test subjects
+        :param bool select_complete: select subjects with complete biomarker measurements
+        :param bool no_regression: do not perform age regression
 
         Returns:
-        A dictionary with the following structure:
+        :return: a dictionary with the following structure:
         { <rid> : { <viscode> : { DX.scan : <diagnosis> }
                                 { AGE.scan : <age in years> }
                                 { scandate : <date of scan> }
@@ -239,34 +243,21 @@ class DataHandler(object):
                                 ... }
                   { <viscode> : ... }
           <rid> : ... }
+        :rtype: dict
         """
         # Read data from lists
-        measurements = self._get_metadata_as_dict(select_converters=select_converters)
-        measurements = self.update_measurements_with_biomarker_values(measurements, biomarkers=biomarkers, no_regression=no_regression)
-        if complete:
-            measurements = self._ensure_complete_measurements(measurements, biomarkers=biomarkers)
+        measurements = self._get_metadata_as_dict()
+        measurements = self.update_measurements_with_biomarker_values(measurements,
+                                                                      biomarkers=biomarkers,
+                                                                      no_regression=no_regression)
+        if select_training_set:
+            measurements = self._select_training_set(measurements)
+        if select_test_set:
+            measurements = self._select_test_set(measurements)
+        if select_complete:
+            measurements = self._select_complete_measurements(measurements, biomarkers=biomarkers)
 
         # Return measurements
-        return measurements
-
-    ############################################################################
-    #
-    # _ensure_complete_measurements()
-    #
-    ############################################################################
-    def _ensure_complete_measurements(self, measurements, biomarkers=None):
-        biomarkers = self.get_biomarker_set() if biomarkers is None else biomarkers
-
-        for rid, visit in measurements.items():
-            drop_rid = False
-            for _, visdata in visit.items():
-                for biomarker in biomarkers:
-                    if biomarker not in visdata:
-                        drop_rid = True
-                        break
-            if drop_rid:
-                measurements.pop(rid)
-
         return measurements
 
     ############################################################################
@@ -277,12 +268,9 @@ class DataHandler(object):
     def _get_metadata_as_dict(self, select_converters=True):
         """ Return all subjects metadata as a dictionary.
 
-        Arguments:
-        data_file -- the names of the csv file containing the data
-        select_converters -- only select MCI -> AD converters
+        :param bool select_converters: only select MCI -> AD converters
 
-        Returns:
-        A dictionary with the following structure:
+        :return: a dictionary with the following structure:
         { <rid> : { <viscode> : { DX.scan : <diagnosis> }
                                 { AGE.scan : <age in years> }
                                 { scandate : <date of scan> }
@@ -290,6 +278,7 @@ class DataHandler(object):
                                 { progress : <days relative to conversion> } }
                   { <viscode> : ... }
           <rid> : ... }
+        :rtype dict
         """
         print log.INFO, 'Collecting metadata...'
         metadata = {}
@@ -340,57 +329,20 @@ class DataHandler(object):
                 metadata[rid][viscode].update({'DX.scan': dx})
 
         #
-        # Add time relative to point of conversion to each data set
-        if select_converters:
-            print log.INFO, 'Selecting converters...'
-            valid_rids = []
-            for rid, rid_data in metadata.items():
-                data_viscode = []
-                data_scantime = []
-                data_diagnosis = []
+        # Add scan time to measurements
+        for rid in metadata:
+            if 'bl' not in metadata[rid]:
+                print log.WARNING, 'No bl scan for subject {0}!'.format(rid)
+                continue
 
-                if 'bl' not in metadata[rid]:
-                    print log.WARNING, 'No bl scan for subject {0}!'.format(rid)
-                    continue
+            bl_date = metadata[rid]['bl']['scandate']
+            for viscode in metadata[rid]:
+                fu_date = metadata[rid][viscode]['scandate']
+                scantime = (fu_date - bl_date).days
+                metadata[rid][viscode].update({'scantime': scantime})
 
-                bl_date = metadata[rid]['bl']['scandate']
-                for viscode, scan_data in rid_data.items():
-                    fu_date = metadata[rid][viscode]['scandate']
-                    scantime = (fu_date - bl_date).days
-
-                    data_viscode.append(viscode)
-                    data_scantime.append(scantime)
-                    data_diagnosis.append(scan_data['DX.scan'])
-
-                data_viscode = np.array(data_viscode)
-                data_scantime = np.array(data_scantime)
-                data_diagnosis = np.array(data_diagnosis)
-
-                args = np.argsort(data_scantime)
-                data_viscode = data_viscode[args]
-                data_scantime = data_scantime[args]
-                data_diagnosis = data_diagnosis[args]
-
-                if data_diagnosis[-1] == 1.0 and data_diagnosis[0] == 0.5:
-                    valid_rids.append(rid)
-                    scantime_prev = data_scantime[0]
-
-                    time_convert = None
-                    for diagnosis, scantime in zip(data_diagnosis, data_scantime):
-                        if diagnosis == 1.0:
-                            time_convert = scantime_prev + (scantime - scantime_prev) / 2
-                            break
-                        else:
-                            scantime_prev = scantime
-
-                    for viscode, scantime in zip(data_viscode, data_scantime):
-                        metadata[rid][viscode].update({'scantime': scantime})
-                        metadata[rid][viscode].update({'progress': scantime - time_convert})
-
-            #
-            # Remove non-valid rids
-            metadata = {rid: value for rid, value in metadata.items() if rid in valid_rids}
-
+        #
+        # Return metadata
         return metadata
 
     ############################################################################
@@ -401,11 +353,9 @@ class DataHandler(object):
     def update_measurements_with_biomarker_values(self, measurements, biomarkers=None, no_regression=False):
         """ Update the metadata dictionary with the biomarker values.
 
-        Arguments:
-        metadata -- the metadata
-        data_file -- the data file containing the biomarker values
-        biomarker_names -- the biomarkers to be read
-        no_regression -- do not perform age regression
+        :param dict metadata: the meta data
+        :param list biomarkers: the biomarkers to be read
+        :param bool no_regression: do not perform age regression
         """
         biomarkers = self.get_biomarker_set() if biomarkers is None else biomarkers
         biomarker_values = self._get_biomarker_values_as_dict(measurements, biomarkers=biomarkers, no_regression=no_regression)
@@ -431,17 +381,16 @@ class DataHandler(object):
     def _get_biomarker_values_as_dict(self, metadata, biomarkers=None, no_regression=False):
         """ Return all measurements as a dictionary.
 
-        Arguments:
-        data_file -- the names of the csv file containing the data
-        biomarker_names -- the biomarkers to be read
-        no_regression -- do not perform age regression
+        :param dict metadata: the meta data
+        :param list biomarkers: the biomarkers to be read
+        :param bool no_regression: do not perform age regression
 
-        Returns:
-        A dictionary with the following structure:
+        :return: A dictionary with the following structure:
         { <rid> : { <viscode> : { <biomarker1> : <value> }
                                 { <biomarker2> : <value> } ... }
                   { <viscode> : ... }
           <rid> : ... }
+        :rtype: dict
         """
         biomarkers = self.get_biomarker_set() if biomarkers is None else biomarkers
 
@@ -534,6 +483,134 @@ class DataHandler(object):
 
     ############################################################################
     #
+    # _select_training_set()
+    #
+    ############################################################################
+    def _select_training_set(self, measurements):
+        """ Select only subjects converting from MCI to AD.
+
+        :param dict measurements: the input measurements
+
+        :return: the selected output measurements
+        :rtype: dict
+        """
+        print log.INFO, 'Selecting converters as training set...'
+        valid_rids = []
+        for rid, rid_data in measurements.items():
+            # Sort data according to scantime
+            data_viscode = []
+            data_scantime = []
+            data_diagnosis = []
+
+            for viscode, scan_data in rid_data.items():
+                data_viscode.append(viscode)
+                data_scantime.append(scan_data['scantime'])
+                data_diagnosis.append(scan_data['DX.scan'])
+
+            data_viscode = np.array(data_viscode)
+            data_scantime = np.array(data_scantime)
+            data_diagnosis = np.array(data_diagnosis)
+
+            args = np.argsort(data_scantime)
+            data_viscode = data_viscode[args]
+            data_scantime = data_scantime[args]
+            data_diagnosis = data_diagnosis[args]
+
+            # Select converters with MCI as first and AD as last diagnosis
+            if data_diagnosis[-1] == 1.0 and data_diagnosis[0] == 0.5:
+                # Mark as valid
+                valid_rids.append(rid)
+
+                # Compute time of conversion
+                time_convert = None
+                scantime_prev = data_scantime[0]
+                for diagnosis, scantime in zip(data_diagnosis, data_scantime):
+                    if diagnosis == 1.0:
+                        time_convert = scantime_prev + (scantime - scantime_prev) / 2
+                        break
+                    else:
+                        scantime_prev = scantime
+
+                # Update metadata with progress
+                for viscode, scantime in zip(data_viscode, data_scantime):
+                    measurements[rid][viscode].update({'progress': scantime - time_convert})
+
+        # Remove non-valid rids
+        metadata = {rid: value for rid, value in measurements.items() if rid in valid_rids}
+
+        return metadata
+
+    ############################################################################
+    #
+    # _select_test_set()
+    #
+    ############################################################################
+    def _select_test_set(self, measurements):
+        """ Select only non-converting AD and MCI subjects.
+
+        :param dict measurements: the input measurements
+
+        :return: the selected output measurements
+        :rtype: dict
+        """
+        print log.INFO, 'Selecting converters as training set...'
+        valid_rids = []
+        for rid in measurements:
+            # Sort data according to scantime
+            data_scantime = []
+            data_diagnosis = []
+
+            for _, scan_data in measurements[rid].items():
+                data_scantime.append(scan_data['scantime'])
+                data_diagnosis.append(scan_data['DX.scan'])
+
+            data_diagnosis = np.array(data_diagnosis)
+
+            args = np.argsort(data_scantime)
+            data_diagnosis = data_diagnosis[args]
+
+            # Select non converters with
+            if data_diagnosis[-1] == data_diagnosis[0] == 0.5 or \
+               data_diagnosis[-1] == data_diagnosis[0] == 1.0:
+                # Mark as valid
+                valid_rids.append(rid)
+
+        # Remove non-valid rids
+        metadata = {rid: value for rid, value in measurements.items() if rid in valid_rids}
+
+        return metadata
+
+    ############################################################################
+    #
+    # _select_complete_measurements()
+    #
+    ############################################################################
+    def _select_complete_measurements(self, measurements, biomarkers=None):
+        """ Select only measurements with complete biomarker sets.
+
+        :param dict measurements: the input measurements
+        :param list biomarkers: the biomarkers that have to be available
+
+        :return: the selected output measurements
+        :rtype: dict
+        """
+
+        biomarkers = self.get_biomarker_set() if biomarkers is None else biomarkers
+
+        for rid, visit in measurements.items():
+            drop_rid = False
+            for _, visdata in visit.items():
+                for biomarker in biomarkers:
+                    if biomarker not in visdata:
+                        drop_rid = True
+                        break
+            if drop_rid:
+                measurements.pop(rid)
+
+        return measurements
+
+    ############################################################################
+    #
     # get_mmse_decline_as_dict()
     #
     ############################################################################
@@ -542,13 +619,10 @@ class DataHandler(object):
         """ Return all a dictionary that indicates for each RID the MMSE decline
         of the subject between baseline and m24 visits.
 
-        Arguments:
-        measurements -- the measurements as a dictionary
-
-        Returns:
-        A dictionary with the following structure:
+        :return: A dictionary with the following structure:
         { <rid> : <decline>
           ... }
+        :rtype: dict
         """
         measurements = self._get_metadata_as_dict(select_converters=False)
         measurements = self.update_measurements_with_biomarker_values(measurements, biomarkers=['MMSE'])
@@ -576,13 +650,10 @@ class DataHandler(object):
         """ Return all a dictionary that indicates for each RID if the subject
         is classified as RCD (rapid cognitive decline).
 
-        Arguments:
-        measurements -- the measurements as a dictionary
-
-        Returns:
-        A dictionary with the following structure:
+        :return: A dictionary with the following structure:
         { <rid> : [True|False]
           ... }
+        :rtype: dict
         """
         measurements = self._get_metadata_as_dict(select_converters=False)
         measurements = self.update_measurements_with_biomarker_values(measurements, biomarkers=['MMSE'])
@@ -615,8 +686,7 @@ class SynthDataHandler(DataHandler):
         """
             Initialise the right data files for the given arguments.
 
-            Arguments:
-            args -- command line arguments with:
+            :param args: command line arguments with:
             """
         super(SynthDataHandler, self).__init__()
         if args is None:
@@ -667,15 +737,10 @@ class SynthDataHandler(DataHandler):
     # _get_metadata_as_dict()
     #
     ############################################################################
-    def _get_metadata_as_dict(self, select_converters=True):
+    def _get_metadata_as_dict(self):
         """ Return all subjects metadata as a dictionary.
 
-        Arguments:
-        data_file -- the names of the csv file containing the data
-        select_converters -- only select MCI -> AD converters
-
-        Returns:
-        A dictionary with the following structure:
+        :return: a dictionary with the following structure:
         { <rid> : { <viscode> : { DX.scan : <diagnosis> }
                                 { AGE.scan : <age in years> }
                                 { scandate : <date of scan> }
@@ -683,6 +748,7 @@ class SynthDataHandler(DataHandler):
                                 { progress : <days relative to conversion> } }
                   { <viscode> : ... }
           <rid> : ... }
+        :rtype: dict
         """
         print log.INFO, 'Collecting metadata...'
         metadata = {}
@@ -736,17 +802,16 @@ class SynthDataHandler(DataHandler):
     def _get_biomarker_values_as_dict(self, metadata, biomarkers=None, no_regression=False):
         """ Return all measurements as a dictionary.
 
-        Arguments:
-        data_file -- the names of the csv file containing the data
-        biomarker_names -- the biomarkers to be read
-        no_regression -- do not perform age regression
+        :param dict metadata: the meta data
+        :param list biomarkers: the biomarkers to be read
+        :param bool no_regression: do not perform age regression
 
-        Returns:
-        A dictionary with the following structure:
+        :return: a dictionary with the following structure:
         { <rid> : { <viscode> : { <biomarker1> : <value> }
                                 { <biomarker2> : <value> } ... }
                   { <viscode> : ... }
           <rid> : ... }
+        :rtype: dict
         """
         biomarkers = self.get_biomarker_set() if biomarkers is None else biomarkers
 

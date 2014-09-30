@@ -27,7 +27,7 @@ def main():
 
     # Collect data for test
     data_handler = DataHandler.get_data_handler(args)
-    measurements = data_handler.get_measurements_as_dict(biomarkers=biomarkers, complete=True)
+    measurements = data_handler.get_measurements_as_dict(biomarkers=biomarkers, select_test_set=True, select_complete=True)
 
     # Setup model
     model = MultiBiomarkerProgressionModel()

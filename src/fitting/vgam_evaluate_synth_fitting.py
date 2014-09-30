@@ -114,7 +114,7 @@ def plot_errors(args, errors, biomarkers, viscode_sets):
 
     # Show or save plot
     if args.output_file is not None:
-        plt.savefig(args.output_file)
+        plt.savefig(args.output_file, transparent=True)
     else:
         plt.show()
     plt.close(fig)

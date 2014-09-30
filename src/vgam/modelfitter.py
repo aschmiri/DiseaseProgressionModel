@@ -1,9 +1,9 @@
 """
 A class to provide progression modelling functionality.
 
-@author:     Alexander Schmidt-Richberg
-@copyright:  2014 Imperial College London. All rights reserved.
-@contact:    a.schmidt-richberg@imperial.ac.uk
+:author:     Alexander Schmidt-Richberg
+:copyright:  2014 Imperial College London. All rights reserved.
+:contact:    a.schmidt-richberg@imperial.ac.uk
 """
 import numpy as np
 from common import log as log
@@ -37,6 +37,9 @@ class ModelFitter(object):
     def __init__(self, model):
         """
         Initialise the progression model fitter.
+
+        :param model: the model
+        :type model: ProgressionModel or MultiBiomarkerProgressionModel
         """
         if isinstance(model, ProgressionModel):
             self.model = model
@@ -55,11 +58,10 @@ class ModelFitter(object):
     def get_scaled_measurements(self, measurements):
         """ Return the optimally scaled measurements.
 
-        Arguments:
-        measurements --
+        :param dict measurements: the measurements
 
-        Returns:
-        The optimally scaled measurements
+        :return: the optimally scaled measurements
+        :rtype: dict
         """
         for rid in measurements:
             print log.INFO, 'Estimating optimal scaling for subject {0}...'.format(rid)
@@ -90,11 +92,9 @@ class ModelFitter(object):
         """ Return the optimal scaling value for a subject given a number of samples
         and a set of biomarkers.
 
-        Arguments:
-        samples --
+        :param dict samples: the test samples
 
-        Returns:
-        The estimated DPI and DPR
+        :return: the estimated DPI and DPR
         """
         test_scalings = np.arange(TEST_SCALE_MIN, TEST_SCALE_MAX, TEST_SCALE_STEP)
 
@@ -125,11 +125,9 @@ class ModelFitter(object):
         """ Return the estimated DPI of a subject given a number of samples and
         a set of biomarkers.
 
-        Arguments:
-        samples --
+        :param samples: the test samples
 
-        Returns:
-        The estimated DPI
+        :return: the estimated DPI
         """
         test_dpis = np.arange(TEST_DPI_MIN, TEST_DPI_MAX, TEST_DPI_STEP)
 
@@ -160,11 +158,9 @@ class ModelFitter(object):
         """ Return the estimated DPI and DPR of a subject given a number of samples
         and a set of biomarkers.
 
-        Arguments:
-        samples --
+        :param samples: the test samples
 
-        Returns:
-        The estimated DPI and DPR
+        :return: the estimated DPI and DPR
         """
         test_dprs = np.arange(TEST_DPR_MIN, TEST_DPR_MAX, TEST_DPR_STEP)
         test_dpis = np.arange(TEST_DPI_MIN, TEST_DPI_MAX, TEST_DPI_STEP)
