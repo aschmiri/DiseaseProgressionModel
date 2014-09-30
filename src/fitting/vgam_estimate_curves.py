@@ -99,10 +99,7 @@ def estimate_model(args, data_handler, biomarker):
     assert isinstance(args, argparse.Namespace)
     assert isinstance(data_handler, DataHandler)
 
-    r_file = os.path.join(adni.project_folder, 'src/fitting/vgam_estimate_curves.R')
-    samples_file = data_handler.get_samples_file(biomarker)
     model_file = data_handler.get_model_file(biomarker)
-
     if os.path.isfile(model_file) and not args.recompute_models:
         print log.SKIP, 'Model for {0} already exists.'.format(biomarker)
     else:
