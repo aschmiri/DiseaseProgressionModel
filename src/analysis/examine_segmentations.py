@@ -19,16 +19,9 @@ def main():
     parser.add_argument('-v', '--viscode', type=str, default=None)
     parser.add_argument('--trans', type=str, default='sym', help='the transformation model, e.g. ffd, svffd, sym, or ic (regbased only)')
     parser.add_argument('--spacing', type=str, default='5', help='the transformation spacing (regbased only)')
-    parser.add_argument('--all_structures', action='store_true', default=False, help='segment all 138 structures (graphcuts only)')
     args = parser.parse_args()
 
     lut = '/vol/medic02/users/cl6311/Neuro_Atlas/config/lut.csv'
-
-    # Determine structures to segment
-    if args.method == 'graph' and not args.all_structures:
-        structures = adni.volume_names_essential
-    else:
-        structures = adni.volume_names
 
     # Setup DB
     con = sqlite3.connect(os.path.join(adni.project_folder, 'lists', 'adni.db'))
@@ -67,8 +60,8 @@ def main():
 
             # Get segmentation
             if args.method == 'graph':
-                for structure in structures:
-                    if args.structure_index is not None and adni.volume_names.index(structure) != args.structure_index:
+                for structure in adni.structure_names:
+                    if args.structure_index is not None and adni.structure_names.index(structure) != args.structure_index:
                         continue
 
                     study_bl = visit['study_bl']

@@ -23,16 +23,16 @@ def main():
     plot_steps = 100
     plot_max = 60
 
-    data_file_r = os.path.join(adni.project_folder, 'lists/xvolumes_segbased_sym_5mm.csv')
-    data_file_l = os.path.join(adni.project_folder, 'lists/xvolumes_segbased_longitudinal.csv')
-    data_file_g = os.path.join(adni.project_folder, 'lists/xvolumes_segbased_graphcut.csv')
-    data_file_c = os.path.join(adni.project_folder, 'lists/xvolumes_segbased_consistent.csv')
+    data_file_r = os.path.join(adni.project_folder, 'lists/volumes_segbased_sym_5mm.csv')
+    data_file_l = os.path.join(adni.project_folder, 'lists/volumes_segbased_longitudinal.csv')
+    data_file_g = os.path.join(adni.project_folder, 'lists/volumes_segbased_graphcut.csv')
+    data_file_c = os.path.join(adni.project_folder, 'lists/volumes_segbased_consistent.csv')
 
 #     for vol_index in [18, 19, 22, 23]:
-    for volume in adni.volume_names_essential:
-        vol_index = adni.volume_names.index(volume)
+    for structure in adni.structure_names:
+        vol_index = adni.structure_names.index(structure)
 
-        print log.INFO, 'Plotting {0}...'.format(adni.volume_names[vol_index])
+        print log.INFO, 'Plotting {0}...'.format(adni.structure_names[vol_index])
 
         for rid in [112, 307, 408]:
             plot_points_for_subject(data_file_r, rid, vol_index, 'reg-based', 'r')
@@ -40,7 +40,7 @@ def main():
             plot_points_for_subject(data_file_c, rid, vol_index, 'consistent', 'k')
             plot_points_for_subject(data_file_g, rid, vol_index, 'graphcut', 'b')
 
-            plt.title('{0} of subject {1}'.format(adni.volume_names[vol_index], rid))
+            plt.title('{0} of subject {1}'.format(adni.structure_names[vol_index], rid))
             plt.xlabel('Months after baseline')
             plt.ylabel('Volume')
             plt.legend()
@@ -80,7 +80,7 @@ def plot_points_for_subject(data_file, rid, vol_index, label, color):
                     break
 
                 # Get and normalise volumes
-                volume = float(row[adni.volume_names[vol_index]])
+                volume = float(row[adni.structure_names[vol_index]])
                 # volumes = [float(vol) * factor for vol in row]
 
                 traj_x.append(scan_time)

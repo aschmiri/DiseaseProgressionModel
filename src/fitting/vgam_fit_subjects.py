@@ -4,7 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from common import log as log
 from common import adni_plot as aplt
-from common import adni_tools as adni
 from vgam.datahandler import DataHandler
 from vgam.progressionmodel import MultiBiomarkerProgressionModel
 from vgam.modelfitter import ModelFitter
@@ -12,22 +11,17 @@ from vgam.modelfitter import ModelFitter
 
 def main():
     parser = argparse.ArgumentParser(description='Estimate model curves for biomarkers using VGAM.')
-    parser.add_argument('-i', '--iteration', type=int, default=0, help='the refinement iteration')
+    parser = DataHandler.add_arguments(parser)
+    parser.add_argument('viscodes', nargs='+', type=str, help='the viscodes to be sampled')
     args = parser.parse_args()
-
-    # Define parameters for test
-    # biomarkers = ['MMSE', 'CDRSB', 'Right Amygdala', 'Left Amygdala', 'Right Lateral Ventricle', 'Left Lateral Ventricle']
-    # biomarkers = ['MMSE']
-    # biomarkers = ['MMSE', 'CDRSB', 'P_D1D2', 'D1', 'D3']
-    biomarkers = adni.manifold_coordinate_names
-    # biomarkers = ['Right Amygdala', 'Left Amygdala', 'Right Lateral Ventricle', 'Left Lateral Ventricle', 'Right Hippocampus', 'Left Hippocampus']
-    # biomarkers = ['Right Amygdala', 'Left Amygdala', 'Right Lateral Ventricle', 'Left Lateral Ventricle']
-    # viscodes = ['bl']
-    viscodes = ['bl', 'm12', 'm24']
 
     # Collect data for test
     data_handler = DataHandler.get_data_handler(args)
-    measurements = data_handler.get_measurements_as_dict(biomarkers=biomarkers, select_test_set=True, select_complete=True)
+    biomarkers = data_handler.get_biomarker_set()
+    measurements = data_handler.get_measurements_as_dict(biomarkers=biomarkers,
+                                                         select_test_set=True,
+                                                         select_complete=True)
+    print log.RESULT, 'Collected data from {0} subjects.'.format(len(measurements))
 
     # Setup model
     model = MultiBiomarkerProgressionModel()
@@ -36,7 +30,7 @@ def main():
         model.add_model(biomarker, model_file)
     fitter = ModelFitter(model)
 
-    main_estimate_dpi(measurements, viscodes, fitter)
+    main_estimate_dpi(measurements, args.viscodes, fitter)
 
     # Get RCDs
     # rcds = data_handler.get_mmse_decline_as_dict()
@@ -47,11 +41,13 @@ def main():
 def main_estimate_dpi(measurements, viscodes, fitter):
     # Test all available subjects
     dpis = []
-    progresses = []
+    # progresses = []
+    diagnoses = []
     for rid in measurements:
         print log.INFO, 'Estimating DPI for subject {0}...'.format(rid)
         try:
-            progress = measurements[rid]['bl']['progress']
+            # progress = measurements[rid]['bl']['progress']
+            diagnosis = measurements[rid]['bl']['DX.scan']
         except KeyError:
             continue
 
@@ -64,17 +60,24 @@ def main_estimate_dpi(measurements, viscodes, fitter):
             samples.update({viscode: measurements[rid][viscode]})
         dpi = fitter.get_dpi_for_samples(samples)
 
-        print log.RESULT, 'Estimated DPI: {0}, Progress: {1}'.format(dpi, progress)
+        # print log.RESULT, 'Estimated DPI: {0}, Progress: {1}'.format(dpi, progress)
+        print log.RESULT, 'Estimated DPI: {0}, Diagnosis: {1}'.format(dpi, diagnosis)
         if dpi is not None:
             dpis.append(dpi)
-            progresses.append(progress)
+            # progresses.append(progress)
+            diagnoses.append(diagnosis)
 
-    rms_error = np.sqrt(np.sum(np.square(np.array(progresses) - np.array(dpis))) / len(dpis))
-    mean_error = np.sum(np.abs(np.array(progresses) - np.array(dpis))) / len(dpis)
-    print log.RESULT, 'Mean error: {0}, RMS error: {1}'.format(mean_error, rms_error)
+    # rms_error = np.sqrt(np.sum(np.square(np.array(progresses) - np.array(dpis))) / len(dpis))
+    # mean_error = np.sum(np.abs(np.array(progresses) - np.array(dpis))) / len(dpis)
+    # print log.RESULT, 'Mean error: {0}, RMS error: {1}'.format(mean_error, rms_error)
 
     # Plot the results
-    plot_correlation(dpis, progresses)
+    # plot_correlation(dpis, progresses)
+    misclassified = 0
+    for dpi, diagnosis in zip(dpis, diagnoses):
+        if dpi > 0 and diagnosis == 0.5 or dpi <= 0 and diagnosis == 1.0:
+            misclassified += 1
+    print log.RESULT, 'Accuracy: {0}'.format(1.0 - float(misclassified) / float(len(dpis)))
 
 
 def main_estimate_dpi_dpr(measurements, viscodes, fitter, rcds):

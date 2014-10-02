@@ -73,12 +73,6 @@ def process_image_pairs(args, baseline, followups):
     for i, followup in enumerate(followups):
         print log.INFO, 'followup {0}: {1}'.format(i, os.path.basename(followup))
 
-    # Determine structures to segment
-    if args.all_structures:
-        structures = adni.volume_names
-    else:
-        structures = adni.volume_names_essential
-
     # Define folders
     bl_study = adni.detect_study(baseline)
     out_dir = adni.make_dir(adni.data_folder, bl_study, 'native/seg_138regions_graphcut')
@@ -133,7 +127,7 @@ def process_image_pairs(args, baseline, followups):
         return
 
     # Process all structures individually
-    for structure in structures:
+    for structure in adni.structure_names_complete:
         output_names = get_output_names(out_dir, bl_name, followups_normalised, structure)
 
         if files_present(output_names):
@@ -143,7 +137,7 @@ def process_image_pairs(args, baseline, followups):
             print log.INFO, 'Segmenting {0}...'.format(structure)
 
             # Get atlas for structure
-            posterior_index = adni.volume_names.index(structure) + 1
+            posterior_index = adni.structure_names_complete.index(structure) + 1
             atlas = os.path.join(temp_dir, bl_name + '_posteriors_{0}.nii.gz'.format(posterior_index))
             if not os.path.isfile(atlas):
                 print log.INFO, 'Scaling atlas to [0..100]...'

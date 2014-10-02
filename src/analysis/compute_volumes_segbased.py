@@ -3,6 +3,8 @@ import os.path
 import argparse
 import csv
 import sqlite3
+import re
+import numpy as np
 from subprocess import call
 from subprocess import check_output
 from common import log as log
@@ -21,7 +23,6 @@ def main():
     parser.add_argument('-m', '--min_scans', type=int, default=0, help='the minimal number of scans per subject')
     parser.add_argument('--trans', type=str, default='sym', help='the transformation model, e.g. ffd, svffd, sym, or ic (regbased only)')
     parser.add_argument('--spacing', type=str, default='5', help='the transformation spacing (regbased only)')
-    parser.add_argument('--all_structures', action='store_true', default=False, help='segment all 138 structures (graphcuts only)')
     args = parser.parse_args()
 
     # Set folders for factor computation
@@ -40,10 +41,8 @@ def main():
     # Determine structures to segment
     if args.method == 'meta':
         structures = []
-    elif args.method == 'graph' and not args.all_structures:
-        structures = adni.volume_names_essential
     else:
-        structures = adni.volume_names
+        structures = adni.structure_names
 
     # Setup DB
     con = sqlite3.connect(os.path.join(adni.project_folder, 'lists', 'adni.db'))
@@ -61,7 +60,7 @@ def main():
         writer.writerow(['RID', 'VISCODE', 'DX.scan', 'AGE.scan', 'ScanDate'] +
                         adni.cog_score_names +
                         ['FactorMNI', 'FactorBL'] +
-                        structures)
+                        ([] if structures == [] else structures + ['Whole Brain']))
 
         for rid in rids:
             # Get MNI scaling for RID
@@ -71,7 +70,7 @@ def main():
             sorted_viscodes = get_sorted_viscodes(cur, rid)
 
             # Get all visits for RID
-            cur.execute("SELECT iid, viscode, study, study_bl, diagnosis, filename, age, scandate \
+            cur.execute("SELECT iid, viscode, study, study_bl, diagnosis, diagnosis_bl, filename, age, scandate \
                           FROM adnimerge WHERE rid = " + str(rid))
             visits = cur.fetchall()
             if len(visits) >= args.min_scans:
@@ -82,8 +81,15 @@ def main():
                     study_bl = visit['study_bl']
                     filename = visit['filename']
                     diagnosis = visit['diagnosis']
+                    diagnosis_bl = visit['diagnosis_bl']
                     age = visit['age']
                     scandate = visit['scandate']
+
+                    # Preserve MCI type
+                    if diagnosis_bl == 'LMCI' and diagnosis == 'MCI':
+                        diagnosis = 'LMCI'
+                    if diagnosis_bl == 'EMCI' and diagnosis == 'MCI':
+                        diagnosis = 'EMCI'
 
                     # Get cognitive scores
                     bl_factor = get_bl_factor(cur, rid, viscode, study, filename)
@@ -94,22 +100,29 @@ def main():
                     # Get volumes
                     if args.method == 'reg':
                         volumes = get_volumes_regbased(args, rid, viscode, study, filename)
+                        brain_vol = [np.sum(volumes)]
                     elif args.method == 'long':
                         volumes = get_volumes_longitudinal(rid, viscode, study, filename)
+                        brain_vol = [np.sum(volumes)]
                     elif args.method == 'cons':
                         volumes = get_volumes_consistent(rid, sorted_viscodes.index(viscode), study, filename)
+                        brain_vol = [np.sum(volumes)]
                     elif args.method == 'graph':
                         volumes = get_volumes_graphcut(rid, viscode, study_bl, filename, structures)
+                        brain_vol = [None]
                     else:
                         volumes = []
+                        brain_vol = []
 
-                    if len(volumes) != len(structures):
-                        print log.WARNING, '{0} volumes read for subject {1} ({2})'.format(len(volumes), rid, viscode)
+                    if volumes is None:
+                        print log.WARNING, 'No volumes read for subject {0} ({1})!'.format(rid, viscode)
+                    elif len(volumes) != len(structures):
+                        print log.WARNING, '{0} volumes read for subject {1} ({2})!'.format(len(volumes), rid, viscode)
                     else:
                         writer.writerow([str(rid), viscode, diagnosis, age, scandate] +
                                         cog_scores +
                                         [mni_factor, bl_factor] +
-                                        volumes)
+                                        volumes + brain_vol)
                         csvfile.flush()
 
 
@@ -179,17 +192,17 @@ def get_volumes_regbased(args, rid, viscode, study, filename):
         volumes = [float(vol) for vol in volumes.split(',')]
         volumes.pop(0)
 
-        return volumes
+        return adni.convert_volumes(volumes)
 
 
 def get_volumes_longitudinal(rid, viscode, study, filename):
     print log.INFO, 'Reading volumes for subject {0} ({1})...'.format(rid, viscode)
-    #if viscode == 'bl':
+    # if viscode == 'bl':
     #    seg = adni.find_alternative_file(os.path.join(adni.data_folder, study, 'native/seg_138regions_baseline', 'EM-' + filename))
-    #else:
+    # else:
     #    seg = adni.find_alternative_file(os.path.join('/vol/medic02/users/cl6311/data/ADNI/ADNI_followup/seg/EM/', 'EM-' + filename))
-    seg = adni.find_alternative_file(os.path.join('/vol/medic02/users/cl6311/ADNI_condor/results/','MALPEM-' + filename))
-    
+    seg = adni.find_alternative_file(os.path.join('/vol/medic02/users/cl6311/ADNI_condor/results/', 'MALPEM-' + filename))
+
     # Get volumes of the cortical structures
     if seg is None:
         return []
@@ -198,7 +211,7 @@ def get_volumes_longitudinal(rid, viscode, study, filename):
         volumes = [float(vol) for vol in volumes.split(',')]
         volumes.pop(0)
 
-        return volumes
+        return adni.convert_volumes(volumes)
 
 
 def get_volumes_consistent(rid, index, study, filename):
@@ -223,7 +236,7 @@ def get_volumes_consistent(rid, index, study, filename):
             if os.path.isfile(seg_temp):
                 call([EXEC_REMOVE, seg_temp])
 
-            return volumes
+            return adni.convert_volumes(volumes)
 
 
 def get_volumes_graphcut(rid, viscode, study_bl, filename, structures):
@@ -251,13 +264,10 @@ def get_volumes_graphcut(rid, viscode, study_bl, filename, structures):
                 print log.WARNING, 'Corrupted output from {0} ({1})'.format(os.path.basename(seg), output_split)
                 volumes.append(-1.0)
 
-    return volumes
+    return adni.convert_volumes(volumes)
 
 
 def get_sorted_viscodes(cur, rid):
-    import re
-    import numpy as np
-
     cur.execute("SELECT viscode FROM adnimerge WHERE rid = " + str(rid))
     visits = cur.fetchall()
     scantimes = []

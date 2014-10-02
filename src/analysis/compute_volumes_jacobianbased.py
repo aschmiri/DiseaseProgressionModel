@@ -35,7 +35,7 @@ def main():
 
     with open(out_file, 'wb') as csvfile:
         writer = csv.writer(csvfile, delimiter=',')
-        writer.writerow(['RID', 'VISCODE', 'DX.scan'] + adni.volume_names)
+        writer.writerow(['RID', 'VISCODE', 'DX.scan'] + adni.structure_names)
 
         for rid in rids:
             cur.execute("SELECT iid, viscode, study, diagnosis, filename FROM adnimerge WHERE rid = " + str(rid))
@@ -99,8 +99,8 @@ def main():
                         print 'def', bl_nonlin
                         volumes = check_output([exec_volumes, seg, bl_nonlin])
                     volumes = [float(vol) * bl_factor for vol in volumes.split(',')]
-                    volumes.pop(0)
-                    if len(volumes) != 138:
+                    volumes = adni.convert_volumes(volumes.pop(0))
+                    if len(volumes) != len(adni.structure_names):
                         print 'ERROR:', len(volumes), 'volumes read for', seg
                     else:
                         writer.writerow([str(rid), viscode, diagnosis] + volumes)

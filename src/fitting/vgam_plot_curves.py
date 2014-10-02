@@ -8,7 +8,6 @@ import matplotlib.mlab as mlab
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
 from common import log as log
-from common import adni_tools as adni
 from common import adni_plot as aplt
 from vgam.progressionmodel import ProgressionModel
 from vgam.datahandler import DataHandler
@@ -208,7 +207,7 @@ def plot_model(args, data_handler, biomarker):
 
     if not args.no_densities:
         ax2.set_title('Probability density function for {0}'.format(biomarker))
-        ax2.set_xlabel('Volume' if biomarker in adni.volume_names else 'Score')
+        ax2.set_xlabel(ve.get_metric_unit(biomarker))
         ax2.set_ylabel('Probability')
 
         values = np.linspace(min_val, max_val, 250)

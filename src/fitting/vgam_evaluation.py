@@ -174,7 +174,7 @@ def setup_axes(plt, ax):
 
 
 def get_metric_unit(biomarker):
-    if biomarker in adni.volume_names + ['synth_hipp', 'synth_brain']:
+    if biomarker in adni.structure_names + ['synth_hipp', 'synth_brain']:
         return 'Volume'
     if biomarker in adni.cog_score_names + ['synth_mmse', 'synth_cdrsb']:
         return 'Score'

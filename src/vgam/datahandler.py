@@ -25,7 +25,7 @@ class DataHandler(object):
     ############################################################################
     @staticmethod
     def add_arguments(parser):
-        parser.add_argument('method', choices=['cog', 'reg', 'long', 'cons', 'graph', 'mbl', 'synth', 'all'])
+        parser.add_argument('method', choices=['cog', 'reg', 'long', 'cons', 'graph', 'mbl', 'synth', 'all'], help='the method to collect data for')
         parser.add_argument('-i', '--iteration', type=int, default=0, help='the refinement iteration')
         parser.add_argument('-b', '--biomarkers_name', nargs='+', default=None, help='name of the biomarker to be plotted')
         parser.add_argument('--trans', type=str, default='sym', help='the transformation model, e.g. ffd, svffd, sym, or ic (regbased only)')
@@ -65,12 +65,12 @@ class DataHandler(object):
         else:
             self._biomarker_subset = args.biomarkers_name
         self._biomarker_sets = {'cog': adni.cog_score_names,
-                                'reg': adni.volume_names,
-                                'long': adni.volume_names,
-                                'cons': adni.volume_names,
-                                'graph': adni.volume_names_essential,
+                                'reg': adni.structure_names,
+                                'long': adni.structure_names,
+                                'cons': adni.structure_names,
+                                'graph': adni.structure_names,
                                 'mbl': adni.manifold_coordinate_names,
-                                'all': adni.biomarker_names_essential}
+                                'all': adni.biomarker_names}
 
         # Set data folders
         self._model_folders = {'cog': os.path.join(adni.project_folder, 'models', 'cog'),
@@ -99,7 +99,7 @@ class DataHandler(object):
         # Set method
         if args is None:
             self._method = 'all'
-            self._volume_method = 'graph'
+            self._volume_method = 'long'
         else:
             self._method = args.method
             if args.method == 'reg':
@@ -109,7 +109,7 @@ class DataHandler(object):
             elif args.method == 'cons':
                 self._volume_method = 'cons'
             else:
-                self._volume_method = 'graph'
+                self._volume_method = 'long'
 
         # Set iteration
         if iteration is not None:
@@ -118,6 +118,8 @@ class DataHandler(object):
             self._iteration = args.iteration
         else:
             self._iteration = 0
+
+        self._diagnosis_code = {'CN': 0.0, 'EMCI': 0.25, 'MCI': 0.5, 'LMCI': 0.75, 'AD': 1.0}
 
     ############################################################################
     #
@@ -205,7 +207,7 @@ class DataHandler(object):
         if biomarker in adni.cog_score_names:
             return 'cog'
 
-        elif biomarker in adni.volume_names:
+        elif biomarker in adni.structure_names or biomarker in adni.structure_names_complete:
             return self._volume_method
 
         elif biomarker in adni.manifold_coordinate_names:
@@ -220,9 +222,9 @@ class DataHandler(object):
     # get_measurements_as_dict()
     #
     ############################################################################
-    def get_measurements_as_dict(self, biomarkers=None,
+    def get_measurements_as_dict(self, min_visits=0, biomarkers=None,
                                  select_training_set=False, select_test_set=False,
-                                 select_complete=False, no_regression=False,):
+                                 select_complete=False, no_regression=False):
         """ Return all subjects measurements as a dictionary.
 
         Arguments:
@@ -246,7 +248,7 @@ class DataHandler(object):
         :rtype: dict
         """
         # Read data from lists
-        measurements = self._get_metadata_as_dict()
+        measurements = self._get_metadata_as_dict(min_visits=min_visits)
         measurements = self.update_measurements_with_biomarker_values(measurements,
                                                                       biomarkers=biomarkers,
                                                                       no_regression=no_regression)
@@ -257,7 +259,7 @@ class DataHandler(object):
         if select_complete:
             measurements = self._select_complete_measurements(measurements, biomarkers=biomarkers)
 
-        # Return measurements
+        # Return measurements=
         return measurements
 
     ############################################################################
@@ -265,10 +267,10 @@ class DataHandler(object):
     # _get_metadata_as_dict()
     #
     ############################################################################
-    def _get_metadata_as_dict(self, select_converters=True):
+    def _get_metadata_as_dict(self, min_visits=0):
         """ Return all subjects metadata as a dictionary.
 
-        :param bool select_converters: only select MCI -> AD converters
+        :param int min_visits: minimal number of visits
 
         :return: a dictionary with the following structure:
         { <rid> : { <viscode> : { DX.scan : <diagnosis> }
@@ -302,7 +304,7 @@ class DataHandler(object):
                 viscode = row['VISCODE']
                 if viscode in metadata[rid]:
                     print log.WARNING, 'Entry already exists {0} ({1}). Skipping.'.format(rid, viscode)
-                    break
+                    continue
                 metadata[rid].update({viscode: {}})
 
                 # Get scan date
@@ -310,36 +312,33 @@ class DataHandler(object):
                 metadata[rid][viscode].update({'scandate': scandate})
 
                 # Get age
-                metadata[rid][viscode].update({'AGE.scan': float(row['AGE.scan'])})
+                metadata[rid][viscode].update({'AGE.scan': adni.safe_cast(row['AGE.scan'])})
 
                 # Get factor
-                metadata[rid][viscode].update({'FactorMNI': float(row['FactorMNI'])})
+                metadata[rid][viscode].update({'FactorMNI': adni.safe_cast(row['FactorMNI'])})
 
                 # Get diagnosis as numerical value
-                dx_str = row['DX.scan']
-                if dx_str == 'AD':
-                    dx = 1.0
-                elif dx_str == 'MCI':
-                    dx = 0.5
-                elif dx_str == 'CN':
-                    dx = 0.0
-                else:
-                    print log.ERROR, 'Invalid diagnosis:', viscode
-                    break
+                dx = self._diagnosis_code[row['DX.scan']]
                 metadata[rid][viscode].update({'DX.scan': dx})
+
+        # Select subjects with minimal number of visits
+        valid_rids = []
+        for rid in metadata:
+            if len(metadata[rid]) > min_visits:
+                valid_rids.append(rid)
+        metadata = {rid: value for rid, value in metadata.items() if rid in valid_rids}
 
         #
         # Add scan time to measurements
         for rid in metadata:
             if 'bl' not in metadata[rid]:
                 print log.WARNING, 'No bl scan for subject {0}!'.format(rid)
-                continue
-
-            bl_date = metadata[rid]['bl']['scandate']
-            for viscode in metadata[rid]:
-                fu_date = metadata[rid][viscode]['scandate']
-                scantime = (fu_date - bl_date).days
-                metadata[rid][viscode].update({'scantime': scantime})
+            else:
+                bl_date = metadata[rid]['bl']['scandate']
+                for viscode in metadata[rid]:
+                    fu_date = metadata[rid][viscode]['scandate']
+                    scantime = (fu_date - bl_date).days
+                    metadata[rid][viscode].update({'scantime': scantime})
 
         #
         # Return metadata
@@ -423,11 +422,12 @@ class DataHandler(object):
                         value = adni.safe_cast(row[biomarker])
 
                         # Normalise volumes with mni transformation
-                        if biomarker in adni.volume_names:
-                            factor = metadata[rid][viscode]['FactorMNI']
-                            value /= factor
+                        if biomarker in adni.structure_names or biomarker in adni.structure_names_complete:
+                            brain_vol = adni.safe_cast(row['Whole Brain'])
+                            # factor = 1.0  # metadata[rid][viscode]['FactorMNI']
+                            value *= adni.cn_mean_brain_volume / brain_vol
 
-                        if no_regression:
+                        if no_regression or biomarker in adni.manifold_coordinate_names:
                             values[rid][viscode].update({biomarker: value})
                         else:
                             values[rid][viscode].update({no_regression_str.format(biomarker): value})
@@ -435,31 +435,32 @@ class DataHandler(object):
         if not no_regression:
             print log.INFO, 'Performing age regression...'
             for biomarker in biomarkers:
-                rids = []
-                viscodes = []
-                vals = []
-                ages = []
-                for rid, visits in values.items():
-                    for viscode in visits:
-                        # Get age
-                        try:
-                            age = metadata[rid][viscode]['AGE.scan']
-                        except KeyError:
-                            age = None
+                if biomarker not in adni.manifold_coordinate_names:
+                    rids = []
+                    viscodes = []
+                    vals = []
+                    ages = []
+                    for rid, visits in values.items():
+                        for viscode in visits:
+                            # Get age
+                            try:
+                                age = metadata[rid][viscode]['AGE.scan']
+                            except KeyError:
+                                age = None
 
-                        if age is not None and no_regression_str.format(biomarker) in visits[viscode]:
-                            value = visits[viscode][no_regression_str.format(biomarker)]
-                            if value is not None:
-                                ages.append(age)
-                                vals.append(value)
-                                rids.append(rid)
-                                viscodes.append(viscode)
+                            if age is not None and no_regression_str.format(biomarker) in visits[viscode]:
+                                value = visits[viscode][no_regression_str.format(biomarker)]
+                                if value is not None:
+                                    ages.append(age)
+                                    vals.append(value)
+                                    rids.append(rid)
+                                    viscodes.append(viscode)
 
-                if len(ages) > 1:
-                    regressed_values = self._age_regression(ages, vals)
+                    if len(ages) > 1:
+                        regressed_values = self._age_regression(ages, vals)
 
-                    for rid, viscode, value in zip(rids, viscodes, regressed_values):
-                        values[rid][viscode].update({biomarker: value})
+                        for rid, viscode, value in zip(rids, viscodes, regressed_values):
+                            values[rid][viscode].update({biomarker: value})
 
         return values
 
@@ -517,7 +518,7 @@ class DataHandler(object):
             data_diagnosis = data_diagnosis[args]
 
             # Select converters with MCI as first and AD as last diagnosis
-            if data_diagnosis[-1] == 1.0 and data_diagnosis[0] == 0.5:
+            if data_diagnosis[-1] == 1.0 and 0.25 <= data_diagnosis[0] <= 0.75:
                 # Mark as valid
                 valid_rids.append(rid)
 
@@ -553,7 +554,7 @@ class DataHandler(object):
         :return: the selected output measurements
         :rtype: dict
         """
-        print log.INFO, 'Selecting converters as training set...'
+        print log.INFO, 'Selecting non-converters as test set...'
         valid_rids = []
         for rid in measurements:
             # Sort data according to scantime
@@ -570,8 +571,7 @@ class DataHandler(object):
             data_diagnosis = data_diagnosis[args]
 
             # Select non converters with
-            if data_diagnosis[-1] == data_diagnosis[0] == 0.5 or \
-               data_diagnosis[-1] == data_diagnosis[0] == 1.0:
+            if 0.25 <= data_diagnosis[-1] == data_diagnosis[0] <= 1.0:
                 # Mark as valid
                 valid_rids.append(rid)
 
@@ -776,16 +776,7 @@ class SynthDataHandler(DataHandler):
                 metadata[rid].update({viscode: {}})
 
                 # Get diagnosis as numerical value
-                dx_str = row['DX.scan']
-                if dx_str == 'AD':
-                    dx = 1.0
-                elif dx_str == 'MCI':
-                    dx = 0.5
-                elif dx_str == 'CN':
-                    dx = 0.0
-                else:
-                    print log.ERROR, 'Invalid diagnosis:', viscode
-                    break
+                dx = self._diagnosis_code[row['DX.scan']]
                 metadata[rid][viscode].update({'DX.scan': dx})
 
                 # Get progress

@@ -30,8 +30,8 @@ def main():
     # data_file = os.path.join(adni.project_folder, 'lists/volumes_segbased_longitudinal.csv')
     data_file = os.path.join(adni.project_folder, 'lists/volumes_segbased_graphcut.csv')
 
-    volume_name = adni.volume_names[19]
-    print 'Analysing', volume_name
+    structure = adni.structure_names[19]
+    print 'Analysing', structure
 
     traj_x = []
     traj_y = []
@@ -66,14 +66,14 @@ def main():
                 break
 
             # Get and normalise volumes
-            volume = float(row[volume_name])
+            volume = float(row[structure])
             # volumes = [float(vol) * factor for vol in row]
 
             if rid != previous_rid and previous_rid is not None:
                 # Plot previous subject
                 print 'Plotting subject', previous_rid
                 plot_trajectories(traj_x, traj_y, traj_d, previous_rid,
-                                  biomarker=volume_name)
+                                  biomarker=structure)
                 traj_x = []
                 traj_y = []
                 traj_d = []
@@ -92,7 +92,7 @@ def main():
     y = sigmoid(x, np.mean(list_t0), np.exp(np.mean(list_r)), 1, np.mean(list_up))
     # y = sigmoid(x, np.mean(list_t0), np.mean(list_r), 1, np.mean(list_up))
 
-    plt.title(volume_name + ' mean model ')
+    plt.title(structure + ' mean model ')
     plt.xlabel('Months after baseline')
     plt.ylabel('Volume growth')
     plt.legend([mpl.patches.Rectangle((0, 0), 1, 1, fc=(0.0, 0.5, 0.0)),

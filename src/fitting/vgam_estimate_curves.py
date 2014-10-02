@@ -55,7 +55,7 @@ def generate_csv_files(args, data_handler):
         print log.INFO, 'Generating output CSV for {0}...'.format(biomarker)
         samples_file = data_handler.get_samples_file(biomarker)
         writer = csv.writer(open(samples_file, 'wb'), delimiter=',')
-        writer.writerow(['rid', 'progress', 'value'])
+        writer.writerow(['rid', 'progress', 'value', 'diagnosis'])
 
         subjects = set()
         num_samples = 0
@@ -65,8 +65,9 @@ def generate_csv_files(args, data_handler):
                     progression = adni.safe_cast(visit_data['progress'], int)
                     biomarker_name = biomarker
                     value = adni.safe_cast(visit_data[biomarker_name], float)
+                    diagnosis = adni.safe_cast(visit_data['DX.scan'], float)
                     if progression is not None and value is not None:
-                        writer.writerow([rid, progression, value])
+                        writer.writerow([rid, progression, value, diagnosis])
                         subjects.add(rid)
                         num_samples += 1
                 except KeyError:

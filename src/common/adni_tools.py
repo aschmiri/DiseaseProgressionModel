@@ -24,7 +24,7 @@ query_list = os.path.join(project_folder, 'lists/query_ADNI.csv')
 
 cog_score_names = ['MMSE', 'CDRSB', 'ADAS11', 'ADAS13', 'FAQ']
 
-volume_names = [
+structure_names_complete = [
     '3rd Ventricle',  # 0
     '4th Ventricle',  # 1
     'Right Accumbens Area',  # 2
@@ -164,22 +164,118 @@ volume_names = [
     'Right TTG transverse temporal gyrus',
     'Left TTG transverse temporal gyrus']
 
-volume_names_essential = [
-    'Right Accumbens Area', 'Left Accumbens Area',
-    'Right Amygdala', 'Left Amygdala',
-    'Right Cerebral White Matter', 'Left Cerebral White Matter',
-    'Right Hippocampus', 'Left Hippocampus',
-    'Right Lateral Ventricle', 'Left Lateral Ventricle',
-    'Right Pallidum', 'Left Pallidum',
-    'Right Putamen', 'Left Putamen',
-    'Right Thalamus Proper', 'Left Thalamus Proper']
+structure_names = [
+    '3rd Ventricle',  # 0
+    '4th Ventricle',  # 1
+    'Right Accumbens Area',  # 2
+    'Left Accumbens Area',  # 3
+    'Right Amygdala',  # 4
+    'Left Amygdala',  # 5
+    'Brain Stem',  # 6
+    'Right Caudate',  # 7
+    'Left Caudate',  # 8
+    'Right Cerebellum Exterior',  # 9
+    'Left Cerebellum Exterior',  # 10
+    'Right Cerebellum White Matter',  # 11
+    'Left Cerebellum White Matter',  # 12
+    'Right Cerebral White Matter',  # 13
+    'Left Cerebral White Matter',  # 14
+    'CSF',  # 15
+    'Right Hippocampus',  # 16
+    'Left Hippocampus',  # 17
+    'Right Inf Lat Vent',  # 18
+    'Left Inf Lat Vent',  # 19
+    'Right Lateral Ventricle',  # 20
+    'Left Lateral Ventricle',  # 21
+    'Right Pallidum',  # 22
+    'Left Pallidum',  # 23
+    'Right Putamen',  # 24
+    'Left Putamen',  # 25
+    'Right Thalamus Proper',  # 26
+    'Left Thalamus Proper',  # 27
+    'Right Ventral DC',  # 28
+    'Left Ventral DC',  # 29
+    'Cerebellar Vermis',  # 30
+    'Left Basal Forebrain',  # 31
+    'Right Basal Forebrain',  # 32
+    'Right Cortex',  # 33
+    'Left Cortex']  # 34
 
 manifold_coordinate_names = ['P_D1D2', 'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8',
                              'D9', 'D10', 'D11', 'D12', 'D13', 'D14', 'D15',
                              'D16', 'D17', 'D18', 'D19', 'D20']
 
-biomarker_names = cog_score_names + volume_names + manifold_coordinate_names
-biomarker_names_essential = cog_score_names + volume_names_essential + manifold_coordinate_names
+biomarker_names = cog_score_names + structure_names + manifold_coordinate_names
+
+cn_mean_brain_volume = 1214750.8694
+cn_mean_volumes = [1854.00390144, 2316.77289528, 356.790759754, 346.825256674,
+                   1167.70554415, 1136.36344969, 18885.6190965, 3519.28131417,
+                   3323.20965092, 49234.1262834, 48818.4061602, 15489.5895277,
+                   15285.2047228, 0.637371663244, 0.547022587269, 220331.453388,
+                   217318.180903, 2246.93572895, 3400.92073922, 3252.09917864,
+                   1081.47310062, 991.328952772, 18794.8008214, 20660.610883,
+                   1315.38767967, 1328.99897331, 3933.43696099, 3942.44702259,
+                   6571.49425051, 6760.375154, 4187.79876797, 4374.7174538,
+                   38.9831622177, 46.2135523614, 0.885831622177, 4626.55462012,
+                   2352.64989733, 2826.39425051, 462.056057495, 458.835728953,
+                   3880.17166324, 4798.92156057, 4386.59917864, 4461.57125257,
+                   2076.76324435, 1854.82874743, 9522.08008214, 8108.48193018,
+                   3531.6036961, 3443.43080082, 3999.31868583, 3974.17474333,
+                   5446.00328542, 5365.73655031, 2186.05071869, 2096.18172485,
+                   1862.01540041, 1864.36858316, 2966.44948665, 2606.86940452,
+                   8640.88398357, 8567.63100616, 1706.55585216, 1650.05482546,
+                   6430.26837782, 5804.00082136, 12401.6028747, 12103.4603696,
+                   9675.08151951, 8996.14271047, 1882.94106776, 1957.775154,
+                   5116.34743326, 4798.67104723, 1846.52607803, 1834.15605749,
+                   17479.1648871, 17656.6712526, 4832.71129363, 6031.03408624,
+                   4135.26960986, 4194.44086242, 852.36201232, 835.835728953,
+                   2699.3449692, 2820.75277207, 7177.55523614, 6045.08521561,
+                   14609.001232, 14052.7505133, 2293.52422998, 2411.93264887,
+                   3980.07002053, 4201.93963039, 2988.75420945, 2889.94455852,
+                   1489.28459959, 1395.1486653, 4300.80554415, 4602.52156057,
+                   11462.0340862, 11424.8796715, 3509.16057495, 3752.78295688,
+                   2432.03162218, 2350.05811088, 1955.7, 2463.25482546,
+                   8815.4211499, 9677.13655031, 3139.87330595, 3170.11622177,
+                   1848.45893224, 2091.58110883, 11925.2412731, 12149.4595483,
+                   1853.87967146, 2086.675154, 1291.92628337, 1224.56078029,
+                   13835.3558522, 13948.1924025, 5173.71416838, 5392.07577002,
+                   7256.9137577, 7966.337577, 4133.10944559, 3248.27905544,
+                   9022.48151951, 9022.14147844, 7134.20574949, 6828.25544148,
+                   7599.90349076, 7795.85954825, 3112.75564682, 3377.05174538,
+                   1211.67207392, 1295.85852156]
+
+
+################################################################################
+#
+# convert_volumes
+#
+################################################################################
+def convert_volumes(all_volumes):
+    if len(all_volumes) != len(structure_names_complete) == 138:
+        print log.ERROR, 'Cannot convert volumes of size {0}!'.format(len(all_volumes))
+        return None
+
+    # Leave first 32 structures untouched
+    volumes = all_volumes[:13]
+    volumes += all_volumes[15:32]
+
+    # Add 'Cerebellar Vermal Lobules' as one structure
+    volumes.append(np.sum(all_volumes[35:38]))
+
+    # Add basal forebrains
+    volumes += all_volumes[38:40]
+
+    # Add right cortex
+    volumes.append(np.sum(all_volumes[40:137:2]))
+
+    # Add left cortex
+    volumes.append(np.sum(all_volumes[41:138:2]))
+
+    if len(volumes) != len(structure_names):
+        print log.ERROR, 'Failed convert volumes!'
+        return None
+
+    return volumes
 
 
 ################################################################################
