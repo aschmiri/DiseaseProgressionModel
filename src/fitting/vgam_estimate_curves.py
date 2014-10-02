@@ -16,6 +16,7 @@ def main():
     parser = DataHandler.add_arguments(parser)
     parser.add_argument('-n', '--nr_threads', type=int, default=1, help='number of threads')
     parser.add_argument('-d', '--degrees_of_freedom', type=int, default=2, help='degrees of freedom for the LMS method')
+    parser.add_argument('-m', '--min_visits', type=int, default=0, help='the minimal number of visits')
     parser.add_argument('--no_regression', action='store_true', default=False, help='do not perform age regression of biomarker values')
     parser.add_argument('--recompute_models', action='store_true', help='recompute the models with new samples')
     args = parser.parse_args()
@@ -39,7 +40,7 @@ def generate_csv_files(args, data_handler):
     assert isinstance(data_handler, DataHandler)
 
     biomarkers = data_handler.get_biomarker_set()
-    measurements = data_handler.get_measurements_as_dict(select_training_set=True)
+    measurements = data_handler.get_measurements_as_dict(min_visits=args.min_visits, select_training_set=True)
 
     if args.iteration > 0:
         scaling_biomarkers = ['CDRSB']
@@ -120,7 +121,7 @@ def estimate_model(args, data_handler, biomarker):
 
         # Check if model was generated
         if not os.path.isfile(model_file):
-            log.ERROR, 'Failed to generate model for {0}!'.format(biomarker)
+            print log.ERROR, 'Failed to generate model for {0}!'.format(biomarker)
 
 
 if __name__ == '__main__':
