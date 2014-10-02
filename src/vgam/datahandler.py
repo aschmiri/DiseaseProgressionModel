@@ -222,13 +222,15 @@ class DataHandler(object):
     # get_measurements_as_dict()
     #
     ############################################################################
-    def get_measurements_as_dict(self, min_visits=0, biomarkers=None,
+    def get_measurements_as_dict(self, min_visits=0, visits=None, biomarkers=None,
                                  select_training_set=False, select_test_set=False,
                                  select_complete=False, no_regression=False):
         """ Return all subjects measurements as a dictionary.
 
         Arguments:
-        :param list biomarkers: list of biomarkers
+        :param int min_visits: minimal number of visits that have to be available
+        :param list visits: list of specific visits
+        :param list biomarkers: list of specific biomarkers
         :param bool select_training_set: only select MCI -> AD converters
         :param bool select_test_set: select the test subjects
         :param bool select_complete: select subjects with complete biomarker measurements
@@ -248,16 +250,19 @@ class DataHandler(object):
         :rtype: dict
         """
         # Read data from lists
-        measurements = self._get_metadata_as_dict(min_visits=min_visits)
+        measurements = self._get_metadata_as_dict()
         measurements = self.update_measurements_with_biomarker_values(measurements,
                                                                       biomarkers=biomarkers,
                                                                       no_regression=no_regression)
+
+        # Select specific subset of data. this has to be done after age regression!
+        measurements = self._select_visits(measurements, min_visits=min_visits, visits=visits)
         if select_training_set:
             measurements = self._select_training_set(measurements)
         if select_test_set:
             measurements = self._select_test_set(measurements)
         if select_complete:
-            measurements = self._select_complete_measurements(measurements, biomarkers=biomarkers)
+            measurements = self._select_complete_measurements(measurements, biomarkers=biomarkers, visits=visits)
 
         # Return measurements=
         return measurements
@@ -267,7 +272,7 @@ class DataHandler(object):
     # _get_metadata_as_dict()
     #
     ############################################################################
-    def _get_metadata_as_dict(self, min_visits=0):
+    def _get_metadata_as_dict(self):
         """ Return all subjects metadata as a dictionary.
 
         :param int min_visits: minimal number of visits
@@ -290,7 +295,6 @@ class DataHandler(object):
             print log.ERROR, 'Data file dies not exist:', data_file
             return metadata
 
-        #
         # Get all measurements from CSV file
         with open(data_file, 'rb') as csv_file:
             rows = csv.DictReader(csv_file)
@@ -321,14 +325,6 @@ class DataHandler(object):
                 dx = self._diagnosis_code[row['DX.scan']]
                 metadata[rid][viscode].update({'DX.scan': dx})
 
-        # Select subjects with minimal number of visits
-        valid_rids = []
-        for rid in metadata:
-            if len(metadata[rid]) > min_visits:
-                valid_rids.append(rid)
-        metadata = {rid: value for rid, value in metadata.items() if rid in valid_rids}
-
-        #
         # Add scan time to measurements
         for rid in metadata:
             if 'bl' not in metadata[rid]:
@@ -340,8 +336,8 @@ class DataHandler(object):
                     scantime = (fu_date - bl_date).days
                     metadata[rid][viscode].update({'scantime': scantime})
 
-        #
         # Return metadata
+        print log.RESULT, 'Collected data of {0} subjects.'.format(len(metadata))
         return metadata
 
     ############################################################################
@@ -484,6 +480,42 @@ class DataHandler(object):
 
     ############################################################################
     #
+    # _select_visits()
+    #
+    ############################################################################
+    def _select_visits(self, measurements, min_visits=0, visits=None):
+        """ Select only subjects with specified visits available.
+
+        :param dict measurements: the input measurements
+        :param int min_visits: minimal number of visits that have to be available
+        :param list visits: list of specified visits
+
+        :return: the selected output measurements
+        :rtype: dict
+        """
+        # Select subjects with minimal number of visits
+        if min_visits > 0:
+            print log.INFO, 'Selecting subjects with at least {0} visits...'.format(min_visits)
+            valid_rids = []
+            for rid in measurements:
+                if len(measurements[rid]) > min_visits:
+                    valid_rids.append(rid)
+            measurements = {rid: value for rid, value in measurements.items() if rid in valid_rids}
+
+        # Select subjects with specified visits
+        if visits is not None:
+            print log.INFO, 'Selecting subjects visits at {0}...'.format(visits)
+            valid_rids = []
+            for rid in measurements:
+                if set(visits).issubset(set(measurements[rid].keys())):
+                    valid_rids.append(rid)
+            measurements = {rid: value for rid, value in measurements.items() if rid in valid_rids}
+
+        print log.RESULT, 'Selected {0} subjects.'.format(len(measurements))
+        return measurements
+
+    ############################################################################
+    #
     # _select_training_set()
     #
     ############################################################################
@@ -539,6 +571,7 @@ class DataHandler(object):
         # Remove non-valid rids
         metadata = {rid: value for rid, value in measurements.items() if rid in valid_rids}
 
+        print log.RESULT, 'Selected {0} subjects.'.format(len(measurements))
         return metadata
 
     ############################################################################
@@ -578,6 +611,7 @@ class DataHandler(object):
         # Remove non-valid rids
         metadata = {rid: value for rid, value in measurements.items() if rid in valid_rids}
 
+        print log.RESULT, 'Selected {0} subjects.'.format(len(measurements))
         return metadata
 
     ############################################################################
@@ -585,7 +619,7 @@ class DataHandler(object):
     # _select_complete_measurements()
     #
     ############################################################################
-    def _select_complete_measurements(self, measurements, biomarkers=None):
+    def _select_complete_measurements(self, measurements, biomarkers=None, visits=None):
         """ Select only measurements with complete biomarker sets.
 
         :param dict measurements: the input measurements
@@ -594,19 +628,21 @@ class DataHandler(object):
         :return: the selected output measurements
         :rtype: dict
         """
-
+        print log.INFO, 'Selecting subjects with complete measurements...'
         biomarkers = self.get_biomarker_set() if biomarkers is None else biomarkers
 
         for rid, visit in measurements.items():
             drop_rid = False
-            for _, visdata in visit.items():
-                for biomarker in biomarkers:
-                    if biomarker not in visdata:
-                        drop_rid = True
-                        break
+            for visit, visdata in visit.items():
+                if visits is None or visits in visits:
+                    for biomarker in biomarkers:
+                        if biomarker not in visdata:
+                            drop_rid = True
+                            break
             if drop_rid:
                 measurements.pop(rid)
 
+        print log.RESULT, 'Selected {0} subjects.'.format(len(measurements))
         return measurements
 
     ############################################################################

@@ -5,6 +5,7 @@ A class to provide progression modelling functionality.
 :copyright:  2014 Imperial College London. All rights reserved.
 :contact:    a.schmidt-richberg@imperial.ac.uk
 """
+import math
 import numpy as np
 from common import log as log
 from common import adni_tools as adni
@@ -101,11 +102,10 @@ class ModelFitter(object):
         # Compute probability for each scaling
         probs = []
         for scaling in test_scalings:
-            prob = 1.0
+            prob = math.pow(10.0, len(samples) - 1)
             for viscode in samples:
                 scaled_progress = samples[viscode]['progress'] * scaling
                 prob *= self.model.get_probability_value(samples[viscode], scaled_progress)
-            # prob /= len(samples)
             probs.append(prob)
 
         # Sanity check
@@ -134,11 +134,10 @@ class ModelFitter(object):
         # Compute probability for each scaling
         probs = []
         for dpi in test_dpis:
-            prob = 1.0
+            prob = math.pow(10.0, len(samples) - 1)
             for viscode in samples:
                 offset = samples[viscode]['scantime']
                 prob *= self.model.get_probability_value(samples[viscode], dpi + offset)
-            # prob /= len(samples)
             probs.append(prob)
 
         # Sanity check
@@ -171,11 +170,10 @@ class ModelFitter(object):
         for dpr in test_dprs:
             probs = []
             for dpi in test_dpis:
-                prob = 1.0
+                prob = math.pow(10.0, len(samples) - 1)
                 for viscode in samples:
                     offset = samples[viscode]['scantime'] * dpr
                     prob *= self.model.get_probability_value(samples[viscode], dpi + offset)
-                # prob /= len(samples)
                 probs.append(prob)
 
             arg_max = np.argmax(probs)

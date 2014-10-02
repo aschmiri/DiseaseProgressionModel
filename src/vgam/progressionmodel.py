@@ -40,7 +40,7 @@ class MultiBiomarkerProgressionModel(object):
     #
     ############################################################################
     def get_probability_value(self, values, progression):
-        probability = 1.0
+        probability = math.pow(10.0, len(self.models.keys()) - 1)
         for biomarker in self.models.keys():
             if biomarker in values:
                 value = values[biomarker]

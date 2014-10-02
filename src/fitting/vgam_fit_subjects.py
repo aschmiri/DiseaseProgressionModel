@@ -12,16 +12,16 @@ from vgam.modelfitter import ModelFitter
 def main():
     parser = argparse.ArgumentParser(description='Estimate model curves for biomarkers using VGAM.')
     parser = DataHandler.add_arguments(parser)
-    parser.add_argument('viscodes', nargs='+', type=str, help='the viscodes to be sampled')
+    parser.add_argument('visits', nargs='+', type=str, help='the viscodes to be sampled')
     args = parser.parse_args()
 
     # Collect data for test
     data_handler = DataHandler.get_data_handler(args)
     biomarkers = data_handler.get_biomarker_set()
-    measurements = data_handler.get_measurements_as_dict(biomarkers=biomarkers,
+    measurements = data_handler.get_measurements_as_dict(visits=args.visits,
+                                                         biomarkers=biomarkers,
                                                          select_test_set=True,
                                                          select_complete=True)
-    print log.RESULT, 'Collected data from {0} subjects.'.format(len(measurements))
 
     # Setup model
     model = MultiBiomarkerProgressionModel()
@@ -30,7 +30,7 @@ def main():
         model.add_model(biomarker, model_file)
     fitter = ModelFitter(model)
 
-    main_estimate_dpi(measurements, args.viscodes, fitter)
+    main_estimate_dpi(measurements, args.visits, fitter)
 
     # Get RCDs
     # rcds = data_handler.get_mmse_decline_as_dict()
