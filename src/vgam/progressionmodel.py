@@ -48,6 +48,28 @@ class MultiBiomarkerProgressionModel(object):
 
         return probability
 
+    ############################################################################
+    #
+    # get_mean_min_progression()
+    #
+    ############################################################################
+    def get_mean_min_progression(self):
+        mean_min_progression = 0.0
+        for biomarker in self.models.keys():
+            mean_min_progression += self.models[biomarker].min_progression
+        return mean_min_progression / len(self.models)
+
+    ############################################################################
+    #
+    # get_mean_max_progression()
+    #
+    ############################################################################
+    def get_mean_max_progression(self):
+        mean_max_progression = 0.0
+        for biomarker in self.models.keys():
+            mean_max_progression += self.models[biomarker].max_progression
+        return mean_max_progression / len(self.models)
+
 
 class ProgressionModel(object):
     """

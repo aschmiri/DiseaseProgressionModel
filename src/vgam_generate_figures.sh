@@ -33,14 +33,17 @@ folder="/vol/medic01/users/aschmidt/Dropbox/Documents/Einreichungen/NeuroImage 2
 #  fitting/vgam_plot_curves.py synth -b "${biomarker}" --plot_synth_model --no_densities --no_sample_lines --no_extrapolation --no_model --points_alpha 1.0 --output_file "${output_file}"
 #done
 
-output_file="${folder}eval_synth_1.pdf"
+#
+# Synth evaluation
+#
+#output_file="${folder}eval_synth_1.pdf"
 #fitting/vgam_evaluate_synth_model.py -e ex1 -b synth_brain synth_hipp --experiment_range 100 1000 100 --number_of_runs 50 --output_file "${output_file}"
 #fitting/vgam_evaluate_synth_model.py -e ex1 --output_file ${output_file}
-output_file="${folder}eval_synth_2.pdf"
+#output_file="${folder}eval_synth_2.pdf"
 #fitting/vgam_evaluate_synth_model.py -e ex2 --output_file "${output_file}"
-output_file="${folder}eval_synth_3.pdf"
+#output_file="${folder}eval_synth_3.pdf"
 #fitting/vgam_evaluate_synth_fitting_for_samplings.py --output_file "${output_file}"
-output_file="${folder}eval_synth_4.pdf"
+#output_file="${folder}eval_synth_4.pdf"
 #fitting/vgam_evaluate_synth_fitting.py --output_file "${output_file}"
 
 #
@@ -67,3 +70,4 @@ done
 #  output_file="${folder}model_${biomarker_str}.pdf"
 #  fitting/vgam_plot_curves.py all -b "${biomarker}" --output_file "${output_file}"
 #done
+

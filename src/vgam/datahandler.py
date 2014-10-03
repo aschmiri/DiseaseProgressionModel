@@ -551,6 +551,7 @@ class DataHandler(object):
             data_diagnosis = data_diagnosis[args]
 
             # Select converters with MCI as first and AD as last diagnosis
+            # if data_diagnosis[-1] >= 0.25 and data_diagnosis[0] == 0.0:
             if data_diagnosis[-1] == 1.0 and 0.25 <= data_diagnosis[0] <= 0.75:
                 # Mark as valid
                 valid_rids.append(rid)
@@ -559,6 +560,7 @@ class DataHandler(object):
                 time_convert = None
                 scantime_prev = data_scantime[0]
                 for diagnosis, scantime in zip(data_diagnosis, data_scantime):
+                    # if diagnosis >= 0.25:
                     if diagnosis == 1.0:
                         time_convert = scantime_prev + (scantime - scantime_prev) / 2
                         break
@@ -605,7 +607,7 @@ class DataHandler(object):
             data_diagnosis = data_diagnosis[args]
 
             # Select non converters with
-            if 0.25 <= data_diagnosis[-1] == data_diagnosis[0] <= 1.0:
+            if data_diagnosis[-1] == data_diagnosis[0]:
                 # Mark as valid
                 valid_rids.append(rid)
 

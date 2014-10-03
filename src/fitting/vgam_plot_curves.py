@@ -181,7 +181,8 @@ def plot_model(args, data_handler, biomarker):
             m = mlab.csv2rec(samples_file)
             progr_points = m['progress']
             value_points = m['value']
-            diagn_points = [0.5 if p < 0 else 1.0 for p in progr_points]
+            # diagn_points = [0.5 if p < 0 else 1.0 for p in progr_points]
+            diagn_points = m['diagnosis']
 
             print log.INFO, 'Plotting {0} sample points...'.format(len(progr_points))
             ax1.scatter(progr_points, value_points, c=diagn_points, edgecolor='none',
