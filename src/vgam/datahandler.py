@@ -877,6 +877,21 @@ class SynthDataHandler(DataHandler):
 
     ############################################################################
     #
+    # _select_training_set()
+    #
+    ############################################################################
+    def _select_training_set(self, measurements):
+        """ Select only subjects converting from MCI to AD.
+
+        :param dict measurements: the input measurements
+
+        :return: the selected output measurements
+        :rtype: dict
+        """
+        return measurements
+
+    ############################################################################
+    #
     # _get_method_for_biomarker()
     #
     ############################################################################
