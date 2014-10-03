@@ -256,11 +256,12 @@ class DataHandler(object):
                                                                       no_regression=no_regression)
 
         # Select specific subset of data. this has to be done after age regression!
-        measurements = self._select_visits(measurements, min_visits=min_visits, visits=visits)
         if select_training_set:
             measurements = self._select_training_set(measurements)
         if select_test_set:
             measurements = self._select_test_set(measurements)
+        if visits is not None or min_visits > 0:
+            measurements = self._select_visits(measurements, min_visits=min_visits, visits=visits)
         if select_complete:
             measurements = self._select_complete_measurements(measurements, biomarkers=biomarkers, visits=visits)
 
@@ -634,7 +635,7 @@ class DataHandler(object):
         for rid, visit in measurements.items():
             drop_rid = False
             for visit, visdata in visit.items():
-                if visits is None or visits in visits:
+                if visits is None or visit in visits:
                     for biomarker in biomarkers:
                         if biomarker not in visdata:
                             drop_rid = True

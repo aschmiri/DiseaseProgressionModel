@@ -12,23 +12,22 @@ from common import adni_tools as adni
 from vgam.progressionmodel import ProgressionModel
 from vgam.progressionmodel import MultiBiomarkerProgressionModel
 
-TEST_SCALE_MIN = 0.1
-TEST_SCALE_MAX = 3.0
-TEST_SCALE_STEP = 0.1
-
-TEST_DPI_MIN = -2500
-TEST_DPI_MAX = 2500
-TEST_DPI_STEP = 10
-
-TEST_DPR_MIN = 0.1
-TEST_DPR_MAX = 3.0
-TEST_DPR_STEP = 0.1
-
 
 class ModelFitter(object):
     """
     TODO: classdocs
     """
+    TEST_SCALE_MIN = 0.1
+    TEST_SCALE_MAX = 3.0
+    TEST_SCALE_STEP = 0.1
+
+    TEST_DPI_MIN = -3500
+    TEST_DPI_MAX = 2500
+    TEST_DPI_STEP = 10
+
+    TEST_DPR_MIN = 0.1
+    TEST_DPR_MAX = 3.0
+    TEST_DPR_STEP = 0.1
 
     ############################################################################
     #
@@ -97,7 +96,9 @@ class ModelFitter(object):
 
         :return: the estimated DPI and DPR
         """
-        test_scalings = np.arange(TEST_SCALE_MIN, TEST_SCALE_MAX, TEST_SCALE_STEP)
+        test_scalings = np.arange(self.TEST_SCALE_MIN,
+                                  self.TEST_SCALE_MAX,
+                                  self.TEST_SCALE_STEP)
 
         # Compute probability for each scaling
         probs = []
@@ -129,7 +130,9 @@ class ModelFitter(object):
 
         :return: the estimated DPI
         """
-        test_dpis = np.arange(TEST_DPI_MIN, TEST_DPI_MAX, TEST_DPI_STEP)
+        test_dpis = np.arange(self.TEST_DPI_MIN,
+                              self.TEST_DPI_MAX,
+                              self.TEST_DPI_STEP)
 
         # Compute probability for each scaling
         probs = []
@@ -161,8 +164,12 @@ class ModelFitter(object):
 
         :return: the estimated DPI and DPR
         """
-        test_dprs = np.arange(TEST_DPR_MIN, TEST_DPR_MAX, TEST_DPR_STEP)
-        test_dpis = np.arange(TEST_DPI_MIN, TEST_DPI_MAX, TEST_DPI_STEP)
+        test_dprs = np.arange(self.TEST_DPR_MIN,
+                              self.TEST_DPR_MAX,
+                              self.TEST_DPR_STEP)
+        test_dpis = np.arange(self.TEST_DPI_MIN,
+                              self.TEST_DPI_MAX,
+                              self.TEST_DPI_STEP)
 
         # Compute probability for each DPI and DPR
         prob_max = []
