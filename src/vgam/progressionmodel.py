@@ -125,10 +125,10 @@ class ProgressionModel(object):
     # get_value_range()
     #
     ############################################################################
-    def get_value_range(self, std_range=1.5):
+    def get_value_range(self, quantiles=[0.1, 0.9]):
         """ Get the value range estimated by the model in a given std range. """
-        min_curve = self.get_quantile_curve(self.progressions, -std_range)
-        max_curve = self.get_quantile_curve(self.progressions, std_range)
+        min_curve = self.get_quantile_curve(self.progressions, quantiles[0])
+        max_curve = self.get_quantile_curve(self.progressions, quantiles[1])
         return np.min(min_curve), np.max(max_curve)
 
     ############################################################################
@@ -136,8 +136,10 @@ class ProgressionModel(object):
     # get_quantile_curve()
     #
     ############################################################################
-    def get_quantile_curve(self, progressions, std):
+    def get_quantile_curve(self, progressions, quantile):
+        from scipy import stats
         curve = []
+        std = stats.norm.ppf(quantile, loc=0.0, scale=1.0)
         for progression in progressions:
             lmbda, mu, sigma, yoffset = self.get_parameters(progression)
             curve.append(self.__yeojohnson_quantile(lmbda, mu, sigma, std) - yoffset)

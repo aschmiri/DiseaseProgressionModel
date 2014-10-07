@@ -56,8 +56,8 @@ def evaluate_synth_model(args, model_file, biomarker, metric='area'):
     # Define value steps
     min_val = float('inf')
     max_val = float('-inf')
-    for std in [-2.0, 2.0]:
-        curve = pm.get_quantile_curve(progressions, std)
+    for quantile in [0.01, 0.99]:
+        curve = pm.get_quantile_curve(progressions, quantile)
         min_val = min(min_val, np.min(curve))
         max_val = max(max_val, np.max(curve))
     values = np.linspace(min_val, max_val, args.number_of_value_steps)

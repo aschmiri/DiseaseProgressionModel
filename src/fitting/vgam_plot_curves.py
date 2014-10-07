@@ -29,6 +29,7 @@ def main():
     parser.add_argument('--plot_mu', action='store_true', default=False, help='plot mu')
     parser.add_argument('--plot_errors', action='store_true', default=False, help='plot the errors')
     parser.add_argument('--plot_synth_model', action='store_true', default=False, help='plot density distributions for synthetic data')
+    parser.add_argument('--plot_quantile_label', action='store_true', default=False, help='plot labels on the quantile curces')
     parser.add_argument('--save_file', action='store_true', default=False, help='save the plots as a file')
     parser.add_argument('--output_file', type=str, default=None, help='filename of the output file')
     args = parser.parse_args()
@@ -62,8 +63,8 @@ def plot_model(args, data_handler, biomarker):
     progression_linspace = np.linspace(min_progression_extrapolate, max_progression_extrapolate, 100)
     min_val = float('inf')
     max_val = float('-inf')
-    for std in [-1.0, 1.0]:
-        curve = pm.get_quantile_curve(progression_linspace, std)
+    for quantile in [0.11, 0.99]:
+        curve = pm.get_quantile_curve(progression_linspace, quantile)
         min_val = min(min_val, np.min(curve))
         max_val = max(max_val, np.max(curve))
 
@@ -99,20 +100,22 @@ def plot_model(args, data_handler, biomarker):
         ax1.axvline(pm.min_progression, color='0.15', linestyle=':', alpha=0.8)
         ax1.axvline(pm.max_progression, color='0.15', linestyle=':', alpha=0.8)
 
-        stds = [-1.5, -1.0, -0.5, 0, +0.5, +1.0, +1.5]
-        grey_values = ['0.6', '0.4', '0.2', '0', '0.2', '0.4', '0.6']
-        for grey_value, std in zip(grey_values, stds):
-            curve_int = pm.get_quantile_curve(progression_linspace_int, std)
+        # stds = [-1.5, -1.0, -0.5, 0, +0.5, +1.0, +1.5]
+        quantiles = [0.1, 0.25, 0.5, 0.75, 0.9]
+        grey_values = ['0.4', '0.2', '0', '0.2', '0.4']
+        for grey_value, quantile in zip(grey_values, quantiles):
+            curve_int = pm.get_quantile_curve(progression_linspace_int, quantile)
             ax1.plot(progression_linspace_int, curve_int, color=grey_value)
 
             if not args.no_extrapolation:
-                curve_ex1 = pm.get_quantile_curve(progression_linspace_ex1, std)
-                curve_ex2 = pm.get_quantile_curve(progression_linspace_ex2, std)
+                curve_ex1 = pm.get_quantile_curve(progression_linspace_ex1, quantile)
+                curve_ex2 = pm.get_quantile_curve(progression_linspace_ex2, quantile)
                 ax1.plot(progression_linspace_ex1, curve_ex1, '--', color=grey_value)
                 ax1.plot(progression_linspace_ex2, curve_ex2, '--', color=grey_value)
 
-            # TODO: label = '${0} \sigma$'.format(std)
-            # ax1.text(pm.progressions[-1], curve_2[-1], label, fontsize=11)
+            if args.plot_quantile_label:
+                label = '$q={0}\%$'.format(quantile * 100)
+                ax1.text(progression_linspace_int[-1] + 10, curve_int[-1], label, fontsize=10)
 
     #
     # Plot synthetic model curve
@@ -181,11 +184,11 @@ def plot_model(args, data_handler, biomarker):
             m = mlab.csv2rec(samples_file)
             progr_points = m['progress']
             value_points = m['value']
-            # diagn_points = [0.5 if p < 0 else 1.0 for p in progr_points]
-            diagn_points = m['diagnosis']
+            diagn_points = [0.5 if p < 0 else 1.0 for p in progr_points]
+            # diagn_points = m['diagnosis']
 
             print log.INFO, 'Plotting {0} sample points...'.format(len(progr_points))
-            ax1.scatter(progr_points, value_points, c=diagn_points, edgecolor='none',
+            ax1.scatter(progr_points, value_points, s=15.0, c=diagn_points, edgecolor='none',
                         vmin=0.0, vmax=1.0, cmap=aplt.progression_cmap, alpha=args.points_alpha)
             ax1.legend([mpl.patches.Rectangle((0, 0), 1, 1, fc=(0.8, 0.8, 0.0), linewidth=0),
                         mpl.patches.Rectangle((0, 0), 1, 1, fc=(1.0, 0.0, 0.0), linewidth=0)],

@@ -17,7 +17,7 @@ def main():
     parser = DataHandler.add_arguments(parser)
     parser.add_argument('-v', '--value_samples', type=int, default=100, help='the number of values samples')
     parser.add_argument('-p', '--progression_samples', type=int, default=10, help='the number of progression samples')
-    parser.add_argument('-s', '--std_range', type=float, default=2.0, help='the range of the standard deviation for the interval computation')
+    parser.add_argument('-q', '--quantiles', type=float, nargs=2, default=[0.01, 0.99], help='the quantiles for the interval computation')
     parser.add_argument('-n', '--nr_threads', type=int, default=4, help='number of threads')
     args = parser.parse_args()
 
@@ -45,7 +45,7 @@ def evaluate_biomarker(args, data_handler, biomarker):
         fitter = ModelFitter(model)
 
         # Determine value and progression interval
-        min_value, max_value = model.get_value_range(std_range=args.std_range)
+        min_value, max_value = model.get_value_range(quantiles=args.quantiles)
         values = np.linspace(min_value, max_value, args.value_samples)
         progressions = np.linspace(model.min_progression, model.max_progression, args.progression_samples)
         print log.RESULT, 'Evaluating {0} steps in value interval [{1}, {2}]'.format(args.value_samples, min_value, max_value)
