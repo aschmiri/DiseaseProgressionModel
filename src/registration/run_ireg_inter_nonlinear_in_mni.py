@@ -10,12 +10,12 @@ from registration import ireg_nonlinear
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('viscode', type=str, help='the visit code, e.g. bl, m12, m24, ...')
-    parser.add_argument('diagnosis', type=str, help='the diagnosis, e.g. AD, MCI, CN, ...')
+    # parser.add_argument('viscode', type=str, help='the visit code, e.g. bl, m12, m24, ...')
+    # parser.add_argument('diagnosis', type=str, help='the diagnosis, e.g. AD, MCI, CN, ...')
     parser.add_argument('trans', type=str, help='the transformation model, e.g. ffd, svffd, sym, or ic')
     parser.add_argument('state', type=float, help='the state for which relevant images should be registered')
     parser.add_argument('-n', '--nr_threads', type=int, default=1)
-    parser.add_argument('-i', '--iteration', type=int, default=1)
+    # parser.add_argument('-i', '--iteration', type=int, default=1)
     parser.add_argument('-r', '--required_subjects', type=int, default=20)
     parser.add_argument('-s', '--spacing', type=str, default='10')
     parser.add_argument('-a', '--age_regression', action='store_true', default=False, help='use age regression')
@@ -25,12 +25,15 @@ def main():
     global ireg_params
     ireg_params = os.path.join(adni.param_folder, 'params-ireg-' + a.trans + '-' + a.spacing + 'mm.txt')
 
-    atlas_folder = os.path.join(adni.project_folder, 'atlas/model_' + str(a.iteration))
-    datafile = os.path.join(atlas_folder, 'data_' + a.trans + '_' + a.viscode + '_' + a.diagnosis + '.csv')
+    # atlas_folder = os.path.join(adni.project_folder, 'atlas')
+    # datafile = os.path.join(atlas_folder, 'data_' + a.trans + '_' + a.viscode + '_' + a.diagnosis + '.csv')
+    datafile = os.path.join(adni.project_folder, 'lists', 'dpis_for_atlas.csv')
 
-    rids, _, _, states, images = at.read_datafile(datafile, a.diagnosis, age_regression=a.age_regression)
+    # rids, _, _, states, images = at.read_datafile(datafile, a.diagnosis, age_regression=a.age_regression)
+    rids, states, images = at.read_datafile(datafile)
 
-    _, _, indices = at.adaptive_kernel_regression(states, a.state, required_subjects=a.required_subjects)
+    _, _, indices = at.adaptive_kernel_regression(states, a.state, required_subjects=a.required_subjects,
+                                                  sigma_min=1.0, sigma_max=50.0, sigma_delta=1.0)
 
     global selected_rids
     global selected_images

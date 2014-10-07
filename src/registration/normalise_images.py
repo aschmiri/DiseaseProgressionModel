@@ -5,7 +5,7 @@ from subprocess import call
 from common import log as log
 from common import adni_tools as adni
 
-EXEC_NORM = 'normalize_percentiles_apply'
+EXEC_NORM = 'asr_normalize_percentiles_apply'
 
 
 def main():

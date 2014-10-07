@@ -13,8 +13,6 @@ EXEC_TRANSFORM = 'transformation'
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('viscode', type=str, help='the visit code, e.g. bl, m12, m24, ...')
-    parser.add_argument('diagnosis', type=str, help='the diagnosis, e.g. AD, MCI, CN, ...')
     parser.add_argument('state', type=float, help='the state for which relevant images should be registered')
     parser.add_argument('-i', '--iteration', type=int, default=1)
     parser.add_argument('-r', '--required_subjects', type=int, default=20)
@@ -30,19 +28,22 @@ def main():
 
     atlas_folder = os.path.join(adni.project_folder, 'atlas/model_' + str(a.iteration))
     atlas_folder_temp = adni.make_dir(atlas_folder, 'temp')
-    datafile = os.path.join(atlas_folder, 'data_' + a.trans + '_' + a.viscode + '_' + a.diagnosis + '.csv')
+    datafile = os.path.join(adni.project_folder, 'lists', 'dpis_for_atlas.csv')
 
-    rids, _, _, states, images = at.read_datafile(datafile, a.diagnosis, age_regression=a.age_regression)
+    # rids, _, _, states, images = at.read_datafile(datafile, a.diagnosis, age_regression=a.age_regression)
+    rids, states, images = at.read_datafile(datafile)
 
     # Find sigma and corresponding images
-    _, weights, indices = at.adaptive_kernel_regression(states, a.state, required_subjects=a.required_subjects)
+    _, weights, indices = at.adaptive_kernel_regression(states, a.state, required_subjects=a.required_subjects,
+                                                        sigma_min=1.0, sigma_max=50.0, sigma_delta=1.0)
 
     selected_rids = rids[indices]
     selected_images = images[indices]
     selected_weights = weights[indices]
 
     # Print data file for IRTK image averaging
-    atlas_base = 'atlas_' + a.trans + '_' + a.viscode + '_' + a.diagnosis + '_' + str(a.state)
+    atlas_base = 'atlas_' + a.trans + '_' + str(a.state)
+
     if a.age_regression:
         atlas_base = atlas_base + '_agereg'
     data_file_images = os.path.join(atlas_folder, atlas_base + '_images.txt')
@@ -54,10 +55,10 @@ def main():
             target_rid = selected_rids[i]
 
             # Define the base name of output files
-
             temp_base = str(target_rid) + '_' + str(a.state) + '_' + a.diagnosis
             if a.age_regression:
                 temp_base = temp_base + '_agereg'
+
             # Print data file for IRTK ffd averaging
             data_file_dofs = os.path.join(atlas_folder_temp, temp_base + '_dofs.txt')
             with open(data_file_dofs, 'wb') as csvfile:
