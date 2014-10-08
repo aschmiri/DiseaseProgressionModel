@@ -133,17 +133,41 @@ class ProgressionModel(object):
 
     ############################################################################
     #
+    # approximate_quantile()
+    #
+    ############################################################################
+    def approximate_quantile(self, progression, value, step=0.001):
+        from scipy import stats
+        lmbda, mu, sigma, yoffset = self.get_parameters(progression)
+        for quantile in np.arange(step, 1.0, step):
+            std = stats.norm.ppf(quantile, loc=0.0, scale=1.0)
+            qvalue = self.__yeojohnson_quantile(lmbda, mu, sigma, std) - yoffset
+            if qvalue > value:
+                return quantile
+        return 1.0 - step
+
+    ############################################################################
+    #
     # get_quantile_curve()
     #
     ############################################################################
     def get_quantile_curve(self, progressions, quantile):
-        from scipy import stats
         curve = []
-        std = stats.norm.ppf(quantile, loc=0.0, scale=1.0)
         for progression in progressions:
-            lmbda, mu, sigma, yoffset = self.get_parameters(progression)
-            curve.append(self.__yeojohnson_quantile(lmbda, mu, sigma, std) - yoffset)
+            curve.append(self.get_value_at_quantile(progression, quantile))
         return curve
+
+    ############################################################################
+    #
+    # get_value_at_quantile()
+    #
+    ############################################################################
+    def get_value_at_quantile(self, progression, quantile):
+        from scipy import stats
+        std = stats.norm.ppf(quantile, loc=0.0, scale=1.0)
+        lmbda, mu, sigma, yoffset = self.get_parameters(progression)
+        value = self.__yeojohnson_quantile(lmbda, mu, sigma, std) - yoffset
+        return value
 
     ############################################################################
     #

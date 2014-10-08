@@ -95,11 +95,11 @@ def run_experiment(args, data_handler, biomarker, sampling, num_samples=1000, ra
             print log.SKIP, 'Skipping error computation for {0} samples {1}, sigma {2}, run {3}'.format(num_samples, sampling, rate_sigma, run)
             error_experiment = pickle.load(open(error_file, 'rb'))
         else:
-            ve.generate_model(args, data_handler, biomarker,
-                              num_samples=num_samples,
-                              sampling=sampling,
-                              rate_sigma=rate_sigma,
-                              run=run)
+            ve.generate_synth_model(args, data_handler, biomarker,
+                                    num_samples=num_samples,
+                                    sampling=sampling,
+                                    rate_sigma=rate_sigma,
+                                    run=run)
             error_experiment = ve.evaluate_synth_model(args, model_file, biomarker, metric=args.metric)
             pickle.dump(error_experiment, open(error_file, 'wb'))
         errors_experiment.append(error_experiment)

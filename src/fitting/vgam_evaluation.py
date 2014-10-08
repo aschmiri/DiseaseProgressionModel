@@ -7,11 +7,111 @@ import matplotlib as mpl
 from common import log as log
 from common import adni_tools as adni
 from vgam.synthmodel import SynthModel
+from vgam.datahandler import DataHandler
 from vgam.progressionmodel import ProgressionModel
+from vgam.progressionmodel import MultiBiomarkerProgressionModel
 from vgam.modelfitter import ModelFitter
 
 
-def generate_model(args, data_handler, biomarker, num_samples=1000, sampling='longitudinal', rate_sigma=0.0, run=0):
+def get_dpi_estimates(args):
+    evaluation_basename = 'estimate_dpi_with_{0}_{1}.p'.format(args.method, '_'.join(args.visits))
+    evaluation_file = os.path.join(adni.eval_folder, evaluation_basename)
+
+    if os.path.isfile(evaluation_file) and not args.recompute_dpis:
+        # Read test results from file
+        print log.INFO, 'Reading DPI estimations from {0}...'.format(evaluation_file)
+        (rids, diagnoses, dpis, mean_min, mean_max) = pickle.load(open(evaluation_file, 'rb'))
+    else:
+        # Collect data for test
+        data_handler = DataHandler.get_data_handler(args)
+        biomarkers = data_handler.get_biomarker_set()
+        measurements = data_handler.get_measurements_as_dict(visits=args.visits,
+                                                             biomarkers=biomarkers,
+                                                             select_test_set=True,
+                                                             select_complete=True)
+
+        # Setup model
+        model = MultiBiomarkerProgressionModel()
+        for biomarker in biomarkers:
+            model_file = data_handler.get_model_file(biomarker)
+            model.add_model(biomarker, model_file)
+        fitter = ModelFitter(model)
+
+        # Calculate data
+        mean_min = model.get_mean_min_progression()
+        mean_max = model.get_mean_max_progression()
+        rids, diagnoses, dpis = estimate_dpis(measurements, args.visits, fitter)
+
+        # Save results
+        print log.INFO, 'Saving DPI estimations to {0}...'.format(evaluation_file)
+        pickle.dump((rids, diagnoses, dpis, mean_min, mean_max), open(evaluation_file, 'wb'))
+
+    return rids, diagnoses, dpis, mean_min, mean_max
+
+
+def estimate_dpis(measurements, viscodes, fitter):
+    rids = []
+    diagnoses = []
+    dpis = []
+    for rid in measurements:
+        print log.INFO, 'Estimating DPI for subject {0}...'.format(rid)
+        try:
+            diagnosis = measurements[rid]['bl']['DX.scan']
+        except KeyError:
+            continue
+
+        if not set(viscodes).issubset(set(measurements[rid].keys())):
+            print log.WARNING, 'Not all viscodes {0} available for subject {1}!'.format(viscodes, rid)
+            continue
+
+        samples = {}
+        for viscode in viscodes:
+            samples.update({viscode: measurements[rid][viscode]})
+        dpi = fitter.get_dpi_for_samples(samples)
+
+        print log.RESULT, 'Subject {0}: Estimated DPI: {1}, Diagnosis: {2}'.format(rid, dpi, diagnosis)
+        if dpi is not None:
+            rids.append(rid)
+            diagnoses.append(diagnosis)
+            dpis.append(dpi)
+
+    return rids, diagnoses, dpis
+
+
+def estimate_dpis_dprs(measurements, viscodes, fitter):
+    # Test all available subjects
+    rids = []
+    diagnoses = []
+    dpis = []
+    dprs = []
+    for rid in measurements:
+        print log.INFO, 'Estimating DPI and DPR for subject {0}...'.format(rid)
+        try:
+            diagnosis = measurements[rid]['bl']['DX.scan']
+        except KeyError:
+            continue
+
+        if not set(viscodes).issubset(set(measurements[rid].keys())):
+            print log.WARNING, 'Not all viscodes {0} available for subject {1}!'.format(viscodes, rid)
+            continue
+
+        samples = {}
+        for viscode in viscodes:
+            samples.update({viscode: measurements[rid][viscode]})
+        dpi, dpr = fitter.get_dpi_dpr_for_samples(samples)
+
+        print log.RESULT, 'Estimated DPI: {0}, DPR: {1}, Diagnosis: {2}'.format(dpi, dpr, diagnosis)
+        if dpi is not None and dpr is not None:
+            rids.append(rid)
+            diagnoses.append(diagnosis)
+            dpis.append(dpi)
+            dprs.append(dpr)
+
+    # Plot the results
+    return rids, diagnoses, dpis, dprs
+
+
+def generate_synth_model(args, data_handler, biomarker, num_samples=1000, sampling='longitudinal', rate_sigma=0.0, run=0):
     model_file_experiment = data_handler.get_model_file(biomarker, num_samples=num_samples, sampling=sampling,
                                                         rate_sigma=rate_sigma, run=run)
     samples_file_experiment = data_handler.get_samples_file(biomarker, num_samples=num_samples, sampling=sampling,
@@ -92,7 +192,7 @@ def evaluate_synth_model(args, model_file, biomarker, metric='area'):
     return error
 
 
-def generate_test_data(args, biomarkers, num_test_samples, number_of_visits, run=None):
+def generate_synth_test_data(args, biomarkers, num_test_samples, number_of_visits, run=None):
     print log.INFO, 'Generating test set with {0} samples...'.format(num_test_samples)
     biomarkers_str = '_'.join(biomarkers)
     if run is None:

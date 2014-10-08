@@ -48,13 +48,13 @@ def get_errors(args, data_handler, biomarkers, viscode_sets):
         # Initialise model fitter
         model = MultiBiomarkerProgressionModel()
         for biomarker in biomarkers:
-            model_file = ve.generate_model(args, data_handler, biomarker, num_samples=args.number_of_training_samples)
+            model_file = ve.generate_synth_model(args, data_handler, biomarker, num_samples=args.number_of_training_samples)
             model.add_model(biomarker, model_file)
         fitter = ModelFitter(model)
 
         # Generate test data and test different biomarker constellations
         num_visits = max([max(vs) for vs in viscode_sets]) + 1
-        test_data = ve.generate_test_data(args, biomarkers, args.number_of_test_samples, num_visits)
+        test_data = ve.generate_synth_test_data(args, biomarkers, args.number_of_test_samples, num_visits)
 
         # Compute the errors
         errors = []

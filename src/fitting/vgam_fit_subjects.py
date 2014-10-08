@@ -1,15 +1,11 @@
 #! /usr/bin/env python2.7
-import os.path
 import argparse
-import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 from common import log as log
-from common import adni_plot as aplt
-from common import adni_tools as adni
 from vgam.datahandler import DataHandler
-from vgam.progressionmodel import MultiBiomarkerProgressionModel
 from vgam.modelfitter import ModelFitter
+import fitting.vgam_evaluation as ve
 
 
 def main():
@@ -21,132 +17,12 @@ def main():
     parser.add_argument('--output_file', type=str, default=None, help='filename of the output file')
     args = parser.parse_args()
 
-    evaluation_basename = 'eval_{0}__{1}.p'.format(args.method, '_'.join(args.visits))
-    evaluation_file = os.path.join(adni.eval_folder, evaluation_basename)
-
-    if os.path.isfile(evaluation_file) and not args.recompute_dpis:
-        # Read test results from file
-        print log.INFO, 'Reading test results from {0}...'.format(evaluation_file)
-        (dpis, diagnoses, mean_min, mean_max) = pickle.load(open(evaluation_file, 'rb'))
-    else:
-        # Collect data for test
-        data_handler = DataHandler.get_data_handler(args)
-        biomarkers = data_handler.get_biomarker_set()
-        measurements = data_handler.get_measurements_as_dict(visits=args.visits,
-                                                             biomarkers=biomarkers,
-                                                             select_test_set=True,
-                                                             select_complete=True)
-
-        # Setup model
-        model = MultiBiomarkerProgressionModel()
-        for biomarker in biomarkers:
-            model_file = data_handler.get_model_file(biomarker)
-            model.add_model(biomarker, model_file)
-        fitter = ModelFitter(model)
-
-        # Calculate data
-        mean_min = model.get_mean_min_progression()
-        mean_max = model.get_mean_max_progression()
-        dpis, diagnoses = main_estimate_dpi(measurements, args.visits, fitter)
-
-        # Save results
-        print log.INFO, 'Saving test results to {0}...'.format(evaluation_file)
-        pickle.dump((dpis, diagnoses, mean_min, mean_max), open(evaluation_file, 'wb'))
-
-    analyse_dpis(args, dpis, diagnoses, mean_min, mean_max)
-
-    # Get RCDs
-    # rcds = data_handler.get_mmse_decline_as_dict()
-    # main_estimate_dpi_dpr(measurements, viscodes, fitter, rcds)
-    # main_evaluate_scalings(measurements, viscodes, fitter, rcds)
+    _, diagnoses, dpis, mean_min, mean_max = ve.get_dpi_estimates(args)
+    plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max)
+    analyse_dpi_estimates(args, dpis, diagnoses)
 
 
-def main_estimate_dpi(measurements, viscodes, fitter):
-    # Test all available subjects
-    dpis = []
-    diagnoses = []
-    for rid in measurements:
-        print log.INFO, 'Estimating DPI for subject {0}...'.format(rid)
-        try:
-            diagnosis = measurements[rid]['bl']['DX.scan']
-        except KeyError:
-            continue
-
-        if not set(viscodes).issubset(set(measurements[rid].keys())):
-            print log.WARNING, 'Not all viscodes {0} available for subject {1}!'.format(viscodes, rid)
-            continue
-
-        samples = {}
-        for viscode in viscodes:
-            samples.update({viscode: measurements[rid][viscode]})
-        dpi = fitter.get_dpi_for_samples(samples)
-
-        print log.RESULT, 'Estimated DPI: {0}, Diagnosis: {1}'.format(dpi, diagnosis)
-        if dpi is not None:
-            dpis.append(dpi)
-            diagnoses.append(diagnosis)
-
-    return dpis, diagnoses
-
-
-def main_estimate_dpi_dpr(measurements, viscodes, fitter, rcds):
-    # Test all available subjects
-    dpis = []
-    dprs = []
-    progresses = []
-    rcdnum = []
-    for rid in measurements:
-        print log.INFO, 'Estimating DPI and DPR for subject {0}...'.format(rid)
-        try:
-            progress = measurements[rid]['bl']['progress']
-            rcd = rcds[rid]
-        except KeyError:
-            continue
-
-        if not set(viscodes).issubset(set(measurements[rid].keys())):
-            print log.WARNING, 'Not all viscodes {0} available for subject {1}!'.format(viscodes, rid)
-            continue
-
-        samples = {}
-        for viscode in viscodes:
-            samples.update({viscode: measurements[rid][viscode]})
-        dpi, dpr = fitter.get_dpi_dpr_for_samples(samples)
-
-        print log.RESULT, 'Estimated DPI: {0}, DPR: {1}, Progress: {2}'.format(dpi, dpr, progress)
-        if dpi is not None and dpr is not None:
-            dpis.append(dpi)
-            dprs.append(dpr)
-            progresses.append(progress)
-            rcdnum.append(rcd)
-
-    rms_error = np.sqrt(np.sum(np.square(np.array(progresses) - np.array(dpis))) / len(dpis))
-    mean_error = np.sum(np.abs(np.array(progresses) - np.array(dpis))) / len(dpis)
-    print log.RESULT, 'Mean error: {0}, RMS error: {1}'.format(mean_error, rms_error)
-
-    # Plot the results
-    plot_rcds(dpis, dprs, rcdnum)
-
-
-def main_evaluate_scalings(measurements, fitter, rcds):
-    measurements = fitter.get_scaled_measurements(measurements)
-
-    # Test all available subjects
-    scalings = []
-    rcdnum = []
-    for rid in measurements:
-        if rid in rcds:
-            scalings.append(measurements[rid]['bl']['scaling'])
-            rcdnum.append(rcds[rid])
-
-    # Plot the results
-    plt.title('Correlation between scaling value and MMS decline')
-    plt.xlabel('Estimated scaling values')
-    plt.ylabel('MMSE decline')
-    plt.scatter(scalings, rcdnum, s=50, linewidths=0, alpha=0.5)
-    plt.show()
-
-
-def analyse_dpis(args, dpis, diagnoses, mean_min, mean_max):
+def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
     dpi_range = float(ModelFitter.TEST_DPI_MAX - ModelFitter.TEST_DPI_MIN)
 
     # Setup plot
@@ -208,20 +84,14 @@ def analyse_dpis(args, dpis, diagnoses, mean_min, mean_max):
         plt.show()
     plt.close(fig)
 
+
+def analyse_dpi_estimates(args, dpis, diagnoses):
     # Calculate accuracy
     misclassified = 0
     for dpi, diagnosis in zip(dpis, diagnoses):
         if dpi > 0 and diagnosis == 0.5 or dpi <= 0 and diagnosis == 1.0:
             misclassified += 1
     print log.RESULT, 'Accuracy: {0}'.format(1.0 - float(misclassified) / float(len(dpis)))
-
-
-def plot_rcds(dpis, dprs, rcds):
-    plt.title('DPI and DPR with RCD')
-    plt.xlabel('Estimated DPI')
-    plt.ylabel('Estimated DPR')
-    plt.scatter(dpis, dprs, c=rcds, cmap=aplt.progression_cmap, s=50, linewidths=0)
-    plt.show()
 
 
 if __name__ == '__main__':
