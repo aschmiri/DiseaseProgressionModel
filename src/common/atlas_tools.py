@@ -11,6 +11,7 @@ import matplotlib.mlab as mlab
 def find_file(filename, method_folder, type_folder):
     import os.path
     import adni_tools as adni
+    from common import log as log
 
     folder_ADNI1 = os.path.join(adni.data_folder, 'ADNI1', method_folder, type_folder)
     folder_ADNI2 = os.path.join(adni.data_folder, 'ADNI2', method_folder, type_folder)
@@ -34,6 +35,9 @@ def find_file(filename, method_folder, type_folder):
     filename = os.path.join(folder_ADNIGO, basename)
     if os.path.exists(filename):
         return filename
+
+    print log.ERROR, 'File not found for {0}!'.format(filename)
+    return None
 
 
 ################################################################################

@@ -3,6 +3,7 @@ import os.path
 import argparse
 import csv
 from subprocess import call
+from common import log as log
 from common import adni_tools as adni
 from common import atlas_tools as at
 
@@ -14,9 +15,8 @@ EXEC_TRANSFORM = 'transformation'
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('state', type=float, help='the state for which relevant images should be registered')
-    parser.add_argument('-i', '--iteration', type=int, default=1)
     parser.add_argument('-r', '--required_subjects', type=int, default=20)
-    parser.add_argument('-t', '--trans', type=str, default='svffd', help='the transformation model, e.g. ffd, svffd, sym, or ic')
+    parser.add_argument('-t', '--trans', type=str, default='sym', help='the transformation model, e.g. ffd, svffd, sym, or ic')
     parser.add_argument('-s', '--spacing', type=str, default='10')
     parser.add_argument('-a', '--age_regression', action='store_true', default=False, help='use age regression')
     a = parser.parse_args()
@@ -26,14 +26,12 @@ def main():
 
     dof_folder = os.path.join(adni.data_folder, 'ADNI', 'MNI152_intra_' + a.trans + '_' + a.spacing + 'mm', 'dof')
 
-    atlas_folder = os.path.join(adni.project_folder, 'atlas/model_' + str(a.iteration))
+    atlas_folder = os.path.join(adni.project_folder, 'atlas/cog')
     atlas_folder_temp = adni.make_dir(atlas_folder, 'temp')
     datafile = os.path.join(adni.project_folder, 'lists', 'dpis_for_atlas.csv')
 
-    # rids, _, _, states, images = at.read_datafile(datafile, a.diagnosis, age_regression=a.age_regression)
-    rids, states, images = at.read_datafile(datafile)
-
     # Find sigma and corresponding images
+    rids, states, images = at.read_datafile(datafile)
     _, weights, indices = at.adaptive_kernel_regression(states, a.state, required_subjects=a.required_subjects,
                                                         sigma_min=1.0, sigma_max=50.0, sigma_delta=1.0)
 
@@ -55,7 +53,7 @@ def main():
             target_rid = selected_rids[i]
 
             # Define the base name of output files
-            temp_base = str(target_rid) + '_' + str(a.state) + '_' + a.diagnosis
+            temp_base = str(target_rid) + '_' + str(a.state)
             if a.age_regression:
                 temp_base = temp_base + '_agereg'
 
@@ -72,22 +70,26 @@ def main():
 
             # Call IRTK 'ffdaverage'
             out_average_dof = os.path.join(atlas_folder_temp, temp_base + '_average_ffd.dof.gz')
-            if not os.path.exists(out_average_dof):
-                print '--------------------'
-                print 'Starting: ffdaverage'
-                print 'Data:   ' + data_file_dofs
-                print 'Output: ' + out_average_dof
+            if os.path.exists(out_average_dof):
+                print log.SKIP, 'Transformation {0} already exists.'.format(out_average_dof)
+            else:
+                print log.INFO, '--------------------'
+                print log.INFO, 'Starting: ffdaverage'
+                print log.INFO, 'Data:   ' + data_file_dofs
+                print log.INFO, 'Output: ' + out_average_dof
                 call([EXEC_FFDAVERAGE, out_average_dof, '-dofnames', data_file_dofs,
                       '-identity', str(selected_weights[i])])
 
             # Transform average image
             out_image_transformed = os.path.join(atlas_folder_temp, temp_base + '_image_transformed.nii.gz')
-            if not os.path.exists(out_image_transformed):
-                print '--------------------'
-                print 'Starting: transformation'
-                print 'Input:  ' + target
-                print 'DOF:    ' + out_average_dof
-                print 'Output: ' + out_image_transformed
+            if os.path.exists(out_image_transformed):
+                print log.SKIP, 'Transformed image {0} already exists.'.format(out_average_dof)
+            else:
+                print log.INFO, '--------------------'
+                print log.INFO, 'Starting: transformation'
+                print log.INFO, 'Input:  ' + target
+                print log.INFO, 'DOF:    ' + out_average_dof
+                print log.INFO, 'Output: ' + out_image_transformed
                 call([EXEC_TRANSFORM, target, out_image_transformed,
                       '-dofin', out_average_dof, '-invert'])
 
@@ -96,12 +98,16 @@ def main():
 
     # Call IRTK 'atlas'
     out_average_image = os.path.join(atlas_folder, atlas_base + '_average_image.nii.gz')
-    if not os.path.exists(out_average_image):
-        print '--------------------'
-        print 'Starting: ffdaverage'
-        print 'Data:   ' + data_file_images
-        print 'Output: ' + out_average_image
+    if os.path.exists(out_average_image):
+        print log.SKIP, 'Atlas {0} already exists.'.format(out_average_dof)
+    else:
+        print log.INFO, '--------------------'
+        print log.INFO, 'Starting: ffdaverage'
+        print log.INFO, 'Data:   ' + data_file_images
+        print log.INFO, 'Output: ' + out_average_image
         call([EXEC_ATLAS, out_average_image, '-imagenames', data_file_images])
+
+    print log.RESULT, 'Atlas generated successfully.'
 
 
 if __name__ == '__main__':
