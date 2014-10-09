@@ -26,7 +26,7 @@ def main():
 
     dof_folder = os.path.join(adni.data_folder, 'ADNI', 'MNI152_intra_' + a.trans + '_' + a.spacing + 'mm', 'dof')
 
-    atlas_folder = os.path.join(adni.project_folder, 'atlas/cog')
+    atlas_folder = os.path.join(adni.project_folder, 'atlas/all_no_cn')
     atlas_folder_temp = adni.make_dir(atlas_folder, 'temp')
     datafile = os.path.join(adni.project_folder, 'lists', 'dpis_for_atlas.csv')
 

@@ -10,7 +10,7 @@ from common import log as log
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--estimates_basename', type=str, default='eval_cog_with_rids.p', help='the basename of the file with the DPI estimates')
+    parser.add_argument('--estimates_basename', type=str, default='estimate_dpi_with_all_bl_m12_m24.p', help='the basename of the file with the DPI estimates')
     parser.add_argument('--output_basename', type=str, default='dpis_for_atlas.csv', help='the basename of the output CSV file')
     args = parser.parse_args()
 
@@ -18,7 +18,7 @@ def main():
     folder_lin = adni.data_folder + '/STUDY/MNI152_linear/images'
 
     estimates_file = os.path.join(adni.project_folder, 'eval', args.estimates_basename)
-    (dpis, _, rids) = pickle.load(open(estimates_file, 'rb'))
+    (rids, diagnoses, dpis, _, _) = pickle.load(open(estimates_file, 'rb'))
 
     # Setup output file
     output_file = os.path.join(adni.project_folder, 'lists', args.output_basename)
@@ -30,12 +30,12 @@ def main():
     con.row_factory = sqlite3.Row
     cur = con.cursor()
 
-    for rid, dpi in zip(rids, dpis):
+    for rid, diagnosis, dpi in zip(rids, diagnoses, dpis):
         cur.execute("SELECT study_bl, filename FROM adnimerge WHERE viscode = 'bl' AND rid = " + str(rid))
         visits = cur.fetchall()
         if len(visits) != 1:
             print log.ERROR, 'Wrong number of visits: ', visits
-        else:
+        elif diagnosis != 0.0:
             study = visits[0]['study_bl']
             filename_base = visits[0]['filename']
             filename = os.path.join(folder_lin.replace('STUDY', study), filename_base)

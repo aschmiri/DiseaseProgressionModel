@@ -33,7 +33,7 @@ def main():
     rids, states, images = at.read_datafile(datafile)
 
     _, _, indices = at.adaptive_kernel_regression(states, a.state, required_subjects=a.required_subjects,
-                                                  sigma_min=1.0, sigma_max=50.0, sigma_delta=1.0)
+                                                  sigma_min=1.0, sigma_max=100.0, sigma_delta=1.0)
 
     global selected_rids
     global selected_images
