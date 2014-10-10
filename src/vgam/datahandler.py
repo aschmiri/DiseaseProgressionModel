@@ -25,11 +25,9 @@ class DataHandler(object):
     ############################################################################
     @staticmethod
     def add_arguments(parser):
-        parser.add_argument('-m', '--method', choices=['cog', 'reg', 'long', 'cons', 'graph', 'mbl', 'synth', 'all'], default='all', help='the method to collect data for')
+        parser.add_argument('-m', '--method', choices=['cog', 'long', 'cons', 'mbl', 'img', 'all', 'synth'], default='all', help='the method to collect data for')
         parser.add_argument('-i', '--iteration', type=int, default=0, help='the refinement iteration')
         parser.add_argument('-b', '--biomarkers_name', nargs='+', default=None, help='name of the biomarker to be plotted')
-        parser.add_argument('--trans', type=str, default='sym', help='the transformation model, e.g. ffd, svffd, sym, or ic (regbased only)')
-        parser.add_argument('--spacing', type=str, default='5', help='the transformation spacing (regbased only)')
         return parser
 
     ############################################################################
@@ -54,10 +52,8 @@ class DataHandler(object):
         Initialise the right data files for the given arguments.
 
         :param args: command line arguments with:
-        :param str args.method: the method, choice of ['cog', 'reg', 'long', 'cons', 'graph', 'mbl']
+        :param str args.method: the method, choice of ['cog', 'long', 'cons', 'mbl', 'img', 'all']
         :param int args.iteration: the iteration of the fitting
-        :param str args.trans: the transformation if method == 'reg'
-        :param str args.spacing: the spacing if method == 'reg'
         """
         # Set biomarker sets
         if args is None:
@@ -65,36 +61,24 @@ class DataHandler(object):
         else:
             self._biomarker_subset = args.biomarkers_name
         self._biomarker_sets = {'cog': adni.cog_score_names,
-                                'reg': adni.structure_names,
                                 'long': adni.structure_names,
                                 'cons': adni.structure_names,
-                                'graph': adni.structure_names,
                                 'mbl': adni.manifold_coordinate_names,
+                                'img': adni.image_biomarker_names,
                                 'all': adni.biomarker_names}
 
         # Set data folders
         self._model_folders = {'cog': os.path.join(adni.project_folder, 'models', 'cog'),
                                'mbl': os.path.join(adni.project_folder, 'models', 'mbl'),
-                               'reg': os.path.join(adni.project_folder, 'models', 'reg'),
                                'long': os.path.join(adni.project_folder, 'models', 'long'),
-                               'cons': os.path.join(adni.project_folder, 'models', 'cons'),
-                               'graph': os.path.join(adni.project_folder, 'models', 'graph')}
+                               'cons': os.path.join(adni.project_folder, 'models', 'cons')}
 
         # Set data files
-        if args is None:
-            trans = 'sym'
-            spacing = '5'
-        else:
-            trans = args.trans
-            spacing = args.spacing
-
         self._data_files = {'meta': os.path.join(adni.project_folder, 'lists/metadata.csv'),
                             'cog': os.path.join(adni.project_folder, 'lists/metadata.csv'),
                             'mbl': os.path.join(adni.project_folder, 'lists/manifold_features.csv'),
-                            'reg': os.path.join(adni.project_folder, 'lists/volumes_segbased_{0}_{1}mm.csv'.format(trans, spacing)),
                             'long': os.path.join(adni.project_folder, 'lists/volumes_segbased_longitudinal.csv'),
-                            'cons': os.path.join(adni.project_folder, 'lists/volumes_segbased_consistent.csv'),
-                            'graph': os.path.join(adni.project_folder, 'lists/volumes_segbased_graphcut.csv')}
+                            'cons': os.path.join(adni.project_folder, 'lists/volumes_segbased_consistent.csv')}
 
         # Set method
         if args is None:
@@ -102,9 +86,7 @@ class DataHandler(object):
             self._volume_method = 'long'
         else:
             self._method = args.method
-            if args.method == 'reg':
-                self._volume_method = 'reg'
-            elif args.method == 'long':
+            if args.method == 'long':
                 self._volume_method = 'long'
             elif args.method == 'cons':
                 self._volume_method = 'cons'

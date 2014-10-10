@@ -50,9 +50,9 @@ def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
     diagnosis_indices = {0.0: 0, 0.25: 1, 0.5: 1, 0.75: 2, 1.0: 3}
     matrix = np.zeros((4, args.plot_steps + 1))
     for dpi, diag in zip(dpis, diagnoses):
-        diagnosis_index = diagnosis_indices[diag]
+        row = diagnosis_indices[diag]
         dpi_index = round((dpi - ModelFitter.TEST_DPI_MIN) / dpi_range * args.plot_steps)
-        matrix[diagnosis_index, dpi_index] += 1.0
+        matrix[row, dpi_index] += 1.0
 
     # Draw annotations
     dpis = np.array(dpis)
@@ -60,15 +60,13 @@ def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
     means = []
     stds = []
     for diag in [0.0, 0.25, 0.75, 1.0]:
-        i = diagnosis_indices[diag]
-        num_subjects = np.sum(matrix[i])
-        matrix[i] /= num_subjects
+        row = diagnosis_indices[diag]
+        num_subjects = np.sum(matrix[row])
+        matrix[row] /= num_subjects
 
         indices = np.where(diagnoses == diag)
-        mean = (np.mean(dpis[indices]) - ModelFitter.TEST_DPI_MIN) / dpi_range * args.plot_steps
-        std = np.std(dpis[indices]) / dpi_range * args.plot_steps
-        means.append(mean)
-        stds.append(std)
+        means.append((np.mean(dpis[indices]) - ModelFitter.TEST_DPI_MIN) / dpi_range * args.plot_steps)
+        stds.append(np.std(dpis[indices]) / dpi_range * args.plot_steps)
         # ax.text(args.plot_steps + 1, i, '$n={0}$'.format(int(num_subjects)))
 
     plt.errorbar(means, [0, 1, 2, 3], xerr=stds, fmt=None, ecolor='r', elinewidth=2, capsize=4, capthick=2)
