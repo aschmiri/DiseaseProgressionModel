@@ -25,7 +25,7 @@ class DataHandler(object):
     ############################################################################
     @staticmethod
     def add_arguments(parser):
-        parser.add_argument('method', choices=['cog', 'reg', 'long', 'cons', 'graph', 'mbl', 'synth', 'all'], help='the method to collect data for')
+        parser.add_argument('-m', '--method', choices=['cog', 'reg', 'long', 'cons', 'graph', 'mbl', 'synth', 'all'], default='all', help='the method to collect data for')
         parser.add_argument('-i', '--iteration', type=int, default=0, help='the refinement iteration')
         parser.add_argument('-b', '--biomarkers_name', nargs='+', default=None, help='name of the biomarker to be plotted')
         parser.add_argument('--trans', type=str, default='sym', help='the transformation model, e.g. ffd, svffd, sym, or ic (regbased only)')
@@ -206,15 +206,12 @@ class DataHandler(object):
     def _get_method_for_biomarker(self, biomarker):
         if biomarker in adni.cog_score_names:
             return 'cog'
-
         elif biomarker in adni.structure_names or biomarker in adni.structure_names_complete:
             return self._volume_method
-
         elif biomarker in adni.manifold_coordinate_names:
             return 'mbl'
-
         else:
-            print log.ERROR, 'Tag cannot be determined.'
+            print log.ERROR, 'Tag cannot be determined for {0}!'.format(biomarker)
             return None
 
     ############################################################################

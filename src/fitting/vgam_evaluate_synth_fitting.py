@@ -20,7 +20,7 @@ def main():
     parser.add_argument('--recompute_models', action='store_true', help='recompute the models with new samples')
     parser.add_argument('--recompute_test_data', action='store_true', help='recompute the test samples')
     parser.add_argument('--number_of_training_samples', type=int, default=1000, help='the number of training samples')
-    parser.add_argument('--output_file', type=str, default=None, help='filename of the output image with the plot')
+    parser.add_argument('--plot_file', type=str, default=None, help='filename of the output image with the plot')
     args = parser.parse_args()
 
     # Initialise data handler
@@ -113,8 +113,8 @@ def plot_errors(args, errors, biomarkers, viscode_sets):
             ve.set_boxplot_color(boxplot, i, (0, 0, 0))
 
     # Show or save plot
-    if args.output_file is not None:
-        plt.savefig(args.output_file, transparent=True)
+    if args.plot_file is not None:
+        plt.savefig(args.plot_file, transparent=True)
     else:
         plt.show()
     plt.close(fig)

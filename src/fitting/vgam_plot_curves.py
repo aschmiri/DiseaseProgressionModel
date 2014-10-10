@@ -30,8 +30,8 @@ def main():
     parser.add_argument('--plot_errors', action='store_true', default=False, help='plot the errors')
     parser.add_argument('--plot_synth_model', action='store_true', default=False, help='plot density distributions for synthetic data')
     parser.add_argument('--plot_quantile_label', action='store_true', default=False, help='plot labels on the quantile curces')
-    parser.add_argument('--save_file', action='store_true', default=False, help='save the plots as a file')
-    parser.add_argument('--output_file', type=str, default=None, help='filename of the output file')
+    parser.add_argument('--save_file', action='store_true', default=False, help='save the plots with a default filename')
+    parser.add_argument('--plot_file', type=str, default=None, help='filename of the output file')
     args = parser.parse_args()
 
     data_handler = DataHandler.get_data_handler(args)
@@ -59,7 +59,7 @@ def plot_model(args, data_handler, biomarker):
     progression_linspace_int = np.linspace(pm.min_progression, pm.max_progression, 60)
     progression_linspace_ex2 = np.linspace(pm.max_progression, max_progression_extrapolate, 20)
 
-    # Calc min and max val in interval [-1.5 sigma, +1.5 sigma]
+    # Calc min and max val in interval between 1% and 99% percentie
     progression_linspace = np.linspace(min_progression_extrapolate, max_progression_extrapolate, 100)
     min_val = float('inf')
     max_val = float('-inf')
@@ -100,7 +100,6 @@ def plot_model(args, data_handler, biomarker):
         ax1.axvline(pm.min_progression, color='0.15', linestyle=':', alpha=0.8)
         ax1.axvline(pm.max_progression, color='0.15', linestyle=':', alpha=0.8)
 
-        # stds = [-1.5, -1.0, -0.5, 0, +0.5, +1.0, +1.5]
         quantiles = [0.1, 0.25, 0.5, 0.75, 0.9]
         grey_values = ['0.4', '0.2', '0', '0.2', '0.4']
         for grey_value, quantile in zip(grey_values, quantiles):
@@ -234,9 +233,9 @@ def plot_model(args, data_handler, biomarker):
     # Draw or save the plot
     #
     plt.tight_layout()
-    if args.save_file or args.output_file is not None:
-        if args.output_file is not None:
-            plot_filename = args.output_file
+    if args.save_file or args.plot_file is not None:
+        if args.plot_file is not None:
+            plot_filename = args.plot_file
         else:
             plot_filename = model_file.replace('.csv', '.pdf')
         plt.savefig(plot_filename, transparent=True)

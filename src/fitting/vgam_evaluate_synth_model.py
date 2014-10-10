@@ -21,7 +21,7 @@ def main():
     parser.add_argument('--progression_linspace', type=int, nargs=3, default=[-2000, 2000, 100], help='the width of progression range window used for testing')
     parser.add_argument('--number_of_runs', type=int, default=100, help='the number of repeated runs')
     parser.add_argument('--number_of_value_steps', type=int, default=100, help='the number of value steps')
-    parser.add_argument('--output_file', type=str, default=None, help='filename of the output image with the plot')
+    parser.add_argument('--plot_file', type=str, default=None, help='filename of the output image with the plot')
     args = parser.parse_args()
 
     # Initialise data handler
@@ -141,8 +141,8 @@ def plot_error_bars(args, data_handler, errors):
     plt.legend()
 
     # Show or save plot
-    if args.output_file is not None:
-        plt.savefig(args.output_file, transparent=True)
+    if args.plot_file is not None:
+        plt.savefig(args.plot_file, transparent=True)
     else:
         plt.show()
     plt.close(fig)
@@ -188,8 +188,8 @@ def plot_boxplots_samplings(args, data_handler, errors, num_samples):
         ve.set_boxplot_color(boxplot, i, (0, 0, 0))
 
     # Show or save plot
-    if args.output_file is not None:
-        plt.savefig(args.output_file, transparent=True)
+    if args.plot_file is not None:
+        plt.savefig(args.plot_file, transparent=True)
     else:
         plt.show()
     plt.close(fig)
@@ -234,8 +234,8 @@ def plot_boxplots_noisy_rates(args, data_handler, errors, rate_sigmas):
         ve.set_boxplot_color(boxplot, i, (0, 0, 0))
 
     # Show or save plot
-    if args.output_file is not None:
-        plt.savefig(args.output_file, transparent=True)
+    if args.plot_file is not None:
+        plt.savefig(args.plot_file, transparent=True)
     else:
         plt.show()
     plt.close(fig)

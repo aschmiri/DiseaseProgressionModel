@@ -14,13 +14,26 @@ from vgam.modelfitter import ModelFitter
 
 
 def get_dpi_estimates(args):
-    evaluation_basename = 'estimate_dpi_with_{0}_{1}.p'.format(args.method, '_'.join(args.visits))
-    evaluation_file = os.path.join(adni.eval_folder, evaluation_basename)
+    # Get filename
+    estimates_file_trunk = 'estimate_dpi_dpr_with_{0}_{1}.p' if args.estimate_dprs else 'estimate_dpi_with_{0}_{1}.p'
+    if args.biomarkers_name is None:
+        estimates_file_basename = estimates_file_trunk.format(args.method, '_'.join(args.visits))
+    else:
+        biomarkers_string = '_'.join(args.biomarkers_name).replace(' ', '_')
+        estimates_file_basename = estimates_file_trunk.format(biomarkers_string, '_'.join(args.visits))
+    estimates_file = os.path.join(adni.eval_folder, estimates_file_basename)
 
-    if os.path.isfile(evaluation_file) and not args.recompute_dpis:
+    # Read if estimates exist, else recompute
+    if os.path.isfile(estimates_file) and not args.recompute_estimates:
         # Read test results from file
-        print log.INFO, 'Reading DPI estimations from {0}...'.format(evaluation_file)
-        (rids, diagnoses, dpis, mean_min, mean_max) = pickle.load(open(evaluation_file, 'rb'))
+        print log.INFO, 'Reading DPI{0} estimations from {1}...'.format('\DPR' if args.estimate_dprs else '', estimates_file)
+
+        # TODO: Remove hack to read deprecated files with offset
+        try:
+            (rids, diagnoses, dpis, dprs, mean_min, mean_max) = pickle.load(open(estimates_file, 'rb'))
+        except:
+            print log.WARNING, 'Reading deprecated estimates file'
+            (rids, diagnoses, dpis, dprs, _, mean_min, mean_max) = pickle.load(open(estimates_file, 'rb'))
     else:
         # Collect data for test
         data_handler = DataHandler.get_data_handler(args)
@@ -37,16 +50,24 @@ def get_dpi_estimates(args):
             model.add_model(biomarker, model_file)
         fitter = ModelFitter(model)
 
-        # Calculate data
+        # Calculate mean and max progression
         mean_min = model.get_mean_min_progression()
         mean_max = model.get_mean_max_progression()
-        rids, diagnoses, dpis = estimate_dpis(measurements, args.visits, fitter)
 
-        # Save results
-        print log.INFO, 'Saving DPI estimations to {0}...'.format(evaluation_file)
-        pickle.dump((rids, diagnoses, dpis, mean_min, mean_max), open(evaluation_file, 'wb'))
+        # Estimate dpis (and dprs) and save data
+        if not args.estimate_dprs or len(args.visits) == 1:
+            if args.estimate_dprs and len(args.visits) == 1:
+                print log.WARNING, 'Only one visit, cannot estimate DPR (setting to one)'
+            rids, diagnoses, dpis = estimate_dpis(measurements, args.visits, fitter)
+            dprs = np.ones(len(dpis)).tolist()
+        else:
+            rids, diagnoses, dpis, dprs = estimate_dpis_dprs(measurements, args.visits, fitter)
 
-    return rids, diagnoses, dpis, mean_min, mean_max
+        print log.INFO, 'Saving DPI{0} estimations to {1}...'.format('\DPR' if args.estimate_dprs else '', estimates_file)
+        pickle.dump((rids, diagnoses, dpis, dprs, mean_min, mean_max), open(estimates_file, 'wb'))
+
+    # Return results
+    return rids, diagnoses, dpis, dprs, mean_min, mean_max
 
 
 def estimate_dpis(measurements, viscodes, fitter):
@@ -100,7 +121,7 @@ def estimate_dpis_dprs(measurements, viscodes, fitter):
             samples.update({viscode: measurements[rid][viscode]})
         dpi, dpr = fitter.get_dpi_dpr_for_samples(samples)
 
-        print log.RESULT, 'Estimated DPI: {0}, DPR: {1}, Diagnosis: {2}'.format(dpi, dpr, diagnosis)
+        print log.RESULT, 'Subject {0}: Estimated DPI: {1}, DPR: {2}, Diagnosis: {3}'.format(rid, dpi, dpr, diagnosis)
         if dpi is not None and dpr is not None:
             rids.append(rid)
             diagnoses.append(diagnosis)
@@ -112,11 +133,13 @@ def estimate_dpis_dprs(measurements, viscodes, fitter):
 
 
 def generate_synth_model(args, data_handler, biomarker, num_samples=1000, sampling='longitudinal', rate_sigma=0.0, run=0):
+    # Get model and samples file
     model_file_experiment = data_handler.get_model_file(biomarker, num_samples=num_samples, sampling=sampling,
                                                         rate_sigma=rate_sigma, run=run)
     samples_file_experiment = data_handler.get_samples_file(biomarker, num_samples=num_samples, sampling=sampling,
                                                             rate_sigma=rate_sigma, run=run)
 
+    # Read model or recompute
     if os.path.isfile(model_file_experiment) and os.path.isfile(samples_file_experiment) and not args.recompute_models:
         print log.SKIP, 'Skipping model generation for {0} samples {1}, run {2}'.format(num_samples, sampling, run)
     else:
@@ -143,6 +166,8 @@ def generate_synth_model(args, data_handler, biomarker, num_samples=1000, sampli
                 call(['mv', samples_file, samples_file_experiment])
             else:
                 print log.WARNING, 'Failed to generate model, retrying...'
+
+    # Return model file
     return model_file_experiment
 
 

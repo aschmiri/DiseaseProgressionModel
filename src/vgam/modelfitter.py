@@ -25,7 +25,7 @@ class ModelFitter(object):
     TEST_DPI_MAX = 2500
     TEST_DPI_STEP = 10
 
-    TEST_DPR_MIN = 0.1
+    TEST_DPR_MIN = 0.0
     TEST_DPR_MAX = 3.0
     TEST_DPR_STEP = 0.1
 

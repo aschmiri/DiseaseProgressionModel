@@ -12,13 +12,16 @@ def main():
     parser = argparse.ArgumentParser(description='Estimate model curves for biomarkers using VGAM.')
     parser = DataHandler.add_arguments(parser)
     parser.add_argument('visits', nargs='+', type=str, help='the viscodes to be sampled')
-    parser.add_argument('--recompute_dpis', action='store_true', help='recompute the dpis estimations')
+    parser.add_argument('--estimate_dprs', action='store_true', help='recompute the dpis estimations')
+    parser.add_argument('--recompute_estimates', action='store_true', help='recompute the dpis estimations')
+    parser.add_argument('--no_plot', action='store_true', help='do not plot the results')
     parser.add_argument('--plot_steps', type=int, default=15, help='number of steps for the DPI scale')
-    parser.add_argument('--output_file', type=str, default=None, help='filename of the output file')
+    parser.add_argument('--plot_file', type=str, default=None, help='filename of the output file')
     args = parser.parse_args()
 
-    _, diagnoses, dpis, mean_min, mean_max = ve.get_dpi_estimates(args)
-    plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max)
+    _, diagnoses, dpis, _, mean_min, mean_max = ve.get_dpi_estimates(args)
+    if not args.no_plot:
+        plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max)
     analyse_dpi_estimates(args, dpis, diagnoses)
 
 
@@ -27,7 +30,8 @@ def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
 
     # Setup plot
     fig, ax = plt.subplots(figsize=(6, 2))
-    ax.set_title('DPI estimation using {0} at {1}'.format(args.method, ', '.join(args.visits)))
+    biomarkers_str = args.method if args.biomarkers_name is None else ', '.join(args.biomarkers_name)
+    ax.set_title('DPI estimation using {0} at {1}'.format(biomarkers_str, ', '.join(args.visits)))
     ax.set_xlabel('DPI')
     ax.spines['left'].set_position(('outward', 10))
     ax.spines['bottom'].set_position(('outward', 10))
@@ -45,12 +49,10 @@ def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
     # Compute matrix
     diagnosis_indices = {0.0: 0, 0.25: 1, 0.5: 1, 0.75: 2, 1.0: 3}
     matrix = np.zeros((4, args.plot_steps + 1))
-    mean = np.zeros(4)
     for dpi, diag in zip(dpis, diagnoses):
         diagnosis_index = diagnosis_indices[diag]
         dpi_index = round((dpi - ModelFitter.TEST_DPI_MIN) / dpi_range * args.plot_steps)
         matrix[diagnosis_index, dpi_index] += 1.0
-        mean[diagnosis_index] += dpi
 
     # Draw annotations
     dpis = np.array(dpis)
@@ -78,8 +80,8 @@ def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
 
     # Draw or save the plot
     plt.tight_layout()
-    if args.output_file is not None:
-        plt.savefig(args.output_file, transparent=True)
+    if args.plot_file is not None:
+        plt.savefig(args.plot_file, transparent=True)
     else:
         plt.show()
     plt.close(fig)
