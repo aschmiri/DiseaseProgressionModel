@@ -18,7 +18,7 @@ EXEC_REMOVE = 'rm'
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-b', '--biomarkers_name', default=None, nargs='+', help='name of the biomarkers for which data is to be generated')
+    parser.add_argument('-b', '--biomarkers', default=None, nargs='+', help='name of the biomarkers for which data is to be generated')
     parser.add_argument('-s', '--sampling', type=str, choices=['uniform', 'triangular', 'longitudinal'], default='triangular', help='the type of sampling')
     parser.add_argument('-n', '--number_of_samples', type=int, default=400, help='the number of subjects in the synthetic sample pool')
     parser.add_argument('--samples_per_subject', type=int, default=6, help='the number of samples per subject')

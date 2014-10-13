@@ -14,7 +14,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-e', '--experiment', type=str, choices=['ex1', 'ex2', 'ex3'], default='ex1', help='the experiment to run')
     parser.add_argument('-m', '--metric', type=str, choices=['area', 'peakdist', 'maxdist'], default='area', help='the metric to be evaluated')
-    parser.add_argument('-b', '--biomarkers_name', nargs='+', default=None, help='name of the biomarkers to be evaluated')
+    parser.add_argument('-b', '--biomarkers', nargs='+', default=None, help='name of the biomarkers to be evaluated')
     parser.add_argument('--recompute_errors', action='store_true', help='recompute the errors of the models')
     parser.add_argument('--recompute_models', action='store_true', help='recompute the models with new samples')
     parser.add_argument('--sample_numbers_range', type=int, nargs=3, default=[100, 2000, 100], help='the range for the number of samples tested')

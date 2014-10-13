@@ -41,23 +41,12 @@ def main():
     analyse_biomarker_predictions(args, diagnoses, values_observed, values_naive, values_model)
 
 
-def get_biomarker_predictions(args):
+def get_biomarker_predictions(args, predict_file):
     biomarker = args.predict_biomarker
 
     # Get prediction file
-    predict_biomarker_str = biomarker.replace(' ', '_')
-    predict_file_trunk = 'predict_{0}_with_dpr_{1}_{2}{3}.p' if args.estimate_dprs else 'predict_{0}_with_{1}_{2}{3}.p'
-    if args.biomarkers_name is None:
-        predict_file_basename = predict_file_trunk.format(predict_biomarker_str,
-                                                          args.method, '_'.join(args.visits),
-                                                          '_last' if args.use_last_visit else '')
-    else:
-        estimate_biomarkers_string = '_'.join(args.biomarkers_name).replace(' ', '_')
-        predict_file_basename = predict_file_trunk.format(predict_biomarker_str,
-                                                          estimate_biomarkers_string,
-                                                          '_'.join(args.visits),
-                                                          '_last' if args.use_last_visit else '')
-    predict_file = os.path.join(adni.eval_folder, predict_file_basename)
+    predict_file = ve.get_prediction_file(args.method, args.visits, args.biomarkers,
+                                          args.estimate_dprs, args.use_last_visit, biomarker)
 
     # Read if predictions exist, else recompute
     if os.path.isfile(predict_file) and not args.recompute_predictions:

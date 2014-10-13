@@ -13,15 +13,39 @@ from vgam.progressionmodel import MultiBiomarkerProgressionModel
 from vgam.modelfitter import ModelFitter
 
 
-def get_progress_estimates(args):
-    # Get filename
-    estimates_file_trunk = 'estimate_dpi_dpr_with_{0}_{1}.p' if args.estimate_dprs else 'estimate_dpi_with_{0}_{1}.p'
-    if args.biomarkers_name is None:
-        estimates_file_basename = estimates_file_trunk.format(args.method, '_'.join(args.visits))
+def get_estimates_file(method, visits, biomarkers, estimate_dprs):
+    estimates_file_trunk = 'estimate_dpi_dpr_with_{0}_{1}.p' if estimate_dprs else 'estimate_dpi_with_{0}_{1}.p'
+    if biomarkers is None:
+        estimates_file_basename = estimates_file_trunk.format(method, '_'.join(visits))
     else:
-        biomarkers_string = '_'.join(args.biomarkers_name).replace(' ', '_')
-        estimates_file_basename = estimates_file_trunk.format(biomarkers_string, '_'.join(args.visits))
+        biomarkers_string = '_'.join(biomarkers).replace(' ', '_')
+        estimates_file_basename = estimates_file_trunk.format(biomarkers_string, '_'.join(visits))
     estimates_file = os.path.join(adni.eval_folder, estimates_file_basename)
+    return estimates_file
+
+
+def get_prediction_file(method, visits, biomarkers, estimate_dprs, use_last_visit, predict_biomarker):
+    predict_biomarker_str = predict_biomarker.replace(' ', '_')
+    predict_file_trunk = 'predict_{0}_with_dpr_{1}_{2}{3}.p' if estimate_dprs else 'predict_{0}_with_{1}_{2}{3}.p'
+    if biomarkers is None:
+        predict_file_basename = predict_file_trunk.format(predict_biomarker_str,
+                                                          method, '_'.join(visits),
+                                                          '_last' if use_last_visit else '')
+    else:
+        estimate_biomarkers_string = '_'.join(biomarkers).replace(' ', '_')
+        predict_file_basename = predict_file_trunk.format(predict_biomarker_str,
+                                                          estimate_biomarkers_string,
+                                                          '_'.join(visits),
+                                                          '_last' if use_last_visit else '')
+    prediction_file = os.path.join(adni.eval_folder, predict_file_basename)
+
+    return prediction_file
+
+
+def get_progress_estimates(args, estimates_file=None):
+    # Get filename
+    if estimates_file is None:
+        estimates_file = get_estimates_file(args.method, args.visits, args.biomarkers, args.estimate_dprs)
 
     # Read if estimates exist, else recompute
     if os.path.isfile(estimates_file) and not args.recompute_estimates:

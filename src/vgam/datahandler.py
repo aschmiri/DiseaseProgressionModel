@@ -27,7 +27,7 @@ class DataHandler(object):
     def add_arguments(parser):
         parser.add_argument('-m', '--method', choices=['cog', 'long', 'cons', 'mbl', 'img', 'all', 'synth'], default='all', help='the method to collect data for')
         parser.add_argument('-i', '--iteration', type=int, default=0, help='the refinement iteration')
-        parser.add_argument('-b', '--biomarkers_name', nargs='+', default=None, help='name of the biomarker to be plotted')
+        parser.add_argument('-b', '--biomarkers', nargs='+', default=None, help='name of the biomarker to be plotted')
         return parser
 
     ############################################################################
@@ -59,7 +59,7 @@ class DataHandler(object):
         if args is None:
             self._biomarker_subset = None
         else:
-            self._biomarker_subset = args.biomarkers_name
+            self._biomarker_subset = args.biomarkers
         self._biomarker_sets = {'cog': adni.cog_score_names,
                                 'long': adni.structure_names,
                                 'cons': adni.structure_names,
@@ -710,7 +710,7 @@ class SynthDataHandler(DataHandler):
         if args is None:
             self._biomarker_subset = None
         else:
-            self._biomarker_subset = args.biomarkers_name
+            self._biomarker_subset = args.biomarkers
         self._biomarker_sets = {'synth': SynthModel.get_biomarker_names()}
         self._model_folders = {'synth': os.path.join(adni.project_folder, 'models', 'synth')}
         self._data_files = {'meta': os.path.join(adni.project_folder, 'lists/synth_data.csv'),
