@@ -16,7 +16,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser = DataHandler.add_arguments(parser)
     parser.add_argument('-v', '--value_samples', type=int, default=100, help='the number of values samples')
-    parser.add_argument('-p', '--progression_samples', type=int, default=10, help='the number of progression samples')
+    parser.add_argument('-p', '--progress_samples', type=int, default=10, help='the number of progress samples')
     parser.add_argument('-q', '--quantiles', type=float, nargs=2, default=[0.01, 0.99], help='the quantiles for the interval computation')
     parser.add_argument('-n', '--nr_threads', type=int, default=4, help='number of threads')
     args = parser.parse_args()
@@ -44,33 +44,33 @@ def evaluate_biomarker(args, data_handler, biomarker):
         model = ProgressionModel(biomarker, model_file)
         fitter = ModelFitter(model)
 
-        # Determine value and progression interval
+        # Determine value and progress interval
         min_value, max_value = model.get_value_range(quantiles=args.quantiles)
         values = np.linspace(min_value, max_value, args.value_samples)
-        progressions = np.linspace(model.min_progression, model.max_progression, args.progression_samples)
+        progresses = np.linspace(model.min_progress, model.max_progress, args.progress_samples)
         print log.RESULT, 'Evaluating {0} steps in value interval [{1}, {2}]'.format(args.value_samples, min_value, max_value)
-        print log.RESULT, 'Evaluating {0} steps in progression interval [{1}, {2}]'.format(args.progression_samples, model.min_progression, model.max_progression)
+        print log.RESULT, 'Evaluating {0} steps in progress interval [{1}, {2}]'.format(args.progress_samples, model.min_progress, model.max_progress)
         value_step = values[1] - values[0]
 
         # Compute error
         writer = csv.writer(open(eval_file, 'wb'), delimiter=',')
-        writer.writerow(['progression', 'error'])
+        writer.writerow(['progress', 'error'])
 
         total_error = 0
-        for progression in progressions:
+        for progress in progresses:
             sample_error = 0
             for value in values:
-                prob_value = model.get_probability_value(value, progression)
+                prob_value = model.get_probability_value(value, progress)
                 samples = {'bl': {'scantime': 0, biomarker: value}}
                 estimated_dpi = fitter.get_dpi_for_samples(samples)
-                sample_error += prob_value * np.square(progression - estimated_dpi)
+                sample_error += prob_value * np.square(progress - estimated_dpi)
             sample_error = math.sqrt(value_step * sample_error / len(values))
             total_error += sample_error
 
-            writer.writerow([progression, sample_error])
-            print log.RESULT, 'Error for progression {0}: {1}'.format(progression, sample_error)
+            writer.writerow([progress, sample_error])
+            print log.RESULT, 'Error for progress {0}: {1}'.format(progress, sample_error)
 
-        total_error /= len(progressions)
+        total_error /= len(progresses)
         print log.RESULT, 'Total error: {0}'.format(total_error)
 
 

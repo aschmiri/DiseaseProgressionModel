@@ -18,7 +18,7 @@ def main():
     parser.add_argument('--recompute_errors', action='store_true', help='recompute the errors of the models')
     parser.add_argument('--recompute_models', action='store_true', help='recompute the models with new samples')
     parser.add_argument('--sample_numbers_range', type=int, nargs=3, default=[100, 2000, 100], help='the range for the number of samples tested')
-    parser.add_argument('--progression_linspace', type=int, nargs=3, default=[-2000, 2000, 100], help='the width of progression range window used for testing')
+    parser.add_argument('--progress_linspace', type=int, nargs=3, default=[-2000, 2000, 100], help='the width of progress range window used for testing')
     parser.add_argument('--number_of_runs', type=int, default=100, help='the number of repeated runs')
     parser.add_argument('--number_of_value_steps', type=int, default=100, help='the number of value steps')
     parser.add_argument('--plot_file', type=str, default=None, help='filename of the output image with the plot')
@@ -163,7 +163,7 @@ def plot_boxplots_samplings(args, data_handler, errors, num_samples):
                          'synth_cdrsb': '$\mathcal{M}^{CDRSB}$'}
     ylabels = {'area': 'Mean area between PDFs',
                'peakdist': 'Distance between peaks',
-               'maxdist': 'Distance between progression maxima'}
+               'maxdist': 'Distance between progress maxima'}
 
     data = []
     labels = []
@@ -209,7 +209,7 @@ def plot_boxplots_noisy_rates(args, data_handler, errors, rate_sigmas):
                          'synth_cdrsb': '$\mathcal{M}^{CDRSB}$'}
     ylabels = {'area': 'Mean area between PDFs',
                'peakdist': 'Distance between peaks',
-               'maxdist': 'Distance between progression maxima'}
+               'maxdist': 'Distance between progress maxima'}
 
     data = []
     labels = []
@@ -225,7 +225,7 @@ def plot_boxplots_noisy_rates(args, data_handler, errors, rate_sigmas):
 
     boxplot = plt.boxplot(data, patch_artist=True)
     plt.xticks(np.arange(len(labels)) + 1, labels)
-    plt.title('Influence of noise on the progression rate on the model generation (1000 training samples)')
+    plt.title('Influence of noise on the progress rate on the model generation (1000 training samples)')
     plt.ylabel(ylabels[args.metric])
 
     for x in range(3, len(data), 3):

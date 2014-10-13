@@ -16,7 +16,7 @@ def main():
     parser = DataHandler.add_arguments(parser)
     parser.add_argument('-n', '--nr_threads', type=int, default=1, help='number of threads')
     parser.add_argument('-d', '--degrees_of_freedom', type=int, default=2, help='degrees of freedom for the LMS method')
-    parser.add_argument('-m', '--min_visits', type=int, default=0, help='the minimal number of visits')
+    parser.add_argument('--min_visits', type=int, default=0, help='the minimal number of visits')
     parser.add_argument('--no_regression', action='store_true', default=False, help='do not perform age regression of biomarker values')
     parser.add_argument('--recompute_models', action='store_true', help='recompute the models with new samples')
     args = parser.parse_args()
@@ -62,12 +62,12 @@ def generate_csv_files(args, data_handler):
         for rid, visits in measurements.items():
             for _, visit_data in visits.items():
                 try:
-                    progression = adni.safe_cast(visit_data['progress'], int)
+                    progress = adni.safe_cast(visit_data['progress'], int)
                     biomarker_name = biomarker
                     value = adni.safe_cast(visit_data[biomarker_name], float)
                     diagnosis = adni.safe_cast(visit_data['DX.scan'], float)
-                    if progression is not None and value is not None:
-                        writer.writerow([rid, progression, value, diagnosis])
+                    if progress is not None and value is not None:
+                        writer.writerow([rid, progress, value, diagnosis])
                         subjects.add(rid)
                         num_samples += 1
                 except KeyError:

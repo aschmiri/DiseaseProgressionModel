@@ -141,8 +141,8 @@ class ModelFitter(object):
         for dpi in test_dpis:
             prob = math.pow(10.0, len(samples) - 1)
             for viscode in samples:
-                offset = samples[viscode]['scantime'] - min_scantime
-                prob *= self.model.get_probability_value(samples[viscode], dpi + offset)
+                progress = self.scantime_to_progress(samples[viscode]['scantime'], min_scantime, dpi, 1.0)
+                prob *= self.model.get_probability_value(samples[viscode], progress)
             probs.append(prob)
 
         # Sanity check
@@ -183,8 +183,8 @@ class ModelFitter(object):
             for dpi in test_dpis:
                 prob = math.pow(10.0, len(samples) - 1)
                 for viscode in samples:
-                    offset = (samples[viscode]['scantime'] - min_scantime) * dpr
-                    prob *= self.model.get_probability_value(samples[viscode], dpi + offset)
+                    progress = self.scantime_to_progress(samples[viscode]['scantime'], min_scantime, dpi, dpr)
+                    prob *= self.model.get_probability_value(samples[viscode], progress)
                 probs.append(prob)
 
             arg_max = np.argmax(probs)
@@ -199,3 +199,15 @@ class ModelFitter(object):
         # Find the DPI and DPR with the highest probability
         arg_max = np.argmax(prob_max)
         return dpi_max[arg_max], test_dprs[arg_max]
+
+    @staticmethod
+    def scantime_to_progress(scantime, min_scantime, dpi, dpr):
+        return dpi + dpr * (scantime - min_scantime)
+
+    @staticmethod
+    def progress_to_scantime(progress, min_scantime, dpi, dpr):
+        if dpr == 0.0:
+            print log.WARNING, 'Infinite scantime for dpr = 0.0!'
+            return float('inf') if progress > dpi else float('-inf')
+        else:
+            return (progress - dpi) / dpr + min_scantime

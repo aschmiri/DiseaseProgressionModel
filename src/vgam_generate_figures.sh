@@ -6,10 +6,10 @@ folder="/vol/medic01/users/aschmidt/Dropbox/Documents/Einreichungen/NeuroImage 2
 # Model generation
 #
 #biomarker="CDRSB"
-#fitting/vgam_plot_curves.py cog -b "${biomarker}" --no_densities --no_extrapolation --no_sample_lines --no_model --output_file "${folder}model_generation_align.pdf"
-#fitting/vgam_plot_curves.py cog -b "${biomarker}" --no_densities --no_extrapolation --no_sample_lines --output_file "${folder}model_generation_fit.pdf"
-#fitting/vgam_plot_curves.py cog -b "${biomarker}" --no_densities --plot_mu --output_file "${folder}model_generation_extrapolate.pdf"
-#fitting/vgam_plot_curves.py cog -b "${biomarker}" --only_densities --output_file "${folder}model_generation_densities.pdf"
+#fitting/vgam_plot_curves.py -b "${biomarker}" --no_densities --no_extrapolation --no_sample_lines --no_model --output_file "${folder}model_generation_align.pdf"
+#fitting/vgam_plot_curves.py -b "${biomarker}" --no_densities --no_extrapolation --no_sample_lines --output_file "${folder}model_generation_fit.pdf"
+#fitting/vgam_plot_curves.py -b "${biomarker}" --no_densities --plot_mu --output_file "${folder}model_generation_extrapolate.pdf"
+#fitting/vgam_plot_curves.py -b "${biomarker}" --only_densities --output_file "${folder}model_generation_densities.pdf"
 
 #
 # Synth models
@@ -18,7 +18,7 @@ folder="/vol/medic01/users/aschmidt/Dropbox/Documents/Einreichungen/NeuroImage 2
 #do
 #  biomarker="synth_${b}"
 #  output_file="${folder}synthetic_model_${b}.pdf"
-#  fitting/vgam_plot_curves.py synth -b "${biomarker}" --plot_synth_model --no_densities --no_points --no_sample_lines --no_model --output_file "${output_file}"
+#  fitting/vgam_plot_curves.py -b "${biomarker}" --plot_synth_model --no_densities --no_points --no_sample_lines --no_model --output_file "${output_file}"
 #done
 
 #
@@ -29,8 +29,8 @@ folder="/vol/medic01/users/aschmidt/Dropbox/Documents/Einreichungen/NeuroImage 2
 #do
 #  output_file="${folder}synthetic_sampling_${sampling}.pdf"
 #  fitting/vgam_generate_synth_data.py -b "${biomarker}" -n 100 --sampling ${sampling}
-#	 fitting/vgam_estimate_curves.py synth -b "${biomarker}"
-#  fitting/vgam_plot_curves.py synth -b "${biomarker}" --plot_synth_model --no_densities --no_sample_lines --no_extrapolation --no_model --points_alpha 1.0 --output_file "${output_file}"
+#  fitting/vgam_estimate_curves.py b "${biomarker}"
+#  fitting/vgam_plot_curves.py -b "${biomarker}" --plot_synth_model --no_densities --no_sample_lines --no_extrapolation --no_model --points_alpha 1.0 --output_file "${output_file}"
 #done
 
 #
@@ -47,15 +47,15 @@ folder="/vol/medic01/users/aschmidt/Dropbox/Documents/Einreichungen/NeuroImage 2
 #fitting/vgam_evaluate_synth_fitting.py --output_file "${output_file}"
 
 #
-# Synth sampling
+# Progression estimates
 #
-for method in cog mbl long all
+for method in cog mbl long img all
 do
   i=1
   for visits in "bl" "bl m12" "bl m12 m24"
   do
     output_file="${folder}eval_fitting_${method}_${i}.pdf"
-    fitting/vgam_fit_subjects.py ${method} ${visits} --out "${output_file}"
+    fitting/vgam_estimate_progress.py ${visits} -m ${method} --plot_file "${output_file}"
     i=`expr $i + 1`   
   done
 done
@@ -68,6 +68,6 @@ done
 #do
 #  biomarker_str=${biomarker/ /_}
 #  output_file="${folder}model_${biomarker_str}.pdf"
-#  fitting/vgam_plot_curves.py all -b "${biomarker}" --output_file "${output_file}"
+#  fitting/vgam_plot_curves.py -b "${biomarker}" --output_file "${output_file}"
 #done
 

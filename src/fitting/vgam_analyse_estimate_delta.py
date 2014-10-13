@@ -24,7 +24,7 @@ def main():
             visits_string = '_'.join(visits)
             estimates[method].update({visits_string: {}})
             args = parser.parse_args('{0} -m {1} --consistent_data'.format(' '.join(visits), method).split())
-            _, diagnoses, dpis, _, _, _ = ve.get_progression_estimates(args)
+            _, diagnoses, dpis, _, _, _ = ve.get_progress_estimates(args)
             diagnoses = np.array(diagnoses)
             dpis = np.array(dpis)
             estimates[method][visits_string].update({'CN': np.mean(dpis[np.where(diagnoses == 0.0)])})

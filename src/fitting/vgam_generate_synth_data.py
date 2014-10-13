@@ -23,7 +23,7 @@ def main():
     parser.add_argument('-n', '--number_of_samples', type=int, default=400, help='the number of subjects in the synthetic sample pool')
     parser.add_argument('--samples_per_subject', type=int, default=6, help='the number of samples per subject')
     parser.add_argument('--days_between_samples', type=int, default=365, help='the temporal offset between to samples of one subject')
-    parser.add_argument('--rate_sigma', type=float, default=0.0, help='the standard deviation of the gaussian noise applied on the progression rate')
+    parser.add_argument('--rate_sigma', type=float, default=0.0, help='the standard deviation of the gaussian noise applied on the progress rate')
     args = parser.parse_args()
 
     print log.INFO, 'Generating synthetic data with {0} samples...'.format(args.number_of_samples)

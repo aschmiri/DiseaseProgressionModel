@@ -52,19 +52,19 @@ def plot_model(args, data_handler, biomarker):
     # Read model
     #
     pm = ProgressionModel(biomarker, model_file, extrapolator=args.extrapolator)
-    progression_extrapolate = 0.3 * (pm.max_progression - pm.min_progression)
-    min_progression_extrapolate = pm.min_progression - progression_extrapolate
-    max_progression_extrapolate = pm.max_progression + progression_extrapolate
-    progression_linspace_ex1 = np.linspace(min_progression_extrapolate, pm.min_progression, 20)
-    progression_linspace_int = np.linspace(pm.min_progression, pm.max_progression, 60)
-    progression_linspace_ex2 = np.linspace(pm.max_progression, max_progression_extrapolate, 20)
+    progress_extrapolate = 0.3 * (pm.max_progress - pm.min_progress)
+    min_progress_extrapolate = pm.min_progress - progress_extrapolate
+    max_progress_extrapolate = pm.max_progress + progress_extrapolate
+    progress_linspace_ex1 = np.linspace(min_progress_extrapolate, pm.min_progress, 20)
+    progress_linspace_int = np.linspace(pm.min_progress, pm.max_progress, 60)
+    progress_linspace_ex2 = np.linspace(pm.max_progress, max_progress_extrapolate, 20)
 
     # Calc min and max val in interval between 1% and 99% percentie
-    progression_linspace = np.linspace(min_progression_extrapolate, max_progression_extrapolate, 100)
+    progress_linspace = np.linspace(min_progress_extrapolate, max_progress_extrapolate, 100)
     min_val = float('inf')
     max_val = float('-inf')
     for quantile in [0.11, 0.99]:
-        curve = pm.get_quantile_curve(progression_linspace, quantile)
+        curve = pm.get_quantile_curve(progress_linspace, quantile)
         min_val = min(min_val, np.min(curve))
         max_val = max(max_val, np.max(curve))
 
@@ -89,43 +89,43 @@ def plot_model(args, data_handler, biomarker):
 
     if not args.only_densities:
         ax1.set_title('Percentile curves for {0}'.format(biomarker))
-        ax1.set_xlabel('Disease progression relative to point of conversion')
+        ax1.set_xlabel('Disease progress relative to point of conversion')
         ax1.set_ylabel(ve.get_metric_unit(biomarker))
-        ax1.set_xlim(min_progression_extrapolate, max_progression_extrapolate)
+        ax1.set_xlim(min_progress_extrapolate, max_progress_extrapolate)
 
     #
     # Plot the percentile curves of the fitted model
     #
     if not args.no_model and not args.only_densities:
-        ax1.axvline(pm.min_progression, color='0.15', linestyle=':', alpha=0.8)
-        ax1.axvline(pm.max_progression, color='0.15', linestyle=':', alpha=0.8)
+        ax1.axvline(pm.min_progress, color='0.15', linestyle=':', alpha=0.8)
+        ax1.axvline(pm.max_progress, color='0.15', linestyle=':', alpha=0.8)
 
         quantiles = [0.1, 0.25, 0.5, 0.75, 0.9]
         grey_values = ['0.4', '0.2', '0', '0.2', '0.4']
         for grey_value, quantile in zip(grey_values, quantiles):
-            curve_int = pm.get_quantile_curve(progression_linspace_int, quantile)
-            ax1.plot(progression_linspace_int, curve_int, color=grey_value)
+            curve_int = pm.get_quantile_curve(progress_linspace_int, quantile)
+            ax1.plot(progress_linspace_int, curve_int, color=grey_value)
 
             if not args.no_extrapolation:
-                curve_ex1 = pm.get_quantile_curve(progression_linspace_ex1, quantile)
-                curve_ex2 = pm.get_quantile_curve(progression_linspace_ex2, quantile)
-                ax1.plot(progression_linspace_ex1, curve_ex1, '--', color=grey_value)
-                ax1.plot(progression_linspace_ex2, curve_ex2, '--', color=grey_value)
+                curve_ex1 = pm.get_quantile_curve(progress_linspace_ex1, quantile)
+                curve_ex2 = pm.get_quantile_curve(progress_linspace_ex2, quantile)
+                ax1.plot(progress_linspace_ex1, curve_ex1, '--', color=grey_value)
+                ax1.plot(progress_linspace_ex2, curve_ex2, '--', color=grey_value)
 
             if args.plot_quantile_label:
                 label = '$q={0}\%$'.format(quantile * 100)
-                ax1.text(progression_linspace_int[-1] + 10, curve_int[-1], label, fontsize=10)
+                ax1.text(progress_linspace_int[-1] + 10, curve_int[-1], label, fontsize=10)
 
     #
     # Plot synthetic model curve
     #
     if plot_synth_model:
-        progression_linspace_synth = np.linspace(-2500, 2500, 100)
+        progress_linspace_synth = np.linspace(-2500, 2500, 100)
         quantiles = [0.1, 0.25, 0.5, 0.75, 0.9]
         alphas = [0.4, 0.7, 1.0, 0.7, 0.4]
         for quantile, alpha in zip(quantiles, alphas):
-            curve_synth = [SynthModel.get_distributed_value(biomarker, p, cdf=quantile) for p in progression_linspace_synth]
-            ax1.plot(progression_linspace_synth, curve_synth, color='b', alpha=alpha)
+            curve_synth = [SynthModel.get_distributed_value(biomarker, p, cdf=quantile) for p in progress_linspace_synth]
+            ax1.plot(progress_linspace_synth, curve_synth, color='b', alpha=alpha)
 
     #
     # Plot parameter mu
@@ -134,24 +134,24 @@ def plot_model(args, data_handler, biomarker):
         # Get second axis of plot 1
         ax1b = ax1.twinx()
 
-        # Plot all progressions
-        ax1b.scatter(pm.all_progressions, pm.all_mus, facecolor='b', marker='o', edgecolor='none', alpha=0.2)
-        ax1b.text(pm.progressions[-1], pm.mus[-1], '$\mu$', color='b', fontsize=11)
+        # Plot all progresses
+        ax1b.scatter(pm.all_progresses, pm.all_mus, facecolor='b', marker='o', edgecolor='none', alpha=0.2)
+        ax1b.text(pm.progresses[-1], pm.mus[-1], '$\mu$', color='b', fontsize=11)
 
-        # Plot binned progressions
-        ax1b.scatter(pm.progressions, pm.mus, color='b', marker='x')
+        # Plot binned progresses
+        ax1b.scatter(pm.progresses, pm.mus, color='b', marker='x')
 
         # Plot interpolated model
-        mus = [pm.get_mu(p) for p in progression_linspace_int]
-        ax1b.plot(progression_linspace_int, mus, color='b')
+        mus = [pm.get_mu(p) for p in progress_linspace_int]
+        ax1b.plot(progress_linspace_int, mus, color='b')
 
         if not args.no_extrapolation:
-            mus = [pm.get_mu(p) for p in progression_linspace_ex1]
-            ax1b.plot(progression_linspace_ex1, mus, '--', color='b')
-            mus = [pm.get_mu(p) for p in progression_linspace_ex2]
-            ax1b.plot(progression_linspace_ex2, mus, '--', color='b')
+            mus = [pm.get_mu(p) for p in progress_linspace_ex1]
+            ax1b.plot(progress_linspace_ex1, mus, '--', color='b')
+            mus = [pm.get_mu(p) for p in progress_linspace_ex2]
+            ax1b.plot(progress_linspace_ex2, mus, '--', color='b')
 
-        ax1b.set_xlim(min_progression_extrapolate, max_progression_extrapolate)
+        ax1b.set_xlim(min_progress_extrapolate, max_progress_extrapolate)
 
     #
     # Plot errors
@@ -162,14 +162,14 @@ def plot_model(args, data_handler, biomarker):
             print log.ERROR, 'Evaluation file not found: {0}'.format(eval_file)
         else:
             m = mlab.csv2rec(eval_file)
-            progressions = m['progression']
+            progresses = m['progress']
             errors = m['error']
 
             # Get second axis of plot 1
             ax1b = ax1.twinx()
             ax1b.set_ylim(0, max(150, 1.2 * np.max(errors)))
-            ax1b.plot(progressions, errors, color='g', marker='x')
-            ax1b.text(progressions[-1], errors[-1], 'Discr.', color='g', fontsize=11)
+            ax1b.plot(progresses, errors, color='g', marker='x')
+            ax1b.text(progresses[-1], errors[-1], 'Discr.', color='g', fontsize=11)
             ax1b.axhline(np.mean(errors), color='g', linestyle='--', alpha=0.5)
 
     #
@@ -203,9 +203,9 @@ def plot_model(args, data_handler, biomarker):
 
     if not args.no_sample_lines and not args.only_densities:
         for progr in progr_samples:
-            if not args.no_extrapolation or pm.min_progression < progr < pm.max_progression:
+            if not args.no_extrapolation or pm.min_progress < progr < pm.max_progress:
                 sample_color = sample_cmap.to_rgba(progr_samples.index(progr))
-                linestyle = '--' if progr < pm.min_progression or progr > pm.max_progression else '-'
+                linestyle = '--' if progr < pm.min_progress or progr > pm.max_progress else '-'
                 ax1.axvline(progr, color=sample_color, linestyle=linestyle, alpha=0.3)
 
     if not args.no_densities:
@@ -215,9 +215,9 @@ def plot_model(args, data_handler, biomarker):
 
         values = np.linspace(min_val, max_val, 250)
         for progr in progr_samples:
-            if not args.no_extrapolation or pm.min_progression < progr < pm.max_progression:
+            if not args.no_extrapolation or pm.min_progress < progr < pm.max_progress:
                 sample_color = sample_cmap.to_rgba(progr_samples.index(progr))
-                linestyle = '--' if progr < pm.min_progression or progr > pm.max_progression else '-'
+                linestyle = '--' if progr < pm.min_progress or progr > pm.max_progress else '-'
                 probs = pm.get_density_distribution(values, progr)
                 ax2.set_xlim(min_val, max_val)
                 ax2.plot(values, probs, label=str(progr), color=sample_color, linestyle=linestyle)

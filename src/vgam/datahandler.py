@@ -1,5 +1,5 @@
 """
-A class to provide progression modelling functionality.
+A class to provide reading and writing data for progression modelling.
 
 :author:     Alexander Schmidt-Richberg
 :copyright:  2014 Imperial College London. All rights reserved.

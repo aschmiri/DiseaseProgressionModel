@@ -13,6 +13,7 @@ from common import adni_tools as adni
 from common import adni_plot as aplt
 from vgam.datahandler import DataHandler
 from vgam.progressionmodel import ProgressionModel
+from vgam.modelfitter import ModelFitter
 import fitting.vgam_evaluation as ve
 
 
@@ -72,7 +73,7 @@ def get_biomarker_predictions(args):
         mean_changes = pickle.load(open(mean_changes_file, 'rb'))
 
         # Get DPI estimates
-        rids, diagnoses_all, dpis, dprs, _, _ = ve.get_progression_estimates(args)
+        rids, diagnoses_all, dpis, dprs, _, _ = ve.get_progress_estimates(args)
 
         # Collect MMSE data for test
         data_handler = DataHandler.get_data_handler()
@@ -91,7 +92,7 @@ def get_biomarker_predictions(args):
                 # Get real biomarker value value at next visit
                 scantime_first_visit = measurements[rid][args.visits[0]]['scantime']
                 scantime_next_visit = measurements[rid][next_visit]['scantime']
-                progression_next_visit = scantime_to_progression(scantime_next_visit, scantime_first_visit, dpi, dpr)
+                progress_next_visit = ModelFitter.scantime_to_progress(scantime_next_visit, scantime_first_visit, dpi, dpr)
                 value_observed = measurements[rid][next_visit][biomarker]
                 values_observed.append(value_observed)
 
@@ -99,18 +100,18 @@ def get_biomarker_predictions(args):
                 if args.use_last_visit:
                     value = measurements[rid][args.visits[-1]][biomarker]
                     scantime = measurements[rid][args.visits[-1]]['scantime']
-                    progression = scantime_to_progression(scantime, scantime_first_visit, dpi, dpr)
-                    mean_quantile = model.approximate_quantile(progression, value)
+                    progress = ModelFitter.scantime_to_progress(scantime, scantime_first_visit, dpi, dpr)
+                    mean_quantile = model.approximate_quantile(progress, value)
                 else:
                     mean_quantile = 0.0
                     for visit in args.visits:
                         value = measurements[rid][visit][biomarker]
                         scantime = measurements[rid][visit]['scantime']
-                        progression = scantime_to_progression(scantime, scantime_first_visit, dpi, dpr)
-                        mean_quantile += model.approximate_quantile(progression, value)
+                        progress = ModelFitter.scantime_to_progress(scantime, scantime_first_visit, dpi, dpr)
+                        mean_quantile += model.approximate_quantile(progress, value)
                     mean_quantile /= len(args.visits)
 
-                value_model = model.get_value_at_quantile(progression_next_visit, mean_quantile)
+                value_model = model.get_value_at_quantile(progress_next_visit, mean_quantile)
                 values_model.append(value_model)
 
                 # Predict biomarker value naively
@@ -252,9 +253,9 @@ def plot_predictions(args, model, rid_measurements, dpi, dpr, value_model, value
     next_visit = get_predicted_visit(args.visits)
     scantime_first_visit = rid_measurements[args.visits[0]]['scantime']
     scantime_next_visit = rid_measurements[next_visit]['scantime']
-    progression_first_visit = scantime_to_progression(scantime_first_visit, scantime_first_visit, dpi, dpr)
-    progression_next_visit = scantime_to_progression(scantime_next_visit, scantime_first_visit, dpi, dpr)
-    progression_linspace = np.linspace(progression_first_visit - 200, progression_next_visit + 200, 100)
+    progress_first_visit = ModelFitter.scantime_to_progress(scantime_first_visit, scantime_first_visit, dpi, dpr)
+    progress_next_visit = ModelFitter.scantime_to_progress(scantime_next_visit, scantime_first_visit, dpi, dpr)
+    progress_linspace = np.linspace(progress_first_visit - 200, progress_next_visit + 200, 100)
 
     fig, ax = plt.subplots()
     ve.setup_axes(plt, ax)
@@ -266,8 +267,8 @@ def plot_predictions(args, model, rid_measurements, dpi, dpr, value_model, value
     quantiles = [0.1, 0.25, 0.5, 0.75, 0.9]
     grey_values = ['0.8', '0.6', '0.4', '0.62', '0.84']
     for grey_value, quantile in zip(grey_values, quantiles):
-        curve = model.get_quantile_curve(progression_linspace, quantile)
-        ax.plot(progression_linspace, curve, zorder=1, color=grey_value)
+        curve = model.get_quantile_curve(progress_linspace, quantile)
+        ax.plot(progress_linspace, curve, zorder=1, color=grey_value)
 
     # Collect points
     progr_points = []
@@ -275,14 +276,14 @@ def plot_predictions(args, model, rid_measurements, dpi, dpr, value_model, value
     diagn_points = []
     for visit in args.visits + [next_visit]:
         value_points.append(rid_measurements[visit][args.predict_biomarker])
-        progr_points.append(scantime_to_progression(rid_measurements[visit]['scantime'], scantime_first_visit, dpi, dpr))
+        progr_points.append(ModelFitter.scantime_to_progress(rid_measurements[visit]['scantime'], scantime_first_visit, dpi, dpr))
         diagn_points.append(rid_measurements[visit]['DX.scan'])
 
     # Collect lines
     predict_diagnosis = rid_measurements[next_visit]['DX.scan']
-    predict_linspace = np.linspace(progression_first_visit, progression_next_visit, 50)
+    predict_linspace = np.linspace(progress_first_visit, progress_next_visit, 50)
     curve = [model.get_value_at_quantile(p, mean_quantile) for p in predict_linspace]
-    line = [change * progression_to_scantime(p, scantime_first_visit, dpi, dpr) + intercept for p in predict_linspace]
+    line = [change * ModelFitter.progress_to_scantime(p, scantime_first_visit, dpi, dpr) + intercept for p in predict_linspace]
 
     # Plot model and linear prediction line
     ax.plot(predict_linspace, line, zorder=1, linestyle='--', linewidth=2, color='k',
@@ -293,23 +294,15 @@ def plot_predictions(args, model, rid_measurements, dpi, dpr, value_model, value
                c=[color_mapper.to_rgba(d) for d in diagn_points], edgecolor='none')
 
     # Plot the predicted values
-    ax.scatter([progression_next_visit], [value_naive], zorder=2, s=50.0, c='w',
+    ax.scatter([progress_next_visit], [value_naive], zorder=2, s=50.0, c='w',
                edgecolor=color_mapper.to_rgba(predict_diagnosis))
-    ax.scatter([progression_next_visit], [value_model], zorder=2, s=50.0, c='w',
+    ax.scatter([progress_next_visit], [value_model], zorder=2, s=50.0, c='w',
                edgecolor=color_mapper.to_rgba(predict_diagnosis))
 
     plt.tight_layout()
     plt.legend()
     plt.show()
     plt.close(fig)
-
-
-def scantime_to_progression(scantime, scantime_first_visit, dpi, dpr):
-    return dpi + dpr * (scantime - scantime_first_visit)
-
-
-def progression_to_scantime(progression, scantime_first_visit, dpi, dpr):
-    return (progression - dpi) / dpr + scantime_first_visit
 
 
 def get_predicted_visit(visits):

@@ -13,7 +13,7 @@ from vgam.progressionmodel import MultiBiomarkerProgressionModel
 from vgam.modelfitter import ModelFitter
 
 
-def get_progression_estimates(args):
+def get_progress_estimates(args):
     # Get filename
     estimates_file_trunk = 'estimate_dpi_dpr_with_{0}_{1}.p' if args.estimate_dprs else 'estimate_dpi_with_{0}_{1}.p'
     if args.biomarkers_name is None:
@@ -44,9 +44,9 @@ def get_progression_estimates(args):
             model.add_model(biomarker, model_file)
         fitter = ModelFitter(model)
 
-        # Calculate mean and max progression
-        mean_min = model.get_mean_min_progression()
-        mean_max = model.get_mean_max_progression()
+        # Calculate mean and max progress
+        mean_min = model.get_mean_min_progress()
+        mean_max = model.get_mean_max_progress()
 
         # Estimate dpis (and dprs) and save data
         if not args.estimate_dprs or len(args.visits) == 1:
@@ -189,17 +189,17 @@ def generate_synth_model(args, data_handler, biomarker, num_samples=1000, sampli
 
 
 def evaluate_synth_model(args, model_file, biomarker, metric='area'):
-    # Define progression steps
+    # Define progress steps
     pm = ProgressionModel(biomarker, model_file)
-    progressions = np.linspace(args.progression_linspace[0],
-                               args.progression_linspace[1],
-                               args.progression_linspace[2])
+    progresses = np.linspace(args.progress_linspace[0],
+                             args.progress_linspace[1],
+                             args.progress_linspace[2])
 
     # Define value steps
     min_val = float('inf')
     max_val = float('-inf')
     for quantile in [0.01, 0.99]:
-        curve = pm.get_quantile_curve(progressions, quantile)
+        curve = pm.get_quantile_curve(progresses, quantile)
         min_val = min(min_val, np.min(curve))
         max_val = max(max_val, np.max(curve))
     values = np.linspace(min_val, max_val, args.number_of_value_steps)
@@ -207,25 +207,25 @@ def evaluate_synth_model(args, model_file, biomarker, metric='area'):
     # Get mean error
     error = 0
     if metric == 'area':
-        for progr in progressions:
+        for progr in progresses:
             probs_model = [SynthModel.get_probability(biomarker, progr, v) for v in values]
             probs_fit = pm.get_density_distribution(values, progr)
             error += np.sum(np.abs(np.array(probs_fit) - np.array(probs_model)))
-        error *= (values[1] - values[0]) / len(progressions)
+        error *= (values[1] - values[0]) / len(progresses)
     elif metric == 'peakdist':
-        for progr in progressions:
+        for progr in progresses:
             probs_model = [SynthModel.get_probability(biomarker, progr, v) for v in values]
             probs_fit = pm.get_density_distribution(values, progr)
             peak_model = values[np.argsort(probs_model)[-1]]
             peak_fit = values[np.argsort(probs_fit)[-1]]
             error += np.abs(peak_fit - peak_model)
-        error /= len(progressions)
+        error /= len(progresses)
     elif metric == 'maxdist':
         for value in values:
-            probs_model = [SynthModel.get_probability(biomarker, p, value) for p in progressions]
-            probs_fit = [pm.get_density_distribution([value], p) for p in progressions]
-            max_model = progressions[np.argsort(probs_model)[-1]]
-            max_fit = progressions[np.argsort(probs_fit)[-1]]
+            probs_model = [SynthModel.get_probability(biomarker, p, value) for p in progresses]
+            probs_fit = [pm.get_density_distribution([value], p) for p in progresses]
+            max_model = progresses[np.argsort(probs_model)[-1]]
+            max_fit = progresses[np.argsort(probs_fit)[-1]]
             error += np.abs(max_fit - max_model)
         error /= len(values)
     else:
