@@ -17,13 +17,15 @@ import fitting.vgam_evaluation as ve
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Estimate model curves for biomarkers using VGAM.')
+    parser = argparse.ArgumentParser()
     parser = DataHandler.add_arguments(parser)
     parser.add_argument('visits', nargs='+', type=str, help='the viscodes of the visits that are available')
-    parser.add_argument('--predict_biomarker', type=str, default='MMSE', choices=adni.biomarker_names, help='the biomarker to predict')
-    parser.add_argument('--estimate_dprs', action='store_true', help='estimate dpis and dprs')
+    parser.add_argument('-p', '--predict_biomarker', type=str, default='MMSE', choices=adni.biomarker_names, help='the biomarker to predict')
     parser.add_argument('--recompute_estimates', action='store_true', help='recompute the dpi / dpr estimations')
     parser.add_argument('--recompute_predictions', action='store_true', help='recompute the biomarker predictions')
+    parser.add_argument('--consistent_data', action='store_true', help='use only subjects with bl, m12 and m24 visits')
+    parser.add_argument('--estimate_dprs', action='store_true', help='estimate dpis and dprs')
+    parser.add_argument('--use_last_visit', action='store_true', help='use only the last visit for prediction')
     parser.add_argument('--exclude_cn', action='store_true', help='exclude healthy subjects from analysis')
     parser.add_argument('--naive_use_diagnosis', action='store_true', help='use the specific mean change for the diagnosis')
     parser.add_argument('--plot_predictions', action='store_true', help='visualise the predictions of each subject')
@@ -43,12 +45,17 @@ def get_biomarker_predictions(args):
 
     # Get prediction file
     predict_biomarker_str = biomarker.replace(' ', '_')
-    predict_file_trunk = 'predict_{0}_with_dpr_{1}_{2}.p' if args.estimate_dprs else 'predict_{0}_with_{1}_{2}.p'
+    predict_file_trunk = 'predict_{0}_with_dpr_{1}_{2}{3}.p' if args.estimate_dprs else 'predict_{0}_with_{1}_{2}{3}.p'
     if args.biomarkers_name is None:
-        predict_file_basename = predict_file_trunk.format(predict_biomarker_str, args.method, '_'.join(args.visits))
+        predict_file_basename = predict_file_trunk.format(predict_biomarker_str,
+                                                          args.method, '_'.join(args.visits),
+                                                          '_last' if args.use_last_visit else '')
     else:
         estimate_biomarkers_string = '_'.join(args.biomarkers_name).replace(' ', '_')
-        predict_file_basename = predict_file_trunk.format(predict_biomarker_str, estimate_biomarkers_string, '_'.join(args.visits))
+        predict_file_basename = predict_file_trunk.format(predict_biomarker_str,
+                                                          estimate_biomarkers_string,
+                                                          '_'.join(args.visits),
+                                                          '_last' if args.use_last_visit else '')
     predict_file = os.path.join(adni.eval_folder, predict_file_basename)
 
     # Read if predictions exist, else recompute
@@ -65,7 +72,7 @@ def get_biomarker_predictions(args):
         mean_changes = pickle.load(open(mean_changes_file, 'rb'))
 
         # Get DPI estimates
-        rids, diagnoses_all, dpis, _, _, _ = ve.get_dpi_estimates(args)
+        rids, diagnoses_all, dpis, dprs, _, _ = ve.get_progression_estimates(args)
 
         # Collect MMSE data for test
         data_handler = DataHandler.get_data_handler()
@@ -79,43 +86,57 @@ def get_biomarker_predictions(args):
         values_model = []
         values_naive = []
         diagnoses = []
-        for diagnosis, rid, dpi in zip(diagnoses_all, rids, dpis):
+        for diagnosis, rid, dpi, dpr in zip(diagnoses_all, rids, dpis, dprs):
             if rid in measurements:
                 # Get real biomarker value value at next visit
-                progression_observed = dpi + measurements[rid][next_visit]['scantime']
+                scantime_first_visit = measurements[rid][args.visits[0]]['scantime']
+                scantime_next_visit = measurements[rid][next_visit]['scantime']
+                progression_next_visit = scantime_to_progression(scantime_next_visit, scantime_first_visit, dpi, dpr)
                 value_observed = measurements[rid][next_visit][biomarker]
                 values_observed.append(value_observed)
 
                 # Predict biomarker value value at next visit
-                mean_quantile = 0.0
-                for visit in args.visits:
-                    value = measurements[rid][visit][biomarker]
-                    progression = dpi + measurements[rid][visit]['scantime']
-                    mean_quantile += model.approximate_quantile(progression, value)
-                mean_quantile /= len(args.visits)
+                if args.use_last_visit:
+                    value = measurements[rid][args.visits[-1]][biomarker]
+                    scantime = measurements[rid][args.visits[-1]]['scantime']
+                    progression = scantime_to_progression(scantime, scantime_first_visit, dpi, dpr)
+                    mean_quantile = model.approximate_quantile(progression, value)
+                else:
+                    mean_quantile = 0.0
+                    for visit in args.visits:
+                        value = measurements[rid][visit][biomarker]
+                        scantime = measurements[rid][visit]['scantime']
+                        progression = scantime_to_progression(scantime, scantime_first_visit, dpi, dpr)
+                        mean_quantile += model.approximate_quantile(progression, value)
+                    mean_quantile /= len(args.visits)
 
-                value_model = model.get_value_at_quantile(progression_observed, mean_quantile)
+                value_model = model.get_value_at_quantile(progression_next_visit, mean_quantile)
                 values_model.append(value_model)
 
                 # Predict biomarker value naively
-                num_visits = len(args.visits)
-                x = np.zeros(num_visits)
-                y = np.zeros(num_visits)
-                for i, visit in enumerate(args.visits):
-                    x[i] = measurements[rid][visit]['scantime']
-                    y[i] = measurements[rid][visit][biomarker]
                 if args.naive_use_diagnosis:
                     mean_change = mean_changes[biomarker][diagnosis]
                 else:
                     mean_change = mean_changes[biomarker][0.66]
-                intercept = -np.sum(mean_change * x - y) / len(x)
+
+                if args.use_last_visit:
+                    x = measurements[rid][args.visits[-1]]['scantime']
+                    y = measurements[rid][args.visits[-1]][biomarker]
+                    intercept = -(mean_change * x - y)
+                else:
+                    x = np.zeros(len(args.visits))
+                    y = np.zeros(len(args.visits))
+                    for i, visit in enumerate(args.visits):
+                        x[i] = measurements[rid][visit]['scantime']
+                        y[i] = measurements[rid][visit][biomarker]
+                    intercept = -np.sum(mean_change * x - y) / len(x)
 
                 value_naive = intercept + mean_change * measurements[rid][next_visit]['scantime']
                 values_naive.append(value_naive)
 
                 # Plot estimates
                 if args.plot_predictions and diagnosis != 0.0:
-                    plot_predictions(args, model, measurements[rid], dpi,
+                    plot_predictions(args, model, measurements[rid], dpi, dpr,
                                      value_model, value_naive,
                                      mean_quantile, mean_change, intercept)
 
@@ -227,11 +248,13 @@ def print_to_latex(args, results_naive, results_model, num_subjects):
                          num_subjects))
 
 
-def plot_predictions(args, model, rid_measurements, progression, value_model, value_naive, mean_quantile, change, intercept):
-    predicted_visit = get_predicted_visit(args.visits)
-    min_progression = progression + rid_measurements['bl']['scantime']
-    max_progression = progression + rid_measurements[predicted_visit]['scantime']
-    progression_linspace = np.linspace(min_progression - 200, max_progression + 200, 100)
+def plot_predictions(args, model, rid_measurements, dpi, dpr, value_model, value_naive, mean_quantile, change, intercept):
+    next_visit = get_predicted_visit(args.visits)
+    scantime_first_visit = rid_measurements[args.visits[0]]['scantime']
+    scantime_next_visit = rid_measurements[next_visit]['scantime']
+    progression_first_visit = scantime_to_progression(scantime_first_visit, scantime_first_visit, dpi, dpr)
+    progression_next_visit = scantime_to_progression(scantime_next_visit, scantime_first_visit, dpi, dpr)
+    progression_linspace = np.linspace(progression_first_visit - 200, progression_next_visit + 200, 100)
 
     fig, ax = plt.subplots()
     ve.setup_axes(plt, ax)
@@ -250,17 +273,16 @@ def plot_predictions(args, model, rid_measurements, progression, value_model, va
     progr_points = []
     value_points = []
     diagn_points = []
-    for visit in args.visits + [predicted_visit]:
+    for visit in args.visits + [next_visit]:
         value_points.append(rid_measurements[visit][args.predict_biomarker])
-        progr_points.append(rid_measurements[visit]['scantime'] + progression)
+        progr_points.append(scantime_to_progression(rid_measurements[visit]['scantime'], scantime_first_visit, dpi, dpr))
         diagn_points.append(rid_measurements[visit]['DX.scan'])
 
     # Collect lines
-    predict_diagnosis = rid_measurements[predicted_visit]['DX.scan']
-    predict_progression = progression + rid_measurements[predicted_visit]['scantime']
-    predict_linspace = np.linspace(progr_points[0], predict_progression, 50)
+    predict_diagnosis = rid_measurements[next_visit]['DX.scan']
+    predict_linspace = np.linspace(progression_first_visit, progression_next_visit, 50)
     curve = [model.get_value_at_quantile(p, mean_quantile) for p in predict_linspace]
-    line = [change * (p - progression) + intercept for p in predict_linspace]
+    line = [change * progression_to_scantime(p, scantime_first_visit, dpi, dpr) + intercept for p in predict_linspace]
 
     # Plot model and linear prediction line
     ax.plot(predict_linspace, line, zorder=1, linestyle='--', linewidth=2, color='k',
@@ -271,15 +293,23 @@ def plot_predictions(args, model, rid_measurements, progression, value_model, va
                c=[color_mapper.to_rgba(d) for d in diagn_points], edgecolor='none')
 
     # Plot the predicted values
-    ax.scatter([predict_progression], [value_naive], zorder=2, s=50.0, c='w',
+    ax.scatter([progression_next_visit], [value_naive], zorder=2, s=50.0, c='w',
                edgecolor=color_mapper.to_rgba(predict_diagnosis))
-    ax.scatter([predict_progression], [value_model], zorder=2, s=50.0, c='w',
+    ax.scatter([progression_next_visit], [value_model], zorder=2, s=50.0, c='w',
                edgecolor=color_mapper.to_rgba(predict_diagnosis))
 
     plt.tight_layout()
     plt.legend()
     plt.show()
     plt.close(fig)
+
+
+def scantime_to_progression(scantime, scantime_first_visit, dpi, dpr):
+    return dpi + dpr * (scantime - scantime_first_visit)
+
+
+def progression_to_scantime(progression, scantime_first_visit, dpi, dpr):
+    return (progression - dpi) / dpr + scantime_first_visit
 
 
 def get_predicted_visit(visits):

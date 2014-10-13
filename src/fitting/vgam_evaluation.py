@@ -13,7 +13,7 @@ from vgam.progressionmodel import MultiBiomarkerProgressionModel
 from vgam.modelfitter import ModelFitter
 
 
-def get_dpi_estimates(args):
+def get_progression_estimates(args):
     # Get filename
     estimates_file_trunk = 'estimate_dpi_dpr_with_{0}_{1}.p' if args.estimate_dprs else 'estimate_dpi_with_{0}_{1}.p'
     if args.biomarkers_name is None:
@@ -27,13 +27,7 @@ def get_dpi_estimates(args):
     if os.path.isfile(estimates_file) and not args.recompute_estimates:
         # Read test results from file
         print log.INFO, 'Reading DPI{0} estimations from {1}...'.format('\DPR' if args.estimate_dprs else '', estimates_file)
-
-        # TODO: Remove hack to read deprecated files with offset
-        try:
-            (rids, diagnoses, dpis, dprs, mean_min, mean_max) = pickle.load(open(estimates_file, 'rb'))
-        except:
-            print log.WARNING, 'Reading deprecated estimates file'
-            (rids, diagnoses, dpis, dprs, _, mean_min, mean_max) = pickle.load(open(estimates_file, 'rb'))
+        (rids, diagnoses, dpis, dprs, mean_min, mean_max) = pickle.load(open(estimates_file, 'rb'))
     else:
         # Collect data for test
         data_handler = DataHandler.get_data_handler(args)
@@ -65,6 +59,29 @@ def get_dpi_estimates(args):
 
         print log.INFO, 'Saving DPI{0} estimations to {1}...'.format('\DPR' if args.estimate_dprs else '', estimates_file)
         pickle.dump((rids, diagnoses, dpis, dprs, mean_min, mean_max), open(estimates_file, 'wb'))
+
+    # Reduce to consistent data sets with bl, m12 and m24 samples
+    if args.consistent_data:
+        data_handler = DataHandler.get_data_handler(args)
+        consistent_measures = data_handler.get_measurements_as_dict(visits=['bl', 'm12', 'm24'],
+                                                                    select_test_set=True,
+                                                                    select_complete=True)
+        consistent_rids = []
+        consistent_diagnoses = []
+        consistent_dpis = []
+        consistent_dprs = []
+        for i, rid in enumerate(rids):
+            if rid in consistent_measures:
+                consistent_rids.append(rid)
+                consistent_diagnoses.append(diagnoses[i])
+                consistent_dpis.append(dpis[i])
+                consistent_dprs.append(dprs[i])
+        rids = consistent_rids
+        diagnoses = consistent_diagnoses
+        dpis = consistent_dpis
+        dprs = consistent_dprs
+
+        print log.INFO, 'Selected {0} consistent subjects.'.format(len(dpis))
 
     # Return results
     return rids, diagnoses, dpis, dprs, mean_min, mean_max

@@ -134,12 +134,14 @@ class ModelFitter(object):
                               self.TEST_DPI_MAX,
                               self.TEST_DPI_STEP)
 
+        min_scantime = min([samples[v]['scantime'] for v in samples])
+
         # Compute probability for each scaling
         probs = []
         for dpi in test_dpis:
             prob = math.pow(10.0, len(samples) - 1)
             for viscode in samples:
-                offset = samples[viscode]['scantime']
+                offset = samples[viscode]['scantime'] - min_scantime
                 prob *= self.model.get_probability_value(samples[viscode], dpi + offset)
             probs.append(prob)
 
@@ -171,6 +173,8 @@ class ModelFitter(object):
                               self.TEST_DPI_MAX,
                               self.TEST_DPI_STEP)
 
+        min_scantime = min([samples[v]['scantime'] for v in samples])
+
         # Compute probability for each DPI and DPR
         prob_max = []
         dpi_max = []
@@ -179,7 +183,7 @@ class ModelFitter(object):
             for dpi in test_dpis:
                 prob = math.pow(10.0, len(samples) - 1)
                 for viscode in samples:
-                    offset = samples[viscode]['scantime'] * dpr
+                    offset = (samples[viscode]['scantime'] - min_scantime) * dpr
                     prob *= self.model.get_probability_value(samples[viscode], dpi + offset)
                 probs.append(prob)
 

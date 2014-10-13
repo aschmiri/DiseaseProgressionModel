@@ -9,9 +9,10 @@ import fitting.vgam_evaluation as ve
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Estimate model curves for biomarkers using VGAM.')
+    parser = argparse.ArgumentParser()
     parser = DataHandler.add_arguments(parser)
     parser.add_argument('visits', nargs='+', type=str, help='the viscodes to be sampled')
+    parser.add_argument('--consistent_data', action='store_true', help='us only subjects with bl, m12 and m24 visits')
     parser.add_argument('--estimate_dprs', action='store_true', help='recompute the dpis estimations')
     parser.add_argument('--recompute_estimates', action='store_true', help='recompute the dpis estimations')
     parser.add_argument('--no_plot', action='store_true', help='do not plot the results')
@@ -19,7 +20,7 @@ def main():
     parser.add_argument('--plot_file', type=str, default=None, help='filename of the output file')
     args = parser.parse_args()
 
-    _, diagnoses, dpis, _, mean_min, mean_max = ve.get_dpi_estimates(args)
+    _, diagnoses, dpis, _, mean_min, mean_max = ve.get_progression_estimates(args)
     if not args.no_plot:
         plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max)
     analyse_dpi_estimates(args, dpis, diagnoses)
