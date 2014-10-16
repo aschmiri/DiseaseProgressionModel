@@ -20,7 +20,10 @@ def main():
     parser.add_argument('--plot_file', type=str, default=None, help='filename of the output file')
     args = parser.parse_args()
 
-    _, diagnoses, dpis, _, mean_min, mean_max = ve.get_progress_estimates(args)
+    _, diagnoses, dpis, _, mean_min, mean_max = ve.get_progress_estimates(args, args.visits,
+                                                                          estimate_dprs=args.estimate_dprs,
+                                                                          recompute_estimates=args.recompute_estimates,
+                                                                          consistent_data=args.consistent_data)
     if not args.no_plot:
         plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max)
     analyse_dpi_estimates(args, dpis, diagnoses)

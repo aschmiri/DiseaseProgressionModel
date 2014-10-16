@@ -55,13 +55,13 @@ class SynthModel(object):
 
     # Whole brain volume model following [Coley 09]
     #   Mean volume: 1487 ml, Atrophy rate: 0.3%
-    _models.update({'synth_brain': {'shape': 'pow',
-                                    'pow_a': 1480,
-                                    'pow_b': 0.986,
-                                    'offset': 0.0,
-                                    'noise': 'gaussian',
-                                    'noise_sigma_mci': 92.0,
-                                    'noise_sigma_ad': 92.0}})
+    # _models.update({'synth_brain': {'shape': 'pow',
+    #                                 'pow_a': 1480,
+    #                                 'pow_b': 0.986,
+    #                                 'offset': 0.0,
+    #                                 'noise': 'gaussian',
+    #                                 'noise_sigma_mci': 92.0,
+    #                                 'noise_sigma_ad': 92.0}})
 
     ############################################################################
     #

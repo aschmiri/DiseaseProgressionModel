@@ -63,7 +63,7 @@ def plot_model(args, data_handler, biomarker):
     progress_linspace = np.linspace(min_progress_extrapolate, max_progress_extrapolate, 100)
     min_val = float('inf')
     max_val = float('-inf')
-    for quantile in [0.11, 0.99]:
+    for quantile in [0.1, 0.9]:
         curve = pm.get_quantile_curve(progress_linspace, quantile)
         min_val = min(min_val, np.min(curve))
         max_val = max(max_val, np.max(curve))
@@ -80,11 +80,11 @@ def plot_model(args, data_handler, biomarker):
     elif args.no_densities:
         ax1 = plt.subplot(1, 1, 1)
         ax2 = None
-        ve.setup_axes(plt, ax1)
+        ve.setup_axes(plt, ax1, xgrid=False)
     else:
         ax1 = plt.subplot(1, 2, 1)
         ax2 = plt.subplot(1, 2, 2)
-        ve.setup_axes(plt, ax1)
+        ve.setup_axes(plt, ax1, xgrid=False)
         ve.setup_axes(plt, ax2)
 
     if not args.only_densities:
@@ -97,8 +97,8 @@ def plot_model(args, data_handler, biomarker):
     # Plot the percentile curves of the fitted model
     #
     if not args.no_model and not args.only_densities:
-        ax1.axvline(pm.min_progress, color='0.15', linestyle=':', alpha=0.8)
-        ax1.axvline(pm.max_progress, color='0.15', linestyle=':', alpha=0.8)
+        ax1.axvline(pm.min_progress, color='0.15', linestyle=':')
+        ax1.axvline(pm.max_progress, color='0.15', linestyle=':')
 
         quantiles = [0.1, 0.25, 0.5, 0.75, 0.9]
         grey_values = ['0.4', '0.2', '0', '0.2', '0.4']
@@ -189,9 +189,10 @@ def plot_model(args, data_handler, biomarker):
             print log.INFO, 'Plotting {0} sample points...'.format(len(progr_points))
             ax1.scatter(progr_points, value_points, s=15.0, c=diagn_points, edgecolor='none',
                         vmin=0.0, vmax=1.0, cmap=aplt.progression_cmap, alpha=args.points_alpha)
-            ax1.legend([mpl.patches.Rectangle((0, 0), 1, 1, fc=(0.8, 0.8, 0.0), linewidth=0),
-                        mpl.patches.Rectangle((0, 0), 1, 1, fc=(1.0, 0.0, 0.0), linewidth=0)],
-                       ['MCI', 'AD'], fontsize=10)
+            legend = ax1.legend([mpl.patches.Rectangle((0, 0), 1, 1, fc=(0.8, 0.8, 0.0, args.points_alpha), linewidth=0),
+                                 mpl.patches.Rectangle((0, 0), 1, 1, fc=(1.0, 0.0, 0.0, args.points_alpha), linewidth=0)],
+                                ['MCI', 'AD'], fontsize=10, ncol=2, loc='upper center', framealpha=0.9)
+            legend.get_frame().set_edgecolor((0.6, 0.6, 0.6))
 
     #
     # Plot PDFs
@@ -226,8 +227,9 @@ def plot_model(args, data_handler, biomarker):
                     probs = [SynthModel.get_probability(biomarker, progr, v) for v in values]
                     ax2.plot(values, probs, color='b', linestyle='--')
 
-        handles2, labels2 = ax2.get_legend_handles_labels()
-        ax2.legend(handles2, labels2, fontsize=10)
+#         handles2, labels2 = ax2.get_legend_handles_labels()
+        legend = ax2.legend(fontsize=10, loc='best', framealpha=0.9)
+        legend.get_frame().set_edgecolor((0.6, 0.6, 0.6))
 
     #
     # Draw or save the plot

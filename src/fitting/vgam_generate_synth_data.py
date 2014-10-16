@@ -23,7 +23,8 @@ def main():
     parser.add_argument('-n', '--number_of_samples', type=int, default=400, help='the number of subjects in the synthetic sample pool')
     parser.add_argument('--samples_per_subject', type=int, default=6, help='the number of samples per subject')
     parser.add_argument('--days_between_samples', type=int, default=365, help='the temporal offset between to samples of one subject')
-    parser.add_argument('--rate_sigma', type=float, default=0.0, help='the standard deviation of the gaussian noise applied on the progress rate')
+    parser.add_argument('--rate_sigma', type=float, default=0.0, help='the standard deviation of the gaussian noise applied on the progression rate')
+    parser.add_argument('--conversion_sigma', type=float, default=0.0, help='the standard deviation of the gaussian noise applied on the point of conversion')
     args = parser.parse_args()
 
     print log.INFO, 'Generating synthetic data with {0} samples...'.format(args.number_of_samples)
@@ -36,7 +37,7 @@ def main():
     # Estimate volumes
     with open(out_file, 'wb') as csvfile:
         writer = csv.writer(csvfile, delimiter=',')
-        writer.writerow(['RID', 'VISCODE', 'DX.scan', 'progress', 'rate'] + biomarkers)
+        writer.writerow(['RID', 'VISCODE', 'DX.scan', 'progress', 'rate', 'offset'] + biomarkers)
 
         if args.sampling == 'longitudinal':
             # Get the number of subjects from the total number of samples
@@ -47,25 +48,27 @@ def main():
                 # Get days between two samples
                 rate = 1.0 if args.rate_sigma == 0.0 else random.gauss(1.0, args.rate_sigma)
                 sample_range = rate * args.days_between_samples * args.samples_per_subject - 1
-                base_progress = SynthModel.get_random_progress(sampling=args.sampling, sample_range=sample_range)
+                offset = 0.0 if args.conversion_sigma == 0.0 else random.gauss(0.0, args.conversion_sigma)
+                base_progress_measured = SynthModel.get_random_progress(sampling=args.sampling, sample_range=sample_range)
+                base_progress_real = base_progress_measured + offset
 
                 # Get cdfs for all biomarkers
                 cdfs = {}
                 for biomarker in biomarkers:
-                    base_sample = SynthModel.get_distributed_value(biomarker, base_progress)
-                    cdfs.update({biomarker: SynthModel.get_cumulative_probability(biomarker, base_progress, base_sample)})
+                    base_sample = SynthModel.get_distributed_value(biomarker, base_progress_real)
+                    cdfs.update({biomarker: SynthModel.get_cumulative_probability(biomarker, base_progress_real, base_sample)})
 
                 # Get samples with same noise for all biomarkers
                 for sample_index in range(args.samples_per_subject):
-                    sample_progress_measured = base_progress + args.days_between_samples * sample_index
-                    sample_progress_real = base_progress + int(round(rate * args.days_between_samples * sample_index))
+                    sample_progress_measured = base_progress_measured + args.days_between_samples * sample_index
+                    sample_progress_real = int(round(base_progress_real + rate * args.days_between_samples * sample_index))
 
                     dx = 'AD' if sample_progress_real > 0 else 'MCI'
                     viscode = 'bl' if sample_index == 0 else 'm{0}'.format(sample_index * 12)
                     values = []
                     for biomarker in biomarkers:
                         values.append(SynthModel.get_distributed_value(biomarker, sample_progress_real, cdf=cdfs[biomarker]))
-                    writer.writerow([rid, viscode, dx, sample_progress_measured, rate] + values)
+                    writer.writerow([rid, viscode, dx, sample_progress_measured, rate, offset] + values)
         else:
             for rid in range(args.number_of_samples):
                 progress = SynthModel.get_random_progress(sampling=args.sampling)
@@ -75,7 +78,7 @@ def main():
                 values = []
                 for biomarker in biomarkers:
                     values.append(SynthModel.get_distributed_value(biomarker, progress))
-                writer.writerow([rid, viscode, dx, progress, '1.0'] + values)
+                writer.writerow([rid, viscode, dx, progress, '1.0', '0.0'] + values)
 
 
 if __name__ == '__main__':

@@ -3,6 +3,7 @@ import os.path
 import argparse
 import pickle
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from common import log as log
 from common import adni_tools as adni
@@ -12,7 +13,7 @@ import fitting.vgam_evaluation as ve
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-e', '--experiment', type=str, choices=['ex1', 'ex2', 'ex3'], default='ex1', help='the experiment to run')
+    parser.add_argument('-e', '--experiment', type=str, choices=['ex1', 'ex2', 'ex3', 'ex4'], default='ex1', help='the experiment to run')
     parser.add_argument('-m', '--metric', type=str, choices=['area', 'peakdist', 'maxdist'], default='area', help='the metric to be evaluated')
     parser.add_argument('-b', '--biomarkers', nargs='+', default=None, help='name of the biomarkers to be evaluated')
     parser.add_argument('--recompute_errors', action='store_true', help='recompute the errors of the models')
@@ -46,7 +47,14 @@ def main():
     if args.experiment == 'ex3':
         rate_sigmas = [0.0, 0.1, 0.2]
         errors = get_errors_noisy_rates(args, data_handler, rate_sigmas)
-        plot_boxplots_noisy_rates(args, data_handler, errors, rate_sigmas)
+        plot_boxplots_noisy_data(args, data_handler, errors, rate_sigmas, noise_on_rate=True)
+
+    # Experiment 4
+    if args.experiment == 'ex4':
+        conversion_sigmas = [0.0, 200.0, 400.0]
+        errors = get_errors_noisy_conversion(args, data_handler, conversion_sigmas)
+
+        plot_boxplots_noisy_data(args, data_handler, errors, conversion_sigmas, noise_on_rate=False)
 
 
 def get_errors_samplings(args, data_handler, sample_numbers):
@@ -75,9 +83,22 @@ def get_errors_noisy_rates(args, data_handler, rate_sigmas):
     return errors
 
 
-def run_experiment(args, data_handler, biomarker, sampling, num_samples=1000, rate_sigma=None):
+def get_errors_noisy_conversion(args, data_handler, conversion_sigmas):
     assert isinstance(data_handler, SynthDataHandler)
-    print log.INFO, 'Evaluating {0} model (sigma {1}) with {2} training samples...'.format(biomarker, rate_sigma, num_samples)
+
+    errors = {}
+    for biomarker in data_handler.get_biomarker_set():
+        errors.update({biomarker: {}})
+        for conversion_sigma in conversion_sigmas:
+            e = run_experiment(args, data_handler, biomarker, 'longitudinal', conversion_sigma=conversion_sigma)
+            errors[biomarker].update({conversion_sigma: e})
+    return errors
+
+
+def run_experiment(args, data_handler, biomarker, sampling, num_samples=1000, rate_sigma=0.0, conversion_sigma=0.0):
+    assert isinstance(data_handler, SynthDataHandler)
+    print log.INFO, 'Evaluating {0} model (sigmas {1} and {2}) with {3} training samples...'.format(
+        biomarker, rate_sigma, conversion_sigma, num_samples)
 
     errors_experiment = []
     for run in xrange(args.number_of_runs):
@@ -86,19 +107,23 @@ def run_experiment(args, data_handler, biomarker, sampling, num_samples=1000, ra
                                                  num_samples=num_samples,
                                                  sampling=sampling,
                                                  rate_sigma=rate_sigma,
+                                                 conversion_sigma=conversion_sigma,
                                                  run=run)
+
         error_folder = adni.make_dir(adni.eval_folder, biomarker)
         error_file_ending = '_{0}.p'.format(args.metric)
         error_file = os.path.join(error_folder, os.path.basename(model_file).replace('.csv', error_file_ending))
 
         if os.path.isfile(error_file) and not args.recompute_errors:
-            print log.SKIP, 'Skipping error computation for {0} samples {1}, sigma {2}, run {3}'.format(num_samples, sampling, rate_sigma, run)
+            print log.SKIP, 'Skipping error computation for {0} samples {1}, sigmas {2} and {3}, run {4}'.format(
+                num_samples, sampling, rate_sigma, conversion_sigma, run)
             error_experiment = pickle.load(open(error_file, 'rb'))
         else:
             ve.generate_synth_model(args, data_handler, biomarker,
                                     num_samples=num_samples,
                                     sampling=sampling,
                                     rate_sigma=rate_sigma,
+                                    conversion_sigma=conversion_sigma,
                                     run=run)
             error_experiment = ve.evaluate_synth_model(args, model_file, biomarker, metric=args.metric)
             pickle.dump(error_experiment, open(error_file, 'wb'))
@@ -111,11 +136,14 @@ def plot_error_bars(args, data_handler, errors):
     assert isinstance(data_handler, SynthDataHandler)
     print log.INFO, 'Plotting error bars...'
 
-    fig, ax = plt.subplots(figsize=(15, 5))
+    fig, ax = plt.subplots(figsize=(8, 5))
     ve.setup_axes(plt, ax)
+    ax.set_title('Influence of the number of training samples')
+    ax.set_xlabel('Number of samples')
+    ax.set_ylabel('Mean area between PDFs')
 
     linestyle = {'longitudinal': '-', 'triangular': '--', 'uniform': ':'}
-    color = {'synth_hipp': 'c', 'synth_brain': 'b', 'synth_mmse': 'g', 'synth_cdrsb': 'r'}
+    color = {'synth_hipp': 'c', 'synth_brain': 'b', 'synth_mmse': 'g', 'synth_cdrsb': (0.0, 0.5, 0.5)}
 
     sample_numbers = range(args.sample_numbers_range[0],
                            args.sample_numbers_range[1],
@@ -136,11 +164,13 @@ def plot_error_bars(args, data_handler, errors):
 
             plt.errorbar(sample_numbers, curve_median, yerr=[curve_err_1, curve_err_2],
                          linestyle=linestyle[sampling], color=color[biomarker],
-                         label='{0} {1}'.format(biomarker, sampling))
+                         label='{0} sampling'.format(sampling))
 
-    plt.legend()
+    legend = plt.legend(fontsize=10, ncol=3, loc='upper center', framealpha=0.9)
+    legend.get_frame().set_edgecolor((0.6, 0.6, 0.6))
 
     # Show or save plot
+    plt.tight_layout()
     if args.plot_file is not None:
         plt.savefig(args.plot_file, transparent=True)
     else:
@@ -152,42 +182,67 @@ def plot_boxplots_samplings(args, data_handler, errors, num_samples):
     assert isinstance(data_handler, SynthDataHandler)
     print log.INFO, 'Plotting error bars...'
 
-    fig, ax = plt.subplots(figsize=(15, 5))
-    ve.setup_axes(plt, ax)
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ve.setup_axes(plt, ax, xgrid=False)
 
     biomarkers = data_handler.get_biomarker_set()
     samplings = ['longitudinal', 'triangular', 'uniform']
-    biomarker_strings = {'synth_brain': '$\mathcal{M}^{brain}$',
-                         'synth_hipp': '$\mathcal{M}^{hipp}$',
-                         'synth_mmse': '$\mathcal{M}^{MMSE}$',
-                         'synth_cdrsb': '$\mathcal{M}^{CDRSB}$'}
+    biomarker_strings = {'synth_hipp': '$\mathcal{M}^{HV_s}$',
+                         'synth_mmse': '$\mathcal{M}^{MMSE_s}$',
+                         'synth_cdrsb': '$\mathcal{M}^{CDR-SB_s}$'}
     ylabels = {'area': 'Mean area between PDFs',
                'peakdist': 'Distance between peaks',
                'maxdist': 'Distance between progress maxima'}
 
+    ax.set_title('Influence of the sampling strategy')
+    ax.set_ylabel(ylabels[args.metric])
+    ax.set_xticklabels([])
+
+    # Collect data
     data = []
-    labels = []
+    medians = []
     for biomarker in biomarkers:
         for sampling in samplings:
             data.append(errors[biomarker][sampling][num_samples])
-            labels.append(sampling)
+            medians.append(np.median(errors[biomarker][sampling][num_samples]))
 
-    for i, biomarker in enumerate(biomarkers):
-        plt.text((i + 0.5) * len(samplings) + 0.5, -0.03,
-                 biomarker_strings[biomarker],
-                 horizontalalignment='center')
+    # Set limits
+    max_data = np.max(data)
+    ax.set_ylim(0, 1.15 * max_data)
 
+    # Draw boxplot
     boxplot = plt.boxplot(data, patch_artist=True)
-    plt.xticks(np.arange(len(labels)) + 1, labels)
-    plt.title('Comparison of different sampling methods ({0} training samples)'.format(num_samples))
-    plt.ylabel(ylabels[args.metric])
 
+    # Set boxplot colours
+    colours = [(0.0, 0.0, 0.0), (0.0, 0.0, 0.5), (0.0, 0.5, 0.0)] * len(biomarkers)
+    for i in range(len(data)):
+        ve.set_boxplot_color(boxplot, i, colours[i])
+
+    # Write median errors as text
+    upper_labels = [str(np.round(m, 3)) for m in medians]
+    for i in np.arange(len(upper_labels)):
+        ax.text(i + 1, 1.02 * max_data, upper_labels[i],
+                horizontalalignment='center', size=10, color=colours[i])
+
+    # Write category labels
+    for i, biomarker in enumerate(biomarkers):
+        plt.text((i + 0.5) * len(samplings) + 0.5, -0.06 * max_data,
+                 biomarker_strings[biomarker],
+                 horizontalalignment='center', size=15)
+
+    # Draw horizontal lines
     for x in range(3, len(data), 3):
         plt.axvline(x + 0.5, color='k', alpha=0.4)
-    for i in range(len(data)):
-        ve.set_boxplot_color(boxplot, i, (0, 0, 0))
+
+    # Plot legend
+    legend = ax.legend([mpl.patches.Rectangle((0, 0), 1, 1, fc=(0.0, 0.0, 0.0, 0.2), ec=(0.0, 0.0, 0.0, 1.0), linewidth=1),
+                        mpl.patches.Rectangle((0, 0), 1, 1, fc=(0.0, 0.0, 0.5, 0.2), ec=(0.0, 0.0, 0.5, 1.0), linewidth=1),
+                        mpl.patches.Rectangle((0, 0), 1, 1, fc=(0.0, 0.5, 0.0, 0.2), ec=(0.0, 0.5, 0.0, 1.0), linewidth=1)],
+                       ['{0} sampling'.format(s) for s in samplings], fontsize=10, ncol=3, loc='upper center', framealpha=0.9)
+    legend.get_frame().set_edgecolor((0.6, 0.6, 0.6))
 
     # Show or save plot
+    plt.tight_layout()
     if args.plot_file is not None:
         plt.savefig(args.plot_file, transparent=True)
     else:
@@ -195,45 +250,73 @@ def plot_boxplots_samplings(args, data_handler, errors, num_samples):
     plt.close(fig)
 
 
-def plot_boxplots_noisy_rates(args, data_handler, errors, rate_sigmas):
+def plot_boxplots_noisy_data(args, data_handler, errors, sigmas, noise_on_rate=True):
     assert isinstance(data_handler, SynthDataHandler)
     print log.INFO, 'Plotting error bars...'
 
-    fig, ax = plt.subplots(figsize=(15, 5))
-    ve.setup_axes(plt, ax)
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ve.setup_axes(plt, ax, xgrid=False)
 
     biomarkers = data_handler.get_biomarker_set()
-    biomarker_strings = {'synth_brain': '$\mathcal{M}^{brain}$',
-                         'synth_hipp': '$\mathcal{M}^{hipp}$',
-                         'synth_mmse': '$\mathcal{M}^{MMSE}$',
-                         'synth_cdrsb': '$\mathcal{M}^{CDRSB}$'}
+    biomarker_strings = {'synth_hipp': '$\mathcal{M}^{HV_s}$',
+                         'synth_mmse': '$\mathcal{M}^{MMSE_s}$',
+                         'synth_cdrsb': '$\mathcal{M}^{CDR-SB_s}$'}
     ylabels = {'area': 'Mean area between PDFs',
                'peakdist': 'Distance between peaks',
                'maxdist': 'Distance between progress maxima'}
 
+    if noise_on_rate:
+        ax.set_title('Influence of variations in progression rate')
+    else:
+        ax.set_title('Influence of variations in point of conversion')
+    ax.set_ylabel(ylabels[args.metric])
+    ax.set_xticklabels([])
+
+    # Collect data
     data = []
-    labels = []
+    medians = []
     for biomarker in biomarkers:
-        for rate_sigma in rate_sigmas:
-            data.append(errors[biomarker][rate_sigma])
-            labels.append('$\sigma={0}$'.format(rate_sigma))
+        for sigma in sigmas:
+            data.append(errors[biomarker][sigma])
+            medians.append(np.mean(errors[biomarker][sigma]))
 
-    for i, biomarker in enumerate(biomarkers):
-        plt.text((i + 0.5) * len(rate_sigmas) + 0.5, -0.03,
-                 biomarker_strings[biomarker],
-                 horizontalalignment='center')
+    # Set limits
+    max_data = np.max(data)
+    ax.set_ylim(0, 1.15 * max_data)
 
+    # Draw boxplot
     boxplot = plt.boxplot(data, patch_artist=True)
-    plt.xticks(np.arange(len(labels)) + 1, labels)
-    plt.title('Influence of noise on the progress rate on the model generation (1000 training samples)')
-    plt.ylabel(ylabels[args.metric])
 
+    # Set boxplot colours
+    colours = [(0.0, 0.0, 0.0), (0.0, 0.0, 0.5), (0.0, 0.5, 0.0)] * len(biomarkers)
+    for i in range(len(data)):
+        ve.set_boxplot_color(boxplot, i, colours[i])
+
+    # Write median errors as text
+    upper_labels = [str(np.round(m, 3)) for m in medians]
+    for i in np.arange(len(upper_labels)):
+        ax.text(i + 1, 1.02 * max_data, upper_labels[i],
+                horizontalalignment='center', size=10, color=colours[i])
+
+    # Write category labels
+    for i, biomarker in enumerate(biomarkers):
+        plt.text((i + 0.5) * len(sigmas) + 0.5, -0.06 * max_data,
+                 biomarker_strings[biomarker],
+                 horizontalalignment='center', size=15)
+
+    # Draw horizontal lines
     for x in range(3, len(data), 3):
         plt.axvline(x + 0.5, color='k', alpha=0.4)
-    for i in range(len(data)):
-        ve.set_boxplot_color(boxplot, i, (0, 0, 0))
+
+    # Plot legend
+    legend = ax.legend([mpl.patches.Rectangle((0, 0), 1, 1, fc=(0.0, 0.0, 0.0, 0.2), ec=(0.0, 0.0, 0.0, 1.0), linewidth=1),
+                        mpl.patches.Rectangle((0, 0), 1, 1, fc=(0.0, 0.0, 0.5, 0.2), ec=(0.0, 0.0, 0.5, 1.0), linewidth=1),
+                        mpl.patches.Rectangle((0, 0), 1, 1, fc=(0.0, 0.5, 0.0, 0.2), ec=(0.0, 0.5, 0.0, 1.0), linewidth=1)],
+                       ['$\sigma={0}$'.format(s) for s in sigmas], fontsize=10, ncol=3, loc='upper center', framealpha=0.9)
+    legend.get_frame().set_edgecolor((0.6, 0.6, 0.6))
 
     # Show or save plot
+    plt.tight_layout()
     if args.plot_file is not None:
         plt.savefig(args.plot_file, transparent=True)
     else:

@@ -727,28 +727,34 @@ class SynthDataHandler(DataHandler):
     # get_model_file()
     #
     ############################################################################
-    def get_model_file(self, biomarker, iteration=None, num_samples=None, sampling=None, rate_sigma=None, run=None):
+    def get_model_file(self, biomarker, iteration=None, num_samples=None, sampling=None,
+                       rate_sigma=None, conversion_sigma=None, run=None):
         """ Get the right model file for the given biomarker. """
         model_file = DataHandler.get_model_file(self, biomarker, iteration=iteration)
         num_samples_str = '_{0}'.format(num_samples) if num_samples is not None else ''
         sampling_str = '_{0}'.format(sampling) if sampling is not None else ''
         rate_sigma_str = '_sig{0}'.format(rate_sigma) if rate_sigma is not None and rate_sigma > 0.0 else ''
+        conv_sigma_str = '_csig{0}'.format(conversion_sigma) if conversion_sigma is not None and conversion_sigma > 0.0 else ''
         run_str = '_{0}'.format(run) if run is not None else ''
-        return model_file.replace('.csv', '{0}{1}{2}{3}.csv'.format(num_samples_str, sampling_str, rate_sigma_str, run_str))
+        return model_file.replace('.csv', '{0}{1}{2}{3}{4}.csv'.format(
+            num_samples_str, sampling_str, rate_sigma_str, conv_sigma_str, run_str))
 
     ############################################################################
     #
     # get_samples_file()
     #
     ############################################################################
-    def get_samples_file(self, biomarker, iteration=None, num_samples=None, sampling=None, rate_sigma=None, run=None):
+    def get_samples_file(self, biomarker, iteration=None, num_samples=None, sampling=None,
+                         rate_sigma=None, conversion_sigma=None, run=None):
         """ Get the right model file for the given biomarker. """
         samples_file = DataHandler.get_samples_file(self, biomarker, iteration=iteration)
         num_samples_str = '_{0}'.format(num_samples) if num_samples is not None else ''
         sampling_str = '_{0}'.format(sampling) if sampling is not None else ''
         rate_sigma_str = '_sig{0}'.format(rate_sigma) if rate_sigma is not None and rate_sigma > 0.0 else ''
+        conv_sigma_str = '_csig{0}'.format(conversion_sigma) if conversion_sigma is not None and conversion_sigma > 0.0 else ''
         run_str = '_{0}'.format(run) if run is not None else ''
-        return samples_file.replace('.csv', '{0}{1}{2}{3}.csv'.format(num_samples_str, sampling_str, rate_sigma_str, run_str))
+        return samples_file.replace('.csv', '{0}{1}{2}{3}{4}.csv'.format(
+            num_samples_str, sampling_str, rate_sigma_str, conv_sigma_str, run_str))
 
     ############################################################################
     #
