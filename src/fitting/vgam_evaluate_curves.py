@@ -15,8 +15,9 @@ from vgam.modelfitter import ModelFitter
 def main():
     parser = argparse.ArgumentParser()
     parser = DataHandler.add_arguments(parser)
+    parser.add_argument('--metric', type=str, default='cover', help='the metric used for the evaluation')
     parser.add_argument('-v', '--value_samples', type=int, default=100, help='the number of values samples')
-    parser.add_argument('-p', '--progress_samples', type=int, default=10, help='the number of progress samples')
+    parser.add_argument('-p', '--progress_samples', type=int, default=50, help='the number of progress samples')
     parser.add_argument('-q', '--quantiles', type=float, nargs=2, default=[0.01, 0.99], help='the quantiles for the interval computation')
     parser.add_argument('-n', '--nr_threads', type=int, default=4, help='number of threads')
     args = parser.parse_args()
@@ -26,15 +27,55 @@ def main():
 
     # Compute error for each biomarker
     biomarkers = data_handler.get_biomarker_set()
-    jl.Parallel(n_jobs=args.nr_threads)(jl.delayed(evaluate_biomarker)(args, data_handler, biomarker) for biomarker in biomarkers)
+    evaluation_function = evaluate_biomarker_cover if args.metric == 'cover' else evaluate_biomarker_disc
+    jl.Parallel(n_jobs=args.nr_threads)(jl.delayed(evaluation_function)(args, data_handler, biomarker) for biomarker in biomarkers)
 
-    sort_biomarkers(data_handler, biomarkers)
+    sort_biomarkers(args, data_handler, biomarkers)
 
 
-def evaluate_biomarker(args, data_handler, biomarker):
+def evaluate_biomarker_cover(args, data_handler, biomarker):
     data_handler.get_model_file(biomarker)
     model_file = data_handler.get_model_file(biomarker)
-    eval_file = model_file.replace('.csv', '_eval.csv')
+    eval_file = model_file.replace('.csv', '_eval_{0}.csv'.format(args.metric))
+
+    if os.path.isfile(eval_file):
+        print log.SKIP, 'Evaluation file already existing: {0}'.format(eval_file)
+    elif not os.path.isfile(model_file):
+        print log.ERROR, 'Model file not found: {0}!'.format(model_file)
+    else:
+        model = ProgressionModel(biomarker, model_file)
+
+        # Determine value and progress interval
+        progresses = np.linspace(model.min_progress, model.max_progress, args.progress_samples)
+        median_curve = model.get_quantile_curve(progresses, 0.5)
+        min_value = np.min(median_curve)
+        max_value = np.max(median_curve)
+
+        print log.RESULT, 'Evaluating {0} steps in progress interval [{1}, {2}] for values in [{3}, {4}].'.format(
+            args.progress_samples, progresses[0], progresses[-1], min_value, max_value)
+
+        # Compute error
+        writer = csv.writer(open(eval_file, 'wb'), delimiter=',')
+        writer.writerow(['progress', 'error'])
+
+        # Compute error
+        total_error = 0
+        for progress in progresses:
+            min_q = model.approximate_quantile(progress, min_value)
+            max_q = model.approximate_quantile(progress, max_value)
+            quantile_range = max_q - min_q
+            total_error += quantile_range
+
+            writer.writerow([progress, quantile_range])
+
+        total_error /= len(progresses)
+        print log.RESULT, 'Total error {0}: {1}'.format(biomarker, total_error)
+
+
+def evaluate_biomarker_disc(args, data_handler, biomarker):
+    data_handler.get_model_file(biomarker)
+    model_file = data_handler.get_model_file(biomarker)
+    eval_file = model_file.replace('.csv', '_eval_{0}.csv'.format(args.metric))
 
     if os.path.isfile(eval_file):
         print log.SKIP, 'Evaluation file already existing: {0}'.format(eval_file)
@@ -74,12 +115,12 @@ def evaluate_biomarker(args, data_handler, biomarker):
         print log.RESULT, 'Total error: {0}'.format(total_error)
 
 
-def sort_biomarkers(data_handler, biomarkers):
+def sort_biomarkers(args, data_handler, biomarkers):
     errors = []
     for biomarker in biomarkers:
         data_handler.get_model_file(biomarker)
         model_file = data_handler.get_model_file(biomarker)
-        eval_file = model_file.replace('.csv', '_eval.csv')
+        eval_file = model_file.replace('.csv', '_eval_{0}.csv'.format(args.metric))
 
         if os.path.isfile(eval_file):
             m = mlab.csv2rec(eval_file)
@@ -91,7 +132,7 @@ def sort_biomarkers(data_handler, biomarkers):
     print log.RESULT, 'Sorted biomarkers:'
     max_length = np.max([len(biomarker) for biomarker in biomarkers])
     idx = np.argsort(errors)
-    for i in idx:
+    for i in reversed(idx):
         print log.RESULT, ('{0:>' + str(max_length) + '}  {1}').format(biomarkers[i], errors[i])
     print log.RESULT, 'Mean error: {0}'.format(np.mean(errors))
 

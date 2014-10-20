@@ -157,7 +157,7 @@ def plot_model(args, data_handler, biomarker):
     # Plot errors
     #
     if args.plot_errors and not args.only_densities:
-        eval_file = model_file.replace('.csv', '_eval.csv')
+        eval_file = model_file.replace('.csv', '_eval_cover.csv')
         if not os.path.isfile(eval_file):
             print log.ERROR, 'Evaluation file not found: {0}'.format(eval_file)
         else:
@@ -167,10 +167,19 @@ def plot_model(args, data_handler, biomarker):
 
             # Get second axis of plot 1
             ax1b = ax1.twinx()
-            ax1b.set_ylim(0, max(150, 1.2 * np.max(errors)))
+            # ax1b.set_ylim(0, max(150, 1.2 * np.max(errors)))
             ax1b.plot(progresses, errors, color='g', marker='x')
             ax1b.text(progresses[-1], errors[-1], 'Discr.', color='g', fontsize=11)
             ax1b.axhline(np.mean(errors), color='g', linestyle='--', alpha=0.5)
+
+            median_curve = pm.get_quantile_curve(progresses, 0.5)
+            min_value = np.min(median_curve)
+            max_value = np.max(median_curve)
+            rect = mpl.patches.Rectangle((progresses[0], min_value), progresses[-1] - progresses[0],
+                                         max_value - min_value,
+                                         fc=(0.0, 0.5, 0.0, 0.1), ec=(0.0, 0.5, 0.0, 0.8),
+                                         linewidth=1)
+            ax1.add_patch(rect)
 
     #
     # Plot points
