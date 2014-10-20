@@ -4,41 +4,30 @@ import csv
 import re
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.mlab as mlab
 from common import log as log
 from common import adni_tools as adni
 
 
 def main():
-    global list_r
-    global list_t0
-    global list_up
-    global list_dx
-    global plot_max
-    global plot_steps
-
-    list_r = []
-    list_t0 = []
-    list_up = []
-    list_dx = []
-    plot_steps = 100
-    plot_max = 60
-
-    data_file_r = os.path.join(adni.project_folder, 'lists/volumes_segbased_sym_5mm.csv')
+    # data_file_r = os.path.join(adni.project_folder, 'lists/volumes_segbased_sym_5mm.csv')
     data_file_l = os.path.join(adni.project_folder, 'lists/volumes_segbased_longitudinal.csv')
-    data_file_g = os.path.join(adni.project_folder, 'lists/volumes_segbased_graphcut.csv')
+    # data_file_g = os.path.join(adni.project_folder, 'lists/volumes_segbased_graphcut.csv')
     data_file_c = os.path.join(adni.project_folder, 'lists/volumes_segbased_consistent.csv')
 
-#     for vol_index in [18, 19, 22, 23]:
-    for structure in adni.structure_names:
+    m = mlab.csv2rec(data_file_c)
+    rids = set(m['rid'])
+
+    for structure in ['Right Hippocampus']:  # adni.structure_names:
         vol_index = adni.structure_names.index(structure)
 
         print log.INFO, 'Plotting {0}...'.format(adni.structure_names[vol_index])
 
-        for rid in [112, 307, 408]:
-            plot_points_for_subject(data_file_r, rid, vol_index, 'reg-based', 'r')
+        for rid in rids:
+            # plot_points_for_subject(data_file_r, rid, vol_index, 'reg-based', 'r')
             plot_points_for_subject(data_file_l, rid, vol_index, 'longitudinal', 'g')
             plot_points_for_subject(data_file_c, rid, vol_index, 'consistent', 'k')
-            plot_points_for_subject(data_file_g, rid, vol_index, 'graphcut', 'b')
+            # plot_points_for_subject(data_file_g, rid, vol_index, 'graphcut', 'b')
 
             plt.title('{0} of subject {1}'.format(adni.structure_names[vol_index], rid))
             plt.xlabel('Months after baseline')
@@ -71,7 +60,7 @@ def plot_points_for_subject(data_file, rid, vol_index, label, color):
                 dx_str = row['DX.scan']
                 if dx_str == 'AD':
                     dx = 1.0
-                elif dx_str == 'MCI':
+                elif dx_str in ['EMCI', 'MCI', 'LMCI']:
                     dx = 0.5
                 elif dx_str == 'CN':
                     dx = 0.0
