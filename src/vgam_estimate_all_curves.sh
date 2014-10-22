@@ -1,9 +1,9 @@
 #! /bin/bash
 
 process_group() {
-    python ./fitting/vgam_estimate_curves.py $1 -i $2
-    python ./fitting/vgam_evaluate_curves.py $1 -i $2
-    python ./fitting/vgam_plot_curves.py $1 -i $2 --plot_mu --save_file
+    python ./fitting/vgam_estimate_curves.py -m $1 -i $2
+    python ./fitting/vgam_evaluate_curves.py -m $1 -i $2
+    python ./fitting/vgam_plot_curves.py -m $1 -i $2 --plot_mu --save_file
 }
 
 

@@ -1,6 +1,6 @@
 #! /bin/bash
-folder="/vol/medic01/users/aschmidt/Dropbox/Documents/Einreichungen/NeuroImage 2014/figs/"
-#folder="/Users/aschmiri/Dropbox/Documents/Einreichungen/NeuroImage 2014/figs/"
+folder="/vol/medic01/users/aschmidt/Dropbox/Documents/Einreichungen/MedIA 2014/figs/"
+#folder="/Users/aschmiri/Dropbox/Documents/Einreichungen/MedIA 2014/figs/"
 
 #
 # Model generation
@@ -38,19 +38,19 @@ folder="/vol/medic01/users/aschmidt/Dropbox/Documents/Einreichungen/NeuroImage 2
 #
 # Synth evaluation
 #
-#output_file="${folder}eval_synth_1.pdf"
-#fitting/vgam_evaluate_synth_model.py -e ex1 -b synth_cdrsb --sample_numbers_range 100 2000 100 --number_of_runs 100 --plot_file "${output_file}"
-#output_file="${folder}eval_synth_2.pdf"
+#output_file="${folder}eval_synth_num_samples.pdf"
+#fitting/vgam_evaluate_synth_model.py -e ex1 -b synth_cdrsb --plot_file "${output_file}"
+#output_file="${folder}eval_synth_sampling_strategy.pdf"
 #fitting/vgam_evaluate_synth_model.py -e ex2 --plot_file "${output_file}"
 #output_file="${folder}eval_synth_sigma_rates.pdf"
 #fitting/vgam_evaluate_synth_model.py -e ex3 --plot_file "${output_file}"
 #output_file="${folder}eval_synth_sigma_conv.pdf"
 #fitting/vgam_evaluate_synth_model.py -e ex4 --plot_file "${output_file}"
 
-#output_file="${folder}eval_synth_3.pdf"
+#output_file="${folder}eval_synth_estimation.pdf"
 #fitting/vgam_evaluate_synth_fitting.py -e ex1 --plot_file "${output_file}"
-output_file="${folder}eval_synth_4.pdf"
-fitting/vgam_evaluate_synth_fitting.py -e ex2 --plot_file "${output_file}"
+#output_file="${folder}eval_synth_available_data.pdf"
+#fitting/vgam_evaluate_synth_fitting.py -e ex2 --plot_file "${output_file}"
 
 
 #
@@ -66,16 +66,16 @@ fitting/vgam_evaluate_synth_fitting.py -e ex2 --plot_file "${output_file}"
 #
 # Progression estimates
 #
-#for method in cog mbl long img all
-#do
-#  i=1
-#  for visits in "bl" "bl m12" "bl m12 m24"
-#  do
-#    output_file="${folder}eval_fitting_${method}_${i}.pdf"
-#    fitting/vgam_estimate_progress.py ${visits} -m ${method} --plot_file "${output_file}"
-#    i=`expr $i + 1`   
-#  done
-#done
+for method in mbl3 #cog mbl long img all
+do
+  i=1
+  for visits in "bl" "bl m12" "bl m12 m24"
+  do
+    output_file="${folder}eval_fitting_${method}_${i}.pdf"
+    fitting/vgam_estimate_progress.py ${visits} -m ${method} --consistent_data --plot_file "${output_file}"
+    i=`expr $i + 1`   
+  done
+done
 
 #
 # Biomarker predictions
