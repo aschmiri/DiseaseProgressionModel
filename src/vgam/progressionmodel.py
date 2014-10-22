@@ -40,13 +40,27 @@ class MultiBiomarkerProgressionModel(object):
     #
     ############################################################################
     def get_probability_value(self, values, progress):
-        probability = math.pow(10.0, len(self.models.keys()) - 1)
+        probability = 1.0
         for biomarker in self.models.keys():
             if biomarker in values:
                 value = values[biomarker]
                 probability *= self.models[biomarker].get_probability_value(value, progress)
 
         return probability
+
+    ############################################################################
+    #
+    # get_log_likelihood()
+    #
+    ############################################################################
+    def get_log_likelihood(self, values, progress):
+        log_likelihood = 0.0
+        for biomarker in self.models.keys():
+            if biomarker in values:
+                value = values[biomarker]
+                log_likelihood += self.models[biomarker].get_log_likelihood(value, progress)
+
+        return log_likelihood
 
     ############################################################################
     #
@@ -88,6 +102,7 @@ class ProgressionModel(object):
         self.biomarker = biomarker
         self.extrapolator = extrapolator
         self.__initialise_model(model_file)
+        self.A = 1.0 / math.sqrt(2 * math.pi)
 
     ############################################################################
     #
@@ -188,6 +203,21 @@ class ProgressionModel(object):
         lmbda, mu, sigma, yoffset = self.get_parameters(progress)
         value = sample[self.biomarker] if isinstance(sample, dict) else sample
         return self.__yeojohnson_density(yoffset + value, lmbda, mu, sigma)
+
+    ############################################################################
+    #
+    # get_log_likelihood()
+    #
+    ############################################################################
+    def get_log_likelihood(self, sample, progress):
+        lmbda, mu, sigma, yoffset = self.get_parameters(progress)
+        value = sample[self.biomarker] if isinstance(sample, dict) else sample
+        # The following lines implement a (slightly) more efficient version of:
+        # return math.log(self.__yeojohnson_density(yoffset + value, lmbda, mu, sigma))
+        y = yoffset + value
+        x = (ProgressionModel.__yeojohnson(y, lmbda) - mu) / sigma
+        return math.log(self.A * sigma) + math.copysign(1, y) * (lmbda - 1) * \
+            math.log(math.fabs(y) + 1) - 0.5 * x ** 2
 
     ############################################################################
     #
@@ -334,7 +364,7 @@ class ProgressionModel(object):
     ############################################################################
     @staticmethod
     def __std_normal_dist(x):
-        return math.exp(-0.5 * x ** 2) / math.sqrt(2 * math.pi)
+        return math.exp(-0.5 * x ** 2) * self.A
 
     ############################################################################
     #

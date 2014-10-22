@@ -5,7 +5,6 @@ A class to provide progression modelling functionality.
 :copyright:  2014 Imperial College London. All rights reserved.
 :contact:    a.schmidt-richberg@imperial.ac.uk
 """
-import math
 import numpy as np
 from common import log as log
 from common import adni_tools as adni
@@ -100,22 +99,22 @@ class ModelFitter(object):
                                   self.TEST_SCALE_MAX,
                                   self.TEST_SCALE_STEP)
 
-        # Compute probability for each scaling
-        probs = []
+        # Compute likelihood for each scaling
+        likelihoods = []
         for scaling in test_scalings:
-            prob = math.pow(10.0, len(samples) - 1)
+            likelihood = 0.0
             for viscode in samples:
                 scaled_progress = samples[viscode]['progress'] * scaling
-                prob *= self.model.get_probability_value(samples[viscode], scaled_progress)
-            probs.append(prob)
+                likelihood += self.model.get_log_likelihood(samples[viscode], scaled_progress)
+            likelihoods.append(likelihood)
 
         # Sanity check
-        if np.sum(probs) == 0.0:
-            print log.WARNING, 'All probabilities equal zero!'
+        if np.sum(likelihoods) == 0.0:
+            print log.WARNING, 'All likelihoods equal zero!'
             return None
 
-        # Find the scaling with the highest probability
-        return test_scalings[np.argmax(probs)]
+        # Find the scaling with the highest likelihood
+        return test_scalings[np.argmax(likelihoods)]
 
     ############################################################################
     #
@@ -136,22 +135,22 @@ class ModelFitter(object):
 
         min_scantime = min([samples[v]['scantime'] for v in samples])
 
-        # Compute probability for each scaling
-        probs = []
+        # Compute likelihood for each scaling
+        likelihoods = []
         for dpi in test_dpis:
-            prob = math.pow(10.0, len(samples) - 1)
+            likelihood = 0.0
             for viscode in samples:
                 progress = self.scantime_to_progress(samples[viscode]['scantime'], min_scantime, dpi, 1.0)
-                prob *= self.model.get_probability_value(samples[viscode], progress)
-            probs.append(prob)
+                likelihood += self.model.get_log_likelihood(samples[viscode], progress)
+            likelihoods.append(likelihood)
 
         # Sanity check
-        if np.sum(probs) == 0.0:
-            print log.WARNING, 'All probabilities equal zero!'
+        if np.sum(likelihoods) == 0.0:
+            print log.WARNING, 'All likelihoods equal zero!'
             return None
 
-        # Find the DPI with the highest probability
-        return test_dpis[np.argmax(probs)]
+        # Find the DPI with the highest likelihood
+        return test_dpis[np.argmax(likelihoods)]
 
     ############################################################################
     #
@@ -175,30 +174,30 @@ class ModelFitter(object):
 
         min_scantime = min([samples[v]['scantime'] for v in samples])
 
-        # Compute probability for each DPI and DPR
-        prob_max = []
-        dpi_max = []
+        # Compute likelihood for each DPI and DPR
+        max_likelihoods = []
+        max_dpis = []
         for dpr in test_dprs:
-            probs = []
+            likelihoods = []
             for dpi in test_dpis:
-                prob = math.pow(10.0, len(samples) - 1)
+                likelihood = 0.0
                 for viscode in samples:
                     progress = self.scantime_to_progress(samples[viscode]['scantime'], min_scantime, dpi, dpr)
-                    prob *= self.model.get_probability_value(samples[viscode], progress)
-                probs.append(prob)
+                    likelihood += self.model.get_log_likelihood(samples[viscode], progress)
+                likelihoods.append(likelihood)
 
-            arg_max = np.argmax(probs)
-            prob_max.append(probs[arg_max])
-            dpi_max.append(test_dpis[arg_max])
+            arg_max = np.argmax(likelihoods)
+            max_likelihoods.append(likelihoods[arg_max])
+            max_dpis.append(test_dpis[arg_max])
 
         # Sanity check
-        if np.sum(prob_max) == 0.0:
-            print log.WARNING, 'All probabilities equal zero!'
+        if np.sum(max_likelihoods) == 0.0:
+            print log.WARNING, 'All likelihoods equal zero!'
             return None, None
 
-        # Find the DPI and DPR with the highest probability
-        arg_max = np.argmax(prob_max)
-        return dpi_max[arg_max], test_dprs[arg_max]
+        # Find the DPI and DPR with the highest likelihood
+        arg_max = np.argmax(max_likelihoods)
+        return max_dpis[arg_max], test_dprs[arg_max]
 
     @staticmethod
     def scantime_to_progress(scantime, min_scantime, dpi, dpr):

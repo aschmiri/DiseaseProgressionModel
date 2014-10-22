@@ -84,14 +84,17 @@ class DataHandler(object):
         if args is None:
             self._method = 'all'
             self._volume_method = 'long'
+            self._mbl_method = 'mbl'
         else:
             self._method = args.method
+
             if args.method == 'long':
                 self._volume_method = 'long'
             elif args.method == 'cons':
                 self._volume_method = 'cons'
             else:
                 self._volume_method = 'long'
+            self._mbl_method = 'mbl'
 
         # Set iteration
         if iteration is not None:
@@ -191,7 +194,7 @@ class DataHandler(object):
         elif biomarker in adni.structure_names or biomarker in adni.structure_names_complete:
             return self._volume_method
         elif biomarker in adni.manifold_coordinate_names:
-            return 'mbl'
+            return self._mbl_method
         else:
             print log.ERROR, 'Tag cannot be determined for {0}!'.format(biomarker)
             return None
@@ -615,12 +618,10 @@ class DataHandler(object):
 
         for rid, visit in measurements.items():
             drop_rid = False
-            for visit, visdata in visit.items():
-                if visits is None or visit in visits:
-                    for biomarker in biomarkers:
-                        if biomarker not in visdata:
-                            drop_rid = True
-                            break
+            for viscode, visdata in visit.items():
+                if visits is None or viscode in visits:
+                    if not set(biomarkers).issubset(set(visdata)):
+                        drop_rid = True
             if drop_rid:
                 measurements.pop(rid)
 
