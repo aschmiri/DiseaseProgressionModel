@@ -89,6 +89,7 @@ class ProgressionModel(object):
     """
     TODO: classdocs
     """
+    A = 1.0 / math.sqrt(2 * math.pi)
 
     ############################################################################
     #
@@ -102,7 +103,6 @@ class ProgressionModel(object):
         self.biomarker = biomarker
         self.extrapolator = extrapolator
         self.__initialise_model(model_file)
-        self.A = 1.0 / math.sqrt(2 * math.pi)
 
     ############################################################################
     #
@@ -364,7 +364,7 @@ class ProgressionModel(object):
     ############################################################################
     @staticmethod
     def __std_normal_dist(x):
-        return math.exp(-0.5 * x ** 2) * self.A
+        return math.exp(-0.5 * x ** 2) * ProgressionModel.A
 
     ############################################################################
     #
