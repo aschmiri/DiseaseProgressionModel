@@ -122,8 +122,8 @@ def analyse_dpi_estimates(args, dpis, diagnoses):
                              acc_cn_ad, t_cn_ad,
                              acc_cn_mci, t_cn_mci,
                              acc_mci_ad, t_mci_ad,
-                             acc_emci_lmci, t_emci_lmci)
-)
+                             acc_emci_lmci, t_emci_lmci))
+
 
 def run_classification(dpis1, dpis2):
     # Assemble data

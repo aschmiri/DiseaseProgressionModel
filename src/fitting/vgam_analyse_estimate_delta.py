@@ -22,8 +22,7 @@ def main():
     for method in methods:
         estimates.update({method: {}})
         for visits in [['bl'], ['m12'], ['m24'], ['bl', 'm12'], ['m12', 'm24']]:
-            estimates_file = ve.get_estimates_file(method, visits, None, args.estimate_dprs)
-            _, diagnoses, dpis, _, _, _ = ve.get_progress_estimates(args, estimates_file=estimates_file)
+            _, diagnoses, dpis, _, _, _ = ve.get_progress_estimates(args, visits, method=method, estimate_dprs=args.estimate_dprs)
 
             diagnoses = np.array(diagnoses)
             dpis = np.array(dpis)
