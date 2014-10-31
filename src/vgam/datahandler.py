@@ -25,7 +25,7 @@ class DataHandler(object):
     ############################################################################
     @staticmethod
     def add_arguments(parser):
-        parser.add_argument('-m', '--method', choices=['cog', 'long', 'cons', 'mbl', 'img', 'all', 'synth'], default='all', help='the method to collect data for')
+        parser.add_argument('-m', '--method', choices=['cog', 'vol', 'long', 'cons', 'mbl', 'img', 'all', 'synth'], default='all', help='the method to collect data for')
         parser.add_argument('-i', '--iteration', type=int, default=0, help='the refinement iteration')
         parser.add_argument('-b', '--biomarkers', nargs='+', default=None, help='name of the biomarker to be plotted')
         return parser
@@ -61,6 +61,7 @@ class DataHandler(object):
         else:
             self._biomarker_subset = args.biomarkers
         self._biomarker_sets = {'cog': adni.cog_score_names,
+                                'vol': adni.structure_names,
                                 'long': adni.structure_names,
                                 'cons': adni.structure_names,
                                 'mbl': adni.manifold_coordinate_names,
@@ -70,6 +71,7 @@ class DataHandler(object):
         # Set data folders
         self._model_folders = {'cog': os.path.join(adni.project_folder, 'models', 'cog'),
                                'mbl': os.path.join(adni.project_folder, 'models', 'mbl'),
+                               'vol': os.path.join(adni.project_folder, 'models', 'long'),
                                'long': os.path.join(adni.project_folder, 'models', 'long'),
                                'cons': os.path.join(adni.project_folder, 'models', 'cons')}
 
@@ -77,6 +79,7 @@ class DataHandler(object):
         self._data_files = {'meta': os.path.join(adni.project_folder, 'lists/metadata.csv'),
                             'cog': os.path.join(adni.project_folder, 'lists/metadata.csv'),
                             'mbl': os.path.join(adni.project_folder, 'lists/manifold_features.csv'),
+                            'vol': os.path.join(adni.project_folder, 'lists/volumes_segbased_longitudinal.csv'),
                             'long': os.path.join(adni.project_folder, 'lists/volumes_segbased_longitudinal.csv'),
                             'cons': os.path.join(adni.project_folder, 'lists/volumes_segbased_consistent.csv')}
 

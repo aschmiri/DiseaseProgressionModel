@@ -157,9 +157,9 @@ def plot_errors_sampling(args, data_handler, errors, num_samples):
 
     biomarkers = data_handler.get_biomarker_set()
     samplings = ['longitudinal', 'triangular', 'uniform']
-    biomarker_strings = {'synth_hipp': '$\mathcal{M}^{HV_s}$',
-                         'synth_mmse': '$\mathcal{M}^{MMSE_s}$',
-                         'synth_cdrsb': '$\mathcal{M}^{CDR-SB_s}$'}
+    biomarker_strings = {'synth_hipp': '$\mathcal{M}^{HV}$',
+                         'synth_mmse': '$\mathcal{M}^{MMSE}$',
+                         'synth_cdrsb': '$\mathcal{M}^{CDR-SB}$'}
 
     # Collect data
     data = []
@@ -225,9 +225,9 @@ def plot_errors_data(args, errors, biomarker_sets, viscode_sets):
     ax.set_title('DPI estimation using different biomarker settings')
     ax.set_ylabel('Mean progress estimation error')
     ax.set_xticklabels([])
-    biomarker_strings = {'synth_hipp': '$\mathcal{M}^{HV_s}$',
-                         'synth_mmse': '$\mathcal{M}^{MMSE_s}$',
-                         'synth_cdrsb': '$\mathcal{M}^{CDR-SB_s}$'}
+    biomarker_strings = {'synth_hipp': '$\mathcal{M}^{HV}$',
+                         'synth_mmse': '$\mathcal{M}^{MMSE}$',
+                         'synth_cdrsb': '$\mathcal{M}^{CDR-SB}$'}
 
     # Collect data
     data = []
@@ -259,7 +259,7 @@ def plot_errors_data(args, errors, biomarker_sets, viscode_sets):
 
     # Write category labels
     for i in xrange(len(viscode_sets)):
-        ax.text(i * num_tests + 0.5 * (num_tests + 1), -175,
+        ax.text(i * num_tests + 0.5 * (num_tests + 1), -70,
                 '{0} timepoint{1}'.format(len(viscode_sets[i]), '' if len(viscode_sets[i]) == 1 else 's'),
                 horizontalalignment='center')
 

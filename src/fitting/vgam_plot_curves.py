@@ -71,6 +71,7 @@ def plot_model(args, data_handler, biomarker):
     #
     # Setup plot
     #
+    biomarker_string = ve.get_biomarker_string(biomarker)
     figure_width = 6 if args.no_densities or args.only_densities else 12
     fig = plt.figure(figsize=(figure_width, 5))
     if args.only_densities:
@@ -88,7 +89,10 @@ def plot_model(args, data_handler, biomarker):
         ve.setup_axes(plt, ax2)
 
     if not args.only_densities:
-        ax1.set_title('Percentile curves for {0}'.format(biomarker))
+        if args.no_model and not args.plot_synth_model:
+            ax1.set_title('Aligned samples for {0}'.format(biomarker_string))
+        else:
+            ax1.set_title('Quantile curves for {0}'.format(biomarker_string))
         ax1.set_xlabel('Disease progress relative to point of conversion')
         ax1.set_ylabel(ve.get_metric_unit(biomarker))
         ax1.set_xlim(min_progress_extrapolate, max_progress_extrapolate)
@@ -219,7 +223,7 @@ def plot_model(args, data_handler, biomarker):
                 ax1.axvline(progr, color=sample_color, linestyle=linestyle, alpha=0.3)
 
     if not args.no_densities:
-        ax2.set_title('Probability density function for {0}'.format(biomarker))
+        ax2.set_title('Probability density function for {0}'.format(biomarker_string))
         ax2.set_xlabel(ve.get_metric_unit(biomarker))
         ax2.set_ylabel('Probability')
 

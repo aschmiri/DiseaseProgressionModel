@@ -142,8 +142,7 @@ def plot_error_bars(args, data_handler, errors):
     ax.set_xlabel('Number of samples')
     ax.set_ylabel('Mean area between PDFs')
 
-    linestyle = {'longitudinal': '-', 'triangular': '--', 'uniform': ':'}
-    color = {'synth_hipp': 'c', 'synth_brain': 'b', 'synth_mmse': 'g', 'synth_cdrsb': (0.0, 0.5, 0.5)}
+    color = {'longitudinal': (0.0, 0.0, 0.0), 'triangular': (0.0, 0.0, 0.5), 'uniform': (0.0, 0.5, 0.0)}
 
     sample_numbers = range(args.sample_numbers_range[0],
                            args.sample_numbers_range[1],
@@ -163,7 +162,7 @@ def plot_error_bars(args, data_handler, errors):
                 curve_err_2.append(np.percentile(errors_experiment, 75) - median)
 
             plt.errorbar(sample_numbers, curve_median, yerr=[curve_err_1, curve_err_2],
-                         linestyle=linestyle[sampling], color=color[biomarker],
+                         linestyle='-', color=color[sampling],
                          label='{0} sampling'.format(sampling))
 
     legend = plt.legend(fontsize=10, ncol=3, loc='upper center', framealpha=0.9)
@@ -187,9 +186,9 @@ def plot_boxplots_samplings(args, data_handler, errors, num_samples):
 
     biomarkers = data_handler.get_biomarker_set()
     samplings = ['longitudinal', 'triangular', 'uniform']
-    biomarker_strings = {'synth_hipp': '$\mathcal{M}^{HV_s}$',
-                         'synth_mmse': '$\mathcal{M}^{MMSE_s}$',
-                         'synth_cdrsb': '$\mathcal{M}^{CDR-SB_s}$'}
+    biomarker_strings = {'synth_hipp': '$\mathcal{M}^{HV}$',
+                         'synth_mmse': '$\mathcal{M}^{MMSE}$',
+                         'synth_cdrsb': '$\mathcal{M}^{CDR-SB}$'}
     ylabels = {'area': 'Mean area between PDFs',
                'peakdist': 'Distance between peaks',
                'maxdist': 'Distance between progress maxima'}
@@ -258,9 +257,9 @@ def plot_boxplots_noisy_data(args, data_handler, errors, sigmas, noise_on_rate=T
     ve.setup_axes(plt, ax, xgrid=False)
 
     biomarkers = data_handler.get_biomarker_set()
-    biomarker_strings = {'synth_hipp': '$\mathcal{M}^{HV_s}$',
-                         'synth_mmse': '$\mathcal{M}^{MMSE_s}$',
-                         'synth_cdrsb': '$\mathcal{M}^{CDR-SB_s}$'}
+    biomarker_strings = {'synth_hipp': '$\mathcal{M}^{HV}$',
+                         'synth_mmse': '$\mathcal{M}^{MMSE}$',
+                         'synth_cdrsb': '$\mathcal{M}^{CDR-SB}$'}
     ylabels = {'area': 'Mean area between PDFs',
                'peakdist': 'Distance between peaks',
                'maxdist': 'Distance between progress maxima'}

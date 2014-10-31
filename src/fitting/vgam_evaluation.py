@@ -556,6 +556,19 @@ def get_metric_unit(biomarker):
         return None
 
 
+def get_biomarker_string(biomarker):
+    if biomarker == 'synth_cdrsb':
+        return '$\mathcal{M}^{CDR-SB}$'
+    elif biomarker == 'synth_mmse':
+        return '$\mathcal{M}^{MMSE}$'
+    elif biomarker == 'synth_hipp':
+        return '$\mathcal{M}^{HV}$'
+    elif biomarker == 'CDRSB':
+        return 'CDR-SB'
+    else:
+        return biomarker
+
+
 def set_boxplot_color(boxplot, index, color):
     box = boxplot['boxes'][index]
     box.set_facecolor(color + (0.2,))
