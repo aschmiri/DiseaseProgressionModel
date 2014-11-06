@@ -1,8 +1,0 @@
-Transformation model             = Rigid
-Energy function                  = -0.995 NMI(I1, I2) + 0.005 BE
-No. of resolution levels         = 3
-Maximum streak of rejected steps = 2
-# Padding value                    = -2
-
-Blurring (in mm)                 = 0.5
-Resolution (in mm)               = 1
