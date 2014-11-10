@@ -1,7 +1,7 @@
 #! /bin/bash
 method=$1
 
-for method in cog mbl vol img all
+for method in cog ml vol img all
 do
   for visits in  "bl" "m12" "m24" "bl m12" "m12 m24" "bl m12 m24"
   do
@@ -11,7 +11,7 @@ done
 
 for biomarker in "MMSE" "FAQ" "CDRSB" "Right Hippocampus"
 do
-  for method in cog mbl vol img all
+  for method in cog ml vol img all
   do
     for visits in  "bl" "m12" "m24" "bl m12" "m12 m24" "bl m12 m24"
     do
@@ -20,7 +20,7 @@ do
   done
 done
 
-for method in cog mbl vol img all
+for method in cog ml vol img all
 do
   for visits in "bl m12" "bl m12 m24" "m12 m24"
   do
@@ -30,7 +30,7 @@ done
 
 for biomarker in "MMSE" "FAQ" "CDRSB" "Right Hippocampus"
 do
-  for method in cog mbl vol img all
+  for method in cog ml vol img all
   do
     for visits in "bl m12" "bl m12 m24" "m12 m24"
     do

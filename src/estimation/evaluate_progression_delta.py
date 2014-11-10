@@ -15,7 +15,7 @@ def main():
     args = parser.parse_args()
 
     estimates = {}
-    methods = ['cog', 'vol', 'mbl', 'img', 'all']
+    methods = ['cog', 'vol', 'ml', 'img', 'all']
     for method in methods:
         estimates.update({method: {}})
         for visits in [['bl'], ['m12'], ['m24'], ['bl', 'm12'], ['m12', 'm24']]:

@@ -93,8 +93,8 @@ def plot_model(args, biomarker):
             ax1.set_title('Aligned samples for {0}'.format(biomarker_string))
         else:
             ax1.set_title('Quantile curves for {0}'.format(biomarker_string))
-        ax1.set_xlabel('Disease progress relative to point of conversion')
-        ax1.set_ylabel('Value')
+        ax1.set_xlabel('Disease progress (days before/after conversion to AD)')
+        ax1.set_ylabel(DataHandler.get_biomarker_unit(biomarker))
         ax1.set_xlim(min_progress_extrapolate, max_progress_extrapolate)
 
     #
@@ -224,7 +224,7 @@ def plot_model(args, biomarker):
 
     if not args.no_densities:
         ax2.set_title('Probability density function for {0}'.format(biomarker_string))
-        ax2.set_xlabel('Value')
+        ax2.set_xlabel(DataHandler.get_biomarker_unit(biomarker))
         ax2.set_ylabel('Probability')
 
         values = np.linspace(min_val, max_val, 250)

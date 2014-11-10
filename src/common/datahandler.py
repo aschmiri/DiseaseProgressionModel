@@ -44,6 +44,8 @@ class DataHandler(object):
             self.model_folders = {'synth': os.path.join(self.models_folder, 'synth')}
             self.data_files = {'synth': os.path.join(self.data_folder, 'synth_data.csv'),
                                'meta': config.get('biomarkers', 'meta_data_file')}
+            self.age_regression = {'synth': False}
+            self.biomarker_units = {'synth': 'Score'}
 
             for biomarker_set in self.biomarker_sets:
                 data_file = config.get(biomarker_set, 'data_file')
@@ -54,6 +56,13 @@ class DataHandler(object):
 
                 model_folder = os.path.join(self.models_folder, biomarker_set)
                 self.model_folders.update({biomarker_set: model_folder})
+
+                age_regression = config.get(biomarker_set, 'age_regression')
+                age_regression = True if age_regression in ['Yes', 'yes', 'True', 'true'] else False
+                self.age_regression.update({biomarker_set: age_regression})
+
+                biomarker_unit = config.get(biomarker_set, 'biomarker_unit')
+                self.biomarker_units.update({biomarker_set: biomarker_unit})
 
             for combined_set in self.combined_biomarker_sets:
                 if config.has_option(combined_set, 'biomarker_sets'):
@@ -221,6 +230,16 @@ class DataHandler(object):
 
     ############################################################################
     #
+    # get_biomarker_unit()
+    #
+    ############################################################################
+    @classmethod
+    def get_biomarker_unit(cls, biomarker):
+        """ Get the right unit for the given biomarker, mainly required for plotting. """
+        return cls._conf.biomarker_unit[cls._get_method_for_biomarker(biomarker)]
+
+    ############################################################################
+    #
     # _get_data_file_for_biomarker()
     #
     ############################################################################
@@ -316,8 +335,8 @@ class ClinicalDataHandler(DataHandler):
         """
         Initialise the right data files for the given arguments.
 
-        :param args: command line arguments with:
-        :param str args.method: the method, choice of ['cog', 'long', 'cons', 'mbl', 'img', 'all']
+        :param str args.method: one of the methods defined in the config file
+        :param list args.biomarkers: subset of biomarkers defined in the config file
         """
         super(ClinicalDataHandler, self).__init__(biomarkers)
 
@@ -334,7 +353,7 @@ class ClinicalDataHandler(DataHandler):
     ############################################################################
     def get_measurements_as_dict(self, min_visits=0, visits=None, biomarkers=None,
                                  select_training_set=False, select_test_set=False,
-                                 select_complete=False, no_regression=False):
+                                 select_complete=False):
         """ Return all subjects measurements as a dictionary.
 
         Arguments:
@@ -362,8 +381,7 @@ class ClinicalDataHandler(DataHandler):
         # Read data from lists
         measurements = self._get_metadata_as_dict()
         measurements = self._update_measurements_with_biomarker_values(measurements,
-                                                                       biomarkers=biomarkers,
-                                                                       no_regression=no_regression)
+                                                                       biomarkers=biomarkers)
 
         # Select specific subset of data. this has to be done after age regression!
         if select_training_set:
@@ -456,7 +474,7 @@ class ClinicalDataHandler(DataHandler):
     # _update_measurements_with_biomarker_values()
     #
     ############################################################################
-    def _update_measurements_with_biomarker_values(self, measurements, biomarkers=None, no_regression=False):
+    def _update_measurements_with_biomarker_values(self, measurements, biomarkers=None):
         """ Update the metadata dictionary with the biomarker values.
 
         :param dict metadata: the meta data
@@ -464,7 +482,7 @@ class ClinicalDataHandler(DataHandler):
         :param bool no_regression: do not perform age regression
         """
         biomarkers = self.get_biomarker_names() if biomarkers is None else biomarkers
-        biomarker_values = self._get_biomarker_values_as_dict(measurements, biomarkers=biomarkers, no_regression=no_regression)
+        biomarker_values = self._get_biomarker_values_as_dict(measurements, biomarkers=biomarkers)
 
         # Update metadata with feature values
         for rid in measurements:
@@ -484,7 +502,7 @@ class ClinicalDataHandler(DataHandler):
     # _get_biomarker_values_as_dict()
     #
     ############################################################################
-    def _get_biomarker_values_as_dict(self, metadata, biomarkers=None, no_regression=False):
+    def _get_biomarker_values_as_dict(self, metadata, biomarkers=None):
         """ Return all measurements as a dictionary.
 
         :param dict metadata: the meta data
@@ -510,6 +528,8 @@ class ClinicalDataHandler(DataHandler):
                 print log.ERROR, 'Data file not found:', data_file
                 continue
 
+            age_regression = self._conf.age_regression[self._get_method_for_biomarker(biomarker)]
+
             #
             # Get all measurements from CSV file
             with open(data_file, 'rb') as csvfile:
@@ -528,14 +548,14 @@ class ClinicalDataHandler(DataHandler):
                         # Get value
                         value = self.safe_cast(row[biomarker])
 
-                        if no_regression:
-                            values[rid][viscode].update({biomarker: value})
-                        else:
+                        if age_regression:
                             values[rid][viscode].update({no_regression_str.format(biomarker): value})
+                        else:
+                            values[rid][viscode].update({biomarker: value})
 
-        if not no_regression:
-            print log.INFO, 'Performing age regression...'
-            for biomarker in biomarkers:
+        for biomarker in biomarkers:
+            if self._conf.age_regression[self._get_method_for_biomarker(biomarker)]:
+                print log.INFO, 'Performing age regression for {0}...'.format(biomarker)
                 rids = []
                 viscodes = []
                 vals = []

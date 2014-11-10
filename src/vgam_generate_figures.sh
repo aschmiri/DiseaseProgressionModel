@@ -68,7 +68,7 @@ done
 #
 # Progression estimates
 #
-for method in cog mbl vol img all
+for method in cog ml vol img all
 do
   i=1
   for visits in "bl" "bl m12" "bl m12 m24"

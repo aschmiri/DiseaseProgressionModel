@@ -16,7 +16,7 @@ def main():
     args = parser.parse_args()
 
     visits = ['bl', 'm12', 'm24']
-    methods = ['hcv']  # cog', 'vol', 'mbl', 'img', 'all']
+    methods = ['cog', 'vol', 'ml', 'img', 'all']
     values = {}
     for method in methods:
         values.update({method: {}})
