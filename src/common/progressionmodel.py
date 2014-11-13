@@ -7,6 +7,7 @@ A class to provide progression modelling functionality.
 """
 import math
 import numpy as np
+from scipy import stats
 import matplotlib.mlab as mlab
 from common import log as log
 
@@ -151,15 +152,35 @@ class ProgressionModel(object):
     # approximate_quantile()
     #
     ############################################################################
-    def approximate_quantile(self, progress, value, step=0.001):
-        from scipy import stats
-        lmbda, mu, sigma, yoffset = self.get_parameters(progress)
-        for quantile in np.arange(step, 1.0, step):
-            std = stats.norm.ppf(quantile, loc=0.0, scale=1.0)
+    def approximate_quantile(self, progress, value,
+                             parameters=None, qmin=0.0, qmax=1.0,
+                             recursion_depth=3, steps_per_level=10):
+
+        # Get parameters and avoid re-computation
+        if parameters is None:
+            lmbda, mu, sigma, yoffset = self.get_parameters(progress)
+        else:
+            lmbda, mu, sigma, yoffset = parameters
+
+        # Get step and maximal quantile
+        step = (qmax - qmin) / steps_per_level
+        quantile = qmax
+        for q in np.arange(qmin + step, qmax, step):
+            std = stats.norm.ppf(q, loc=0.0, scale=1.0)
             qvalue = self.__yeojohnson_quantile(lmbda, mu, sigma, std) - yoffset
             if qvalue > value:
-                return quantile
-        return 1.0 - step
+                quantile = q
+                break
+
+        # Return value or perform next recursion step
+        if recursion_depth == 0:
+            return quantile
+        else:
+            return self.approximate_quantile(progress, value,
+                                             parameters=(lmbda, mu, sigma, yoffset),
+                                             qmin=quantile - step, qmax=quantile,
+                                             recursion_depth=recursion_depth - 1,
+                                             steps_per_level=steps_per_level)
 
     ############################################################################
     #
@@ -178,7 +199,6 @@ class ProgressionModel(object):
     #
     ############################################################################
     def get_value_at_quantile(self, progress, quantile):
-        from scipy import stats
         std = stats.norm.ppf(quantile, loc=0.0, scale=1.0)
         lmbda, mu, sigma, yoffset = self.get_parameters(progress)
         value = self.__yeojohnson_quantile(lmbda, mu, sigma, std) - yoffset
