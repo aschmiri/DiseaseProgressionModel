@@ -164,7 +164,7 @@ def plot_errors_sampling(args, biomarkers, errors, num_samples):
     fig, ax = plt.subplots(figsize=(8, 5))
     pt.setup_axes(plt, ax, xgrid=False)
 
-    ax.set_title('Influence of the sampling strategy')
+    ax.set_title('Influence of the sampling strategy on DP estimation')
     ax.set_ylabel('Mean progress estimation error')
     ax.set_xticklabels([])
 
@@ -234,7 +234,7 @@ def plot_errors_data(args, errors, biomarker_sets, viscode_sets):
     fig, ax = plt.subplots(figsize=(8, 5))
     pt.setup_axes(plt, ax, xgrid=False)
 
-    ax.set_title('DPI estimation using different biomarker settings')
+    ax.set_title('DP estimation using different biomarker settings')
     ax.set_ylabel('Mean progress estimation error')
     ax.set_xticklabels([])
     biomarker_strings = {'synth_hipp': '$\mathcal{M}^{HV}$',

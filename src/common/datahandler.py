@@ -10,6 +10,7 @@ import datetime
 import csv
 import ConfigParser
 import numpy as np
+import scipy.stats as stats
 from common import log as log
 from common.synthmodel import SynthModel
 
@@ -236,7 +237,7 @@ class DataHandler(object):
     @classmethod
     def get_biomarker_unit(cls, biomarker):
         """ Get the right unit for the given biomarker, mainly required for plotting. """
-        return cls._conf.biomarker_unit[cls._get_method_for_biomarker(biomarker)]
+        return cls._conf.biomarker_units[cls._get_method_for_biomarker(biomarker)]
 
     ############################################################################
     #
@@ -561,11 +562,13 @@ class ClinicalDataHandler(DataHandler):
                 viscodes = []
                 vals = []
                 ages = []
+                diagnoses = []
                 for rid, visits in values.items():
                     for viscode in visits:
                         # Get age
                         try:
                             age = metadata[rid][viscode]['AGE.scan']
+                            diagnosis = metadata[rid][viscode]['DX.scan']
                         except KeyError:
                             age = None
 
@@ -576,9 +579,10 @@ class ClinicalDataHandler(DataHandler):
                                 vals.append(value)
                                 rids.append(rid)
                                 viscodes.append(viscode)
+                                diagnoses.append(diagnosis)
 
                 if len(ages) > 1:
-                    regressed_values = self._age_regression(ages, vals)
+                    regressed_values = self._age_regression(ages, vals, viscodes, diagnoses)
 
                     for rid, viscode, value in zip(rids, viscodes, regressed_values):
                         values[rid][viscode].update({biomarker: value})
@@ -590,17 +594,23 @@ class ClinicalDataHandler(DataHandler):
     # _age_regression()
     #
     ############################################################################
-    @staticmethod
-    def _age_regression(timepoints, values):
+    def _age_regression(self, timepoints, values, viscodes, diagnoses):
         """ Perform age regression. """
+        # Cast input lists to numpy arrays
         timepoints = np.array(timepoints)
         values = np.array(values)
-        mean_val = np.mean(values)
+        diagnoses = np.array(diagnoses)
+        viscodes = np.array(viscodes)
 
-        import scipy.stats as stats
-        slope, intercept, _, _, _ = stats.linregress(timepoints, values)
-        values = values - (timepoints * slope + intercept) + mean_val
+        # Compute linear regression model based on baseline values of CN subjects
+        cn_indices = np.where((diagnoses == self._diagnosis_code['CN']) & (viscodes == 'bl'))
+        cn_timepoints = timepoints[cn_indices]
+        cn_values = values[cn_indices]
+        cn_mean = np.mean(cn_values)
+        slope, intercept, _, _, _ = stats.linregress(cn_timepoints, cn_values)
 
+        # Transform values with progression line
+        values = values - (timepoints * slope + intercept) + cn_mean
         return values
 
     ############################################################################

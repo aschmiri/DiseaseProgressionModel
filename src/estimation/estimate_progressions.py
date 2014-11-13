@@ -75,16 +75,19 @@ def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
     # Draw annotations
     dpis = np.array(dpis)
     diagnoses = np.array(diagnoses)
-    means = []
-    stds = []
+    medians = []
+    q25 = []
+    q75 = []
     for diag in [0.0, 0.25, 0.75, 1.0]:
         row = diagnosis_indices[diag]
         num_subjects = np.sum(matrix[row])
         matrix[row] /= num_subjects
 
         indices = np.where(diagnoses == diag)
-        means.append((np.mean(dpis[indices]) - ModelFitter.TEST_DPI_MIN) / dpi_range * args.plot_steps)
-        stds.append(np.std(dpis[indices]) / dpi_range * args.plot_steps)
+        median = np.median(dpis[indices])
+        medians.append((median - ModelFitter.TEST_DPI_MIN) / dpi_range * args.plot_steps)
+        q25.append((median - np.percentile(dpis[indices], 25.0)) / dpi_range * args.plot_steps)
+        q75.append((np.percentile(dpis[indices], 75.0) - median) / dpi_range * args.plot_steps)
 
     if args.plot_lines:
         ax.set_ylim(-0.01, 0.36)
@@ -101,8 +104,8 @@ def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
 
         cmap = plt.get_cmap('jet') if args.plot_cmap_jet else plt.get_cmap('Greys')
         barcol = 'w' if args.plot_cmap_jet else 'r'
-        plt.errorbar(means, [0, 1, 2, 3], xerr=stds, fmt=None, ecolor=barcol, elinewidth=2, capsize=4, capthick=2)
-        plt.plot(means, [0, 1, 2, 3], linestyle='', color=barcol, marker='|', markersize=15, markeredgewidth=2)
+        plt.errorbar(medians, [0, 1, 2, 3], xerr=[q25, q75], fmt=None, ecolor=barcol, elinewidth=2, capsize=4, capthick=2)
+        plt.plot(medians, [0, 1, 2, 3], linestyle='', color=barcol, marker='|', markersize=15, markeredgewidth=2)
         plt.imshow(matrix, cmap=cmap, interpolation='nearest')
     plt.axvline((mean_min - ModelFitter.TEST_DPI_MIN) / dpi_range * args.plot_steps, color='k', linestyle=':', alpha=0.6)
     plt.axvline((mean_max - ModelFitter.TEST_DPI_MIN) / dpi_range * args.plot_steps, color='k', linestyle=':', alpha=0.6)
@@ -125,7 +128,7 @@ def plot_dpi_dpr_distribution(args, dpis, dprs, diagnoses):
     pt.setup_axes(plt, ax)
 
     biomarkers_str = args.method if args.biomarkers is None else ', '.join(args.biomarkers)
-    ax.set_title('DPI estimation using {0} at {1}'.format(biomarkers_str, ', '.join(args.visits)))
+    ax.set_title('DP estimation using {0} at {1}'.format(biomarkers_str, ', '.join(args.visits)))
     ax.set_xlabel('DP')
     ax.set_ylabel('DPR')
 
