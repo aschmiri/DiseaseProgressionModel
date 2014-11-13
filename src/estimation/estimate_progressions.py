@@ -3,8 +3,11 @@ import os.path
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.cm as cmx
+import matplotlib.colors as colors
 from common import log as log
 from common import evaluation_tools as et
+from common import plotting_tools as pt
 from common.datahandler import DataHandler
 from common.modelfitter import ModelFitter
 
@@ -17,9 +20,13 @@ def main():
     parser.add_argument('--consistent_data', action='store_true', help='us only subjects with bl, m12 and m24 visits')
     parser.add_argument('--estimate_dprs', action='store_true', help='recompute the dpis estimations')
     parser.add_argument('--recompute_estimates', action='store_true', help='recompute the dpis estimations')
+    parser.add_argument('--no_analysis', action='store_true', help='do not perform analysis')
     parser.add_argument('--no_plot', action='store_true', help='do not plot the results')
+    parser.add_argument('--plot_distribution', action='store_true', help='plot the DP/DPR distribution')
+    parser.add_argument('--plot_lines', action='store_true', help='plot graphs instead of matrix')
     parser.add_argument('--plot_steps', type=int, default=15, help='number of steps for the DPI scale')
     parser.add_argument('--plot_file', type=str, default=None, help='filename of the output file')
+    parser.add_argument('--plot_cmap_jet', action='store_true', help='use the colour map jet')
     parser.add_argument('--latex_file', type=str, default=None, help='add output to a LaTeX file')
     args = parser.parse_args()
 
@@ -31,7 +38,10 @@ def main():
                                                                              consistent_data=args.consistent_data)
     if not args.no_plot:
         plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max)
-    analyse_dpi_estimates(args, dpis, dprs, diagnoses)
+    if args.plot_distribution and args.estimate_dprs:
+        plot_dpi_dpr_distribution(args, dpis, dprs, diagnoses)
+    if not args.no_analysis:
+        analyse_dpi_estimates(args, dpis, dprs, diagnoses)
 
 
 def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
@@ -41,16 +51,14 @@ def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
     # Setup plot
     fig, ax = plt.subplots(figsize=(6, 2))
     biomarkers_str = args.method if args.biomarkers is None else ', '.join(args.biomarkers)
-    ax.set_title('DPI estimation using {0} at {1}'.format(biomarkers_str, ', '.join(args.visits)))
-    ax.set_xlabel('DPI')
+    ax.set_title('DP estimation using {0} at {1}'.format(biomarkers_str, ', '.join(args.visits)))
+    ax.set_xlabel('DP')
     ax.spines['left'].set_position(('outward', 10))
     ax.spines['bottom'].set_position(('outward', 10))
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.yaxis.set_ticks_position('left')
     ax.xaxis.set_ticks_position('bottom')
-    ax.set_yticks([0, 1, 2, 3])
-    ax.set_yticklabels(['CN', 'EMCI', 'LMCI', 'AD'])
 
     xticks = np.linspace(0, args.plot_steps, 7)
     ax.set_xticks(xticks)
@@ -77,14 +85,53 @@ def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
         indices = np.where(diagnoses == diag)
         means.append((np.mean(dpis[indices]) - ModelFitter.TEST_DPI_MIN) / dpi_range * args.plot_steps)
         stds.append(np.std(dpis[indices]) / dpi_range * args.plot_steps)
-        # ax.text(args.plot_steps + 1, i, '$n={0}$'.format(int(num_subjects)))
 
-    plt.errorbar(means, [0, 1, 2, 3], xerr=stds, fmt=None, ecolor='r', elinewidth=2, capsize=4, capthick=2)
-    plt.plot(means, [0, 1, 2, 3], linestyle='', color='r', marker='|', markersize=15, markeredgewidth=2)
+    if args.plot_lines:
+        ax.set_ylim(-0.01, 0.36)
+
+        sample_cmap = cmx.ScalarMappable(
+            norm=colors.Normalize(0.0, 1.0),
+            cmap=plt.get_cmap(pt.progression_cmap))
+        for diag in [0.0, 0.25, 0.75, 1.0]:
+            row = diagnosis_indices[diag]
+            plt.plot(matrix[row], color=sample_cmap.to_rgba(diag))
+    else:
+        ax.set_yticks([0, 1, 2, 3])
+        ax.set_yticklabels(['CN', 'EMCI', 'LMCI', 'AD'])
+
+        cmap = plt.get_cmap('jet') if args.plot_cmap_jet else plt.get_cmap('Greys')
+        barcol = 'w' if args.plot_cmap_jet else 'r'
+        plt.errorbar(means, [0, 1, 2, 3], xerr=stds, fmt=None, ecolor=barcol, elinewidth=2, capsize=4, capthick=2)
+        plt.plot(means, [0, 1, 2, 3], linestyle='', color=barcol, marker='|', markersize=15, markeredgewidth=2)
+        plt.imshow(matrix, cmap=cmap, interpolation='nearest')
     plt.axvline((mean_min - ModelFitter.TEST_DPI_MIN) / dpi_range * args.plot_steps, color='k', linestyle=':', alpha=0.6)
     plt.axvline((mean_max - ModelFitter.TEST_DPI_MIN) / dpi_range * args.plot_steps, color='k', linestyle=':', alpha=0.6)
     plt.axvline(-ModelFitter.TEST_DPI_MIN / dpi_range * args.plot_steps, color='k', linestyle='-', alpha=0.6)
-    plt.imshow(matrix, cmap=plt.get_cmap('Greys'), interpolation='nearest')
+
+    # Draw or save the plot
+    plt.tight_layout()
+    if args.plot_file is not None:
+        plt.savefig(args.plot_file, transparent=True)
+    else:
+        plt.show()
+    plt.close(fig)
+
+
+def plot_dpi_dpr_distribution(args, dpis, dprs, diagnoses):
+    print log.INFO, 'Plotting estimate distributions...'
+
+    # Setup plot
+    fig, ax = plt.subplots()
+    pt.setup_axes(plt, ax)
+
+    biomarkers_str = args.method if args.biomarkers is None else ', '.join(args.biomarkers)
+    ax.set_title('DPI estimation using {0} at {1}'.format(biomarkers_str, ', '.join(args.visits)))
+    ax.set_xlabel('DP')
+    ax.set_ylabel('DPR')
+
+    plt.scatter(dpis, dprs, c=diagnoses, edgecolor='none', s=25.0,
+                vmin=0.0, vmax=1.0, cmap=pt.progression_cmap,
+                alpha=0.5)
 
     # Draw or save the plot
     plt.tight_layout()

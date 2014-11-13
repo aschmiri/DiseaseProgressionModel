@@ -9,12 +9,16 @@ progression_dict = {
 progression_cmap = mpl.colors.LinearSegmentedColormap('my_colormap', progression_dict)
 
 
-def setup_axes(plt, ax, xgrid=True, ygrid=True):
+def setup_axes(plt, ax, xgrid=True, ygrid=True, xspine=True, yspine=False):
     assert isinstance(ax, mpl.axes.Axes)
 
-    ax.spines['right'].set_color('none')
     ax.spines['top'].set_color('none')
-    ax.spines['left'].set_color('none')
+    ax.spines['right'].set_color('none')
+    if not xspine:
+        ax.spines['bottom'].set_color('none')
+    if not yspine:
+        ax.spines['left'].set_color('none')
+
     if xgrid:
         ax.xaxis.grid(True, linestyle=':', which='major', color='grey', alpha=0.5)
     if ygrid:

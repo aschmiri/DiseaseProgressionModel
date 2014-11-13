@@ -30,7 +30,7 @@ def main():
     parser.add_argument('--plot_errors', action='store_true', default=False, help='plot the errors')
     parser.add_argument('--plot_synth_model', action='store_true', default=False, help='plot density distributions for synthetic data')
     parser.add_argument('--plot_quantile_label', action='store_true', default=False, help='plot labels on the quantile curces')
-    parser.add_argument('--save_file', action='store_true', default=False, help='save the plots with a default filename')
+    parser.add_argument('--save_plots', action='store_true', default=False, help='save the plots with a default filename')
     parser.add_argument('--plot_file', type=str, default=None, help='filename of the output file')
     args = parser.parse_args()
 
@@ -247,7 +247,7 @@ def plot_model(args, biomarker):
     # Draw or save the plot
     #
     plt.tight_layout()
-    if args.save_file or args.plot_file is not None:
+    if args.save_plots or args.plot_file is not None:
         if args.plot_file is not None:
             plot_filename = args.plot_file
         else:

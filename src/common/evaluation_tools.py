@@ -68,7 +68,8 @@ def get_progress_estimates(visits, biomarkers=None, method=None, recompute_estim
         consistent_measurements = data_handler.get_measurements_as_dict(visits=['bl', 'm12', 'm24'],
                                                                         biomarkers=all_biomarkers,
                                                                         select_test_set=True,
-                                                                        select_complete=True)
+                                                                        select_complete=True,
+                                                                        no_regression=True)
         consistent_rids = []
         consistent_diagnoses = []
         consistent_dpis = []

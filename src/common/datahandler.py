@@ -353,7 +353,7 @@ class ClinicalDataHandler(DataHandler):
     ############################################################################
     def get_measurements_as_dict(self, min_visits=0, visits=None, biomarkers=None,
                                  select_training_set=False, select_test_set=False,
-                                 select_complete=False):
+                                 select_complete=False, no_regression=False):
         """ Return all subjects measurements as a dictionary.
 
         Arguments:
@@ -381,7 +381,8 @@ class ClinicalDataHandler(DataHandler):
         # Read data from lists
         measurements = self._get_metadata_as_dict()
         measurements = self._update_measurements_with_biomarker_values(measurements,
-                                                                       biomarkers=biomarkers)
+                                                                       biomarkers=biomarkers,
+                                                                       no_regression=no_regression)
 
         # Select specific subset of data. this has to be done after age regression!
         if select_training_set:
@@ -474,7 +475,7 @@ class ClinicalDataHandler(DataHandler):
     # _update_measurements_with_biomarker_values()
     #
     ############################################################################
-    def _update_measurements_with_biomarker_values(self, measurements, biomarkers=None):
+    def _update_measurements_with_biomarker_values(self, measurements, biomarkers=None, no_regression=False):
         """ Update the metadata dictionary with the biomarker values.
 
         :param dict metadata: the meta data
@@ -482,7 +483,7 @@ class ClinicalDataHandler(DataHandler):
         :param bool no_regression: do not perform age regression
         """
         biomarkers = self.get_biomarker_names() if biomarkers is None else biomarkers
-        biomarker_values = self._get_biomarker_values_as_dict(measurements, biomarkers=biomarkers)
+        biomarker_values = self._get_biomarker_values_as_dict(measurements, biomarkers=biomarkers, no_regression=no_regression)
 
         # Update metadata with feature values
         for rid in measurements:
@@ -502,7 +503,7 @@ class ClinicalDataHandler(DataHandler):
     # _get_biomarker_values_as_dict()
     #
     ############################################################################
-    def _get_biomarker_values_as_dict(self, metadata, biomarkers=None):
+    def _get_biomarker_values_as_dict(self, metadata, biomarkers=None, no_regression=False):
         """ Return all measurements as a dictionary.
 
         :param dict metadata: the meta data
@@ -548,13 +549,13 @@ class ClinicalDataHandler(DataHandler):
                         # Get value
                         value = self.safe_cast(row[biomarker])
 
-                        if age_regression:
+                        if age_regression and not no_regression:
                             values[rid][viscode].update({no_regression_str.format(biomarker): value})
                         else:
                             values[rid][viscode].update({biomarker: value})
 
         for biomarker in biomarkers:
-            if self._conf.age_regression[self._get_method_for_biomarker(biomarker)]:
+            if not no_regression and self._conf.age_regression[self._get_method_for_biomarker(biomarker)]:
                 print log.INFO, 'Performing age regression for {0}...'.format(biomarker)
                 rids = []
                 viscodes = []
