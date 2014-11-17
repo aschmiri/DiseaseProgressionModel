@@ -65,6 +65,7 @@ def get_progress_estimates(visits, biomarkers=None, method=None, recompute_estim
     # Reduce to consistent data sets with bl, m12 and m24 samples
     if consistent_data:
         all_biomarkers = DataHandler.get_all_biomarker_names()
+        data_handler = DataHandler.get_data_handler()
         consistent_measurements = data_handler.get_measurements_as_dict(visits=['bl', 'm12', 'm24'],
                                                                         biomarkers=all_biomarkers,
                                                                         select_test_set=True,
@@ -180,10 +181,10 @@ def get_biomarker_predictions(visits, predict_biomarker, biomarkers=None, method
     if os.path.isfile(prediction_file) and not recompute_predictions:
         # Read biomarker predictions from file
         print log.INFO, 'Reading {0} predictions from {1}...'.format(predict_biomarker, prediction_file)
-        (diagnoses, values_observed, values_naive, values_model) = pickle.load(open(prediction_file, 'rb'))
+        (rids, diagnoses, values_observed, values_naive, values_model) = pickle.load(open(prediction_file, 'rb'))
     else:
-        next_visit = get_predicted_visit(visits)
-        print log.INFO, 'Predicting {0} at {1}...'.format(predict_biomarker, next_visit)
+        predict_visit = get_predicted_visit(visits)
+        print log.INFO, 'Predicting {0} at {1}...'.format(predict_biomarker, predict_visit)
 
         # Get mean changes from file
         mean_changes_file = os.path.join(DataHandler.get_eval_folder(), 'mean_changes.p')
@@ -192,32 +193,33 @@ def get_biomarker_predictions(visits, predict_biomarker, biomarkers=None, method
         mean_changes = pickle.load(open(mean_changes_file, 'rb'))
 
         # Get DPI estimates
-        rids, diagnoses_all, dpis, dprs, _, _ = get_progress_estimates(visits,
-                                                                       biomarkers=biomarkers,
-                                                                       method=method,
-                                                                       recompute_estimates=recompute_estimates,
-                                                                       estimate_dprs=estimate_dprs,
-                                                                       consistent_data=consistent_data)
+        rids_all, diagnoses_all, dpis, dprs, _, _ = get_progress_estimates(visits,
+                                                                           biomarkers=biomarkers,
+                                                                           method=method,
+                                                                           recompute_estimates=recompute_estimates,
+                                                                           estimate_dprs=estimate_dprs,
+                                                                           consistent_data=consistent_data)
 
-        # Collect MMSE data for test
+        # Collect biomarker data for test
         data_handler = DataHandler.get_data_handler()
-        measurements = data_handler.get_measurements_as_dict(visits=['bl', 'm12', 'm24', 'm36'],
+        measurements = data_handler.get_measurements_as_dict(visits=visits + [predict_visit],
                                                              biomarkers=[predict_biomarker],
                                                              select_complete=True)
         model = ProgressionModel(predict_biomarker, DataHandler.get_model_file(predict_biomarker))
 
-        print log.INFO, 'Predicting {0} for {1}'.format(predict_biomarker, next_visit)
+        print log.INFO, 'Predicting {0} for {1}'.format(predict_biomarker, predict_visit)
+        rids = []
+        diagnoses = []
         values_observed = []
         values_model = []
         values_naive = []
-        diagnoses = []
-        for diagnosis, rid, dpi, dpr in zip(diagnoses_all, rids, dpis, dprs):
+        for rid, diagnosis, dpi, dpr in zip(rids_all, diagnoses_all, dpis, dprs):
             if rid in measurements:
                 # Get real biomarker value value at next visit
                 scantime_first_visit = measurements[rid][visits[0]]['scantime']
-                scantime_next_visit = measurements[rid][next_visit]['scantime']
+                scantime_next_visit = measurements[rid][predict_visit]['scantime']
                 progress_next_visit = ModelFitter.scantime_to_progress(scantime_next_visit, scantime_first_visit, dpi, dpr)
-                value_observed = measurements[rid][next_visit][predict_biomarker]
+                value_observed = measurements[rid][predict_visit][predict_biomarker]
                 values_observed.append(value_observed)
 
                 # Predict biomarker value value at next visit
@@ -256,10 +258,11 @@ def get_biomarker_predictions(visits, predict_biomarker, biomarkers=None, method
                         y[i] = measurements[rid][visit][predict_biomarker]
                     intercept = -np.sum(mean_change * x - y) / len(x)
 
-                value_naive = intercept + mean_change * measurements[rid][next_visit]['scantime']
+                value_naive = intercept + mean_change * measurements[rid][predict_visit]['scantime']
                 values_naive.append(value_naive)
 
-                # Append diagnosis
+                # Append rid and diagnosis
+                rids.append(rid)
                 diagnoses.append(diagnosis)
 
                 # Print result
@@ -267,8 +270,9 @@ def get_biomarker_predictions(visits, predict_biomarker, biomarkers=None, method
 
         # Save results
         print log.INFO, 'Saving {0} predictions to {1}...'.format(predict_biomarker, prediction_file)
-        pickle.dump((diagnoses, values_observed, values_naive, values_model), open(prediction_file, 'wb'))
+        pickle.dump((rids, diagnoses, values_observed, values_naive, values_model), open(prediction_file, 'wb'))
 
+    rids = np.array(rids)
     diagnoses = np.array(diagnoses)
     values_observed = np.array(values_observed)
     values_naive = np.array(values_naive)
@@ -277,12 +281,13 @@ def get_biomarker_predictions(visits, predict_biomarker, biomarkers=None, method
     # Exclude healthy subjects
     if exclude_cn:
         indices = np.where(diagnoses != 0.0)
+        rids = rids[indices]
         diagnoses = diagnoses[indices]
         values_observed = values_observed[indices]
         values_naive = values_naive[indices]
         values_model = values_model[indices]
 
-    return diagnoses, values_observed, values_naive, values_model
+    return rids, diagnoses, values_observed, values_naive, values_model
 
 
 def get_predicted_visit(visits):

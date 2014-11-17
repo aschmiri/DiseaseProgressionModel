@@ -80,8 +80,7 @@ def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
     q75 = []
     for diag in [0.0, 0.25, 0.75, 1.0]:
         row = diagnosis_indices[diag]
-        num_subjects = np.sum(matrix[row])
-        matrix[row] /= num_subjects
+        matrix[row] /= np.sum(matrix[row])
 
         indices = np.where(diagnoses == diag)
         median = np.median(dpis[indices])

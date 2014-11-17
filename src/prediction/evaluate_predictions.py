@@ -12,6 +12,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', '--biomarkers', nargs='+', default=None, help='name of the biomarker to be plotted')
     parser.add_argument('-p', '--predict_biomarker', type=str, default='MMSE', help='the biomarker to predict')
+    parser.add_argument('--recompute_estimates', action='store_true', help='recompute the dpi / dpr estimations')
+    parser.add_argument('--recompute_predictions', action='store_true', help='recompute the biomarker predictions')
     parser.add_argument('--plot_file', type=str, default=None, help='filename of the output file')
     args = parser.parse_args()
 
@@ -20,18 +22,24 @@ def main():
     values = {}
     for method in methods:
         values.update({method: {}})
-        _, values_observed, values_naive, values_model = \
-            et.get_biomarker_predictions(visits, args.predict_biomarker,
-                                         method=method, estimate_dprs=False,
-                                         exclude_cn=True, consistent_data=True)
+        _, _, values_observed, values_naive, values_model = \
+            et.get_biomarker_predictions(visits, args.predict_biomarker, method=method,
+                                         recompute_estimates=args.recompute_estimates,
+                                         recompute_predictions=args.recompute_predictions,
+                                         estimate_dprs=False,
+                                         exclude_cn=True,
+                                         consistent_data=True)
         values[method].update({'observed': values_observed})
         values[method].update({'naive': values_naive})
         values[method].update({'model_dpi': values_model})
 
-        _, values_observed, values_naive, values_model = \
-            et.get_biomarker_predictions(visits, args.predict_biomarker,
-                                         method=method, estimate_dprs=True,
-                                         exclude_cn=True, consistent_data=True)
+        _, _, values_observed, values_naive, values_model = \
+            et.get_biomarker_predictions(visits, args.predict_biomarker, method=method,
+                                         recompute_estimates=args.recompute_estimates,
+                                         recompute_predictions=args.recompute_predictions,
+                                         estimate_dprs=True,
+                                         exclude_cn=True,
+                                         consistent_data=True)
         values[method].update({'model_dpi_dpr': values_model})
 
     plot_errors(args, values, methods)

@@ -29,7 +29,7 @@ def main():
     parser.add_argument('--latex_file', type=str, default=None, help='add output to a LaTeX file')
     args = parser.parse_args()
 
-    diagnoses, values_observed, values_naive, values_model = \
+    _, diagnoses, values_observed, values_naive, values_model = \
         et.get_biomarker_predictions(args.visits, args.predict_biomarker,
                                      method=args.method, biomarkers=args.biomarkers,
                                      recompute_estimates=args.recompute_estimates,

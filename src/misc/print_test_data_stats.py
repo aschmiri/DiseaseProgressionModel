@@ -1,21 +1,20 @@
 #! /usr/bin/env python2.7
 from common import log as log
-from vgam.datahandler import DataHandler
-from common import adni_tools as adni
+from common.datahandler import DataHandler
 import os.path
 
 
 def main():
-
     data_handler = DataHandler.get_data_handler()
+    biomarkers = DataHandler.get_all_biomarker_names()
     measurements = data_handler.get_measurements_as_dict(visits=['bl', 'm12', 'm24'],
-                                                         biomarkers=adni.biomarker_names,
+                                                         biomarkers=biomarkers,
                                                          select_test_set=True,
                                                          select_complete=True)
 
     # Setup DB
     import rpy2.robjects as robjects
-    robjects.r['load'](os.path.join(adni.merge_folder, 'data/adnimerge.rdata'))
+    robjects.r['load'](os.path.join('/vol/medic01/users/aschmidt/projects/Data/ADNI/ADNIMERGE', 'data/adnimerge.rdata'))
     adnimerge = robjects.r['adnimerge']
 
     # Print each row

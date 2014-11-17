@@ -549,11 +549,11 @@ class ClinicalDataHandler(DataHandler):
 
                         # Get value
                         value = self.safe_cast(row[biomarker])
-
-                        if age_regression and not no_regression:
-                            values[rid][viscode].update({no_regression_str.format(biomarker): value})
-                        else:
-                            values[rid][viscode].update({biomarker: value})
+                        if value is not None:
+                            if age_regression and not no_regression:
+                                values[rid][viscode].update({no_regression_str.format(biomarker): value})
+                            else:
+                                values[rid][viscode].update({biomarker: value})
 
         for biomarker in biomarkers:
             if not no_regression and self._conf.age_regression[self._get_method_for_biomarker(biomarker)]:
