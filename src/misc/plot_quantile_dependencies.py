@@ -15,11 +15,14 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--method', choices=DataHandler.get_method_choices(), default='all', help='the method to collect data for')
     parser.add_argument('-b', '--biomarkers', nargs='+', default=None, help='name of the biomarker to be plotted')
+    parser.add_argument('-p', '--phase', default=None, choices=DataHandler.get_phase_choices(), help='the phase for which the model is to be trained')
     parser.add_argument('--save_plots', action='store_true', default=False, help='save the plots with a default filename')
     args = parser.parse_args()
 
     # Collect data for test
-    data_handler = DataHandler.get_data_handler(method=args.method, biomarkers=args.biomarkers)
+    data_handler = DataHandler.get_data_handler(method=args.method,
+                                                biomarkers=args.biomarkers,
+                                                phase=args.phase)
     biomarkers = data_handler.get_biomarker_names()
     measurements = data_handler.get_measurements_as_dict(visits=['bl', 'm12'],
                                                          biomarkers=biomarkers,
@@ -27,12 +30,12 @@ def main():
                                                          select_complete=True)
 
     # Setup plotting folder
-    eval_folder = DataHandler.make_dir(DataHandler.get_eval_folder(), 'quants')
+    eval_folder = DataHandler.make_dir(data_handler.get_eval_folder(), 'quants')
 
     # Process all biomarkers
     for biomarker in biomarkers:
         print log.INFO, 'Generating quantile correlation plot for {0}...'.format(biomarker)
-        model_file = DataHandler.get_model_file(biomarker)
+        model_file = data_handler.get_model_file(biomarker)
         pm = ProgressionModel(biomarker, model_file)
 
         q_file = os.path.join(eval_folder, '{0}.p'.format(biomarker))

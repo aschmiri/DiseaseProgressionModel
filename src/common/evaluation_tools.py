@@ -12,8 +12,16 @@ from common.modelfitter import ModelFitter
 # ------------------------------------------------------------------------------
 #  Progression estimation
 # ------------------------------------------------------------------------------
-def get_progress_estimates(visits, biomarkers=None, method=None, recompute_estimates=False,
+def get_progress_estimates(visits,
+                           method=None, biomarkers=None, phase=None,
+                           recompute_estimates=False,
                            estimate_dprs=False, consistent_data=False):
+    # Get data handler and biomarker names
+    data_handler = DataHandler.get_data_handler(method=method,
+                                                biomarkers=biomarkers,
+                                                phase=phase)
+    biomarkers = data_handler.get_biomarker_names()
+
     # Get filename
     estimates_file_trunk = 'estimate_dpi_dpr_with_{0}_{1}.p' if estimate_dprs else 'estimate_dpi_with_{0}_{1}.p'
     if biomarkers is None:
@@ -21,11 +29,7 @@ def get_progress_estimates(visits, biomarkers=None, method=None, recompute_estim
     else:
         biomarkers_string = '_'.join(biomarkers).replace(' ', '_')
         estimates_file_basename = estimates_file_trunk.format(biomarkers_string, '_'.join(visits))
-    estimates_file = os.path.join(DataHandler.get_eval_folder(), estimates_file_basename)
-
-    # Get data handler and biomarker names
-    data_handler = DataHandler.get_data_handler(method=method, biomarkers=biomarkers)
-    biomarkers = data_handler.get_biomarker_names()
+    estimates_file = os.path.join(data_handler.get_eval_folder(), estimates_file_basename)
 
     # Read if estimates exist, else recompute
     if os.path.isfile(estimates_file) and not recompute_estimates:
@@ -42,7 +46,7 @@ def get_progress_estimates(visits, biomarkers=None, method=None, recompute_estim
         # Setup model
         model = MultiBiomarkerProgressionModel()
         for biomarker in biomarkers:
-            model_file = DataHandler.get_model_file(biomarker)
+            model_file = data_handler.get_model_file(biomarker)
             model.add_model(biomarker, model_file)
         fitter = ModelFitter(model)
 
@@ -65,12 +69,13 @@ def get_progress_estimates(visits, biomarkers=None, method=None, recompute_estim
     # Reduce to consistent data sets with bl, m12 and m24 samples
     if consistent_data:
         all_biomarkers = DataHandler.get_all_biomarker_names()
-        data_handler = DataHandler.get_data_handler()
-        consistent_measurements = data_handler.get_measurements_as_dict(visits=['bl', 'm12', 'm24'],
-                                                                        biomarkers=all_biomarkers,
-                                                                        select_test_set=True,
-                                                                        select_complete=True,
-                                                                        no_regression=True)
+        consistent_data_handler = DataHandler.get_data_handler()
+        consistent_measurements = consistent_data_handler.get_measurements_as_dict(
+            visits=['bl', 'm12', 'm24'],
+            biomarkers=all_biomarkers,
+            select_test_set=True,
+            select_complete=True,
+            no_regression=True)
         consistent_rids = []
         consistent_diagnoses = []
         consistent_dpis = []
@@ -157,12 +162,16 @@ def estimate_dpis_dprs(measurements, viscodes, fitter):
 # ------------------------------------------------------------------------------
 #  Biomarker predictions
 # ------------------------------------------------------------------------------
-def get_biomarker_predictions(visits, predict_biomarker, biomarkers=None, method=None,
+def get_biomarker_predictions(visits, predict_biomarker,
+                              method=None, biomarkers=None, phase=None,
                               recompute_estimates=False, recompute_predictions=False,
                               estimate_dprs=False, consistent_data=False, exclude_cn=False,
                               use_last_visit=False, naive_use_diagnosis=False):
 
     # Get prediction file
+    data_handler = DataHandler.get_data_handler(method=method,
+                                                biomarkers=biomarkers,
+                                                phase=phase)
     predict_biomarker_str = predict_biomarker.replace(' ', '_')
     predict_file_trunk = 'predict_{0}_with_dpr_{1}_{2}{3}.p' if estimate_dprs else 'predict_{0}_with_{1}_{2}{3}.p'
     if biomarkers is None:
@@ -175,7 +184,7 @@ def get_biomarker_predictions(visits, predict_biomarker, biomarkers=None, method
                                                           estimate_biomarkers_string,
                                                           '_'.join(visits),
                                                           '_last' if use_last_visit else '')
-    prediction_file = os.path.join(DataHandler.get_eval_folder(), predict_file_basename)
+    prediction_file = os.path.join(data_handler.get_eval_folder(), predict_file_basename)
 
     # Read if predictions exist, else recompute
     if os.path.isfile(prediction_file) and not recompute_predictions:
@@ -187,25 +196,25 @@ def get_biomarker_predictions(visits, predict_biomarker, biomarkers=None, method
         print log.INFO, 'Predicting {0} at {1}...'.format(predict_biomarker, predict_visit)
 
         # Get mean changes from file
-        mean_changes_file = os.path.join(DataHandler.get_eval_folder(), 'mean_changes.p')
+        mean_changes_file = os.path.join(data_handler.get_eval_folder(), 'mean_changes.p')
         if not os.path.isfile(mean_changes_file):
             print log.ERROR, 'Mean changes unknown, run misc/compute_mean_biomarker_changes.py first!'
         mean_changes = pickle.load(open(mean_changes_file, 'rb'))
 
         # Get DPI estimates
         rids_all, diagnoses_all, dpis, dprs, _, _ = get_progress_estimates(visits,
-                                                                           biomarkers=biomarkers,
                                                                            method=method,
+                                                                           biomarkers=biomarkers,
+                                                                           phase=phase,
                                                                            recompute_estimates=recompute_estimates,
                                                                            estimate_dprs=estimate_dprs,
                                                                            consistent_data=consistent_data)
 
         # Collect biomarker data for test
-        data_handler = DataHandler.get_data_handler()
         measurements = data_handler.get_measurements_as_dict(visits=visits + [predict_visit],
                                                              biomarkers=[predict_biomarker],
                                                              select_complete=True)
-        model = ProgressionModel(predict_biomarker, DataHandler.get_model_file(predict_biomarker))
+        model = ProgressionModel(predict_biomarker, data_handler.get_model_file(predict_biomarker))
 
         print log.INFO, 'Predicting {0} for {1}'.format(predict_biomarker, predict_visit)
         rids = []

@@ -31,8 +31,10 @@ class DataHandler(object):
                     list_string = self.get(section, option)
                     return [e.strip() for e in list_string.split(',')]
 
+            config_path = os.path.dirname(os.path.relpath(__file__))
+            config_file = os.path.join(config_path, '..', 'configure.ini')
             config = ListConfigParser()
-            config.read('configure.ini')
+            config.read(config_file)
 
             self.project_folder = config.get('DEFAULT', 'project_folder')
             self.data_folder = config.get('DEFAULT', 'data_folder')
@@ -54,9 +56,6 @@ class DataHandler(object):
 
                 biomarker_names = config.getlist(biomarker_set, 'biomarker_names')
                 self.biomarker_names.update({biomarker_set: biomarker_names})
-
-                model_folder = os.path.join(self.models_folder, biomarker_set)
-                self.model_folders.update({biomarker_set: model_folder})
 
                 age_regression = config.get(biomarker_set, 'age_regression')
                 age_regression = True if age_regression in ['Yes', 'yes', 'True', 'true'] else False
@@ -102,11 +101,11 @@ class DataHandler(object):
     #
     ############################################################################
     @staticmethod
-    def get_data_handler(method=None, biomarkers=None):
+    def get_data_handler(method=None, biomarkers=None, phase=None):
         if method == 'synth':
             return SynthDataHandler(biomarkers=biomarkers)
         else:
-            return ClinicalDataHandler(method=method, biomarkers=biomarkers)
+            return ClinicalDataHandler(method=method, biomarkers=biomarkers, phase=phase)
 
     ############################################################################
     #
@@ -116,6 +115,15 @@ class DataHandler(object):
     @classmethod
     def get_method_choices(cls):
         return cls._conf.biomarker_names.keys()
+
+    ############################################################################
+    #
+    # get_method_choices()
+    #
+    ############################################################################
+    @classmethod
+    def get_phase_choices(cls):
+        return ['cn-mci', 'mci-ad', 'joint']
 
     ############################################################################
     #
@@ -148,61 +156,45 @@ class DataHandler(object):
     # get_project_folder()
     #
     ############################################################################
-    @classmethod
-    def get_project_folder(cls):
+    def get_project_folder(self):
         """ Get the project folder."""
-        return cls.make_dir(cls._conf.project_folder)
+        return self.make_dir(self._conf.project_folder)
 
     ############################################################################
     #
     # get_data_folder()
     #
     ############################################################################
-    @classmethod
-    def get_data_folder(cls):
+    def get_data_folder(self):
         """ Get the data folder."""
-        return cls.make_dir(cls._conf.data_folder)
-
-    ############################################################################
-    #
-    # get_methods_folder()
-    #
-    ############################################################################
-    @classmethod
-    def get_models_folder(cls):
-        """ Get the methods folder."""
-        return cls.make_dir(cls._conf.models_folder)
+        return self.make_dir(self._conf.data_folder)
 
     ############################################################################
     #
     # _get_model_folder_for()
     #
     ############################################################################
-    @classmethod
-    def get_model_folder(cls, biomarker):
-        """ Get the right data folders for the given biomarker. """
-        model_folder = cls._conf.model_folders[cls._get_method_for_biomarker(biomarker)]
-        return cls.make_dir(model_folder)
+    def get_model_folder(self, biomarker):
+        """ Get the right method folder for the given biomarker. """
+        return self.make_dir(self._conf.models_folder, self._get_method_for_biomarker(biomarker))
 
     ############################################################################
     #
     # get_eval_folder()
     #
     ############################################################################
-    @classmethod
-    def get_eval_folder(cls):
+    def get_eval_folder(self):
         """ Get the evaluation folder."""
-        return cls.make_dir(cls._conf.eval_folder)
+        return self.make_dir(self._conf.eval_folder)
 
     ############################################################################
     #
     # get_model_file()
     #
     ############################################################################
-    @classmethod
-    def get_model_file(cls, biomarker):
+    def get_model_file(self, biomarker):
         """ Get the right model file for the given biomarker. """
-        model_folder = cls.get_model_folder(biomarker)
+        model_folder = self.get_model_folder(biomarker)
         return os.path.join(model_folder, biomarker.replace(' ', '_') + '_model.csv')
 
     ############################################################################
@@ -210,34 +202,10 @@ class DataHandler(object):
     # get_samples_file()
     #
     ############################################################################
-    @classmethod
-    def get_samples_file(cls, biomarker):
+    def get_samples_file(self, biomarker):
         """ Get the right model file for the given biomarker. """
-        model_folder = cls.get_model_folder(biomarker)
+        model_folder = self.get_model_folder(biomarker)
         return os.path.join(model_folder, biomarker.replace(' ', '_') + '_samples.csv')
-
-    ############################################################################
-    #
-    # get_all_biomarker_names()
-    #
-    ############################################################################
-    @classmethod
-    def get_all_biomarker_names(cls):
-        """ Get the all biomarker names."""
-        biomarker_names = []
-        for biomarker_set in cls._conf.biomarker_sets:
-            biomarker_names += cls._conf.biomarker_names[biomarker_set]
-        return biomarker_names
-
-    ############################################################################
-    #
-    # get_biomarker_unit()
-    #
-    ############################################################################
-    @classmethod
-    def get_biomarker_unit(cls, biomarker):
-        """ Get the right unit for the given biomarker, mainly required for plotting. """
-        return cls._conf.biomarker_units[cls._get_method_for_biomarker(biomarker)]
 
     ############################################################################
     #
@@ -283,12 +251,37 @@ class DataHandler(object):
 
     ############################################################################
     #
+    # get_biomarker_unit()
+    #
+    ############################################################################
+    @classmethod
+    def get_biomarker_unit(cls, biomarker):
+        """ Get the right unit for the given biomarker, mainly required for plotting. """
+        return cls._conf.biomarker_units[cls._get_method_for_biomarker(biomarker)]
+
+    ############################################################################
+    #
+    # get_all_biomarker_names()
+    #
+    ############################################################################
+    @classmethod
+    def get_all_biomarker_names(cls):
+        """ Get the all biomarker names."""
+        biomarker_names = []
+        for biomarker_set in cls._conf.biomarker_sets:
+            biomarker_names += cls._conf.biomarker_names[biomarker_set]
+        return biomarker_names
+
+    ############################################################################
+    #
     # get_biomarker_names()
     #
     ############################################################################
-    def get_biomarker_names(self):
+    def get_biomarker_names(self, method=None):
         """ Get the right set of biomarkers for the current configuration."""
-        if self._biomarker_subset is not None:
+        if method is not None:
+            return self._conf.biomarker_names[method]
+        elif self._biomarker_subset is not None:
             return self._biomarker_subset
         else:
             return self._conf.biomarker_names[self._method]
@@ -332,7 +325,7 @@ class ClinicalDataHandler(DataHandler):
     # __init__()
     #
     ############################################################################
-    def __init__(self, method=None, biomarkers=None):
+    def __init__(self, method=None, biomarkers=None, phase=None):
         """
         Initialise the right data files for the given arguments.
 
@@ -346,6 +339,32 @@ class ClinicalDataHandler(DataHandler):
             self._method = 'all'
         else:
             self._method = method
+
+        if phase is None:
+            self._phase = 'mci-ad'
+        else:
+            self._phase = phase
+
+    ############################################################################
+    #
+    # get_model_folder()
+    #
+    ############################################################################
+    def get_model_folder(self, biomarker):
+        """ Get the right method folder for the given biomarker. """
+        return self.make_dir(self._conf.models_folder,
+                             self._phase,
+                             self._get_method_for_biomarker(biomarker))
+
+    ############################################################################
+    #
+    # get_eval_folder()
+    #
+    ############################################################################
+    def get_eval_folder(self):
+        """ Get the evaluation folder."""
+        return self.make_dir(self._conf.eval_folder,
+                             self._phase)
 
     ############################################################################
     #
@@ -685,8 +704,16 @@ class ClinicalDataHandler(DataHandler):
             data_diagnosis = data_diagnosis[args]
 
             # Select converters with MCI as first and AD as last diagnosis
-            # if data_diagnosis[-1] >= 0.25 and data_diagnosis[0] == 0.0:
-            if data_diagnosis[-1] == 1.0 and 0.25 <= data_diagnosis[0] <= 0.75:
+            if ((self._phase == 'cn-mci' and
+                 # self._diagnosis_is_cn(data_diagnosis[0]) and
+                 # self._diagnosis_is_mci(data_diagnosis[-1])) or
+                 data_diagnosis[0] == self._diagnosis_code['CN'] and
+                 data_diagnosis[-1] > self._diagnosis_code['CN']) or
+                (self._phase == 'mci-ad' and
+                 # self._diagnosis_is_mci(data_diagnosis[0]) and
+                 # self._diagnosis_is_ad(data_diagnosis[-1]))):
+                 data_diagnosis[0] < self._diagnosis_code['AD'] and
+                 data_diagnosis[-1] == self._diagnosis_code['AD'])):
                 # Mark as valid
                 valid_rids.append(rid)
 
@@ -694,8 +721,12 @@ class ClinicalDataHandler(DataHandler):
                 time_convert = None
                 scantime_prev = data_scantime[0]
                 for diagnosis, scantime in zip(data_diagnosis, data_scantime):
-                    # if diagnosis >= 0.25:
-                    if diagnosis == 1.0:
+                    if ((self._phase == 'cn-mci' and
+                         # self._diagnosis_is_mci(diagnosis)
+                         diagnosis > self._diagnosis_code['CN']) or
+                        (self._phase == 'mci-ad' and
+                         # self._diagnosis_is_af(diagnosis))):
+                         diagnosis == self._diagnosis_code['AD'])):
                         time_convert = scantime_prev + (scantime - scantime_prev) / 2
                         break
                     else:
@@ -706,10 +737,10 @@ class ClinicalDataHandler(DataHandler):
                     measurements[rid][viscode].update({'progress': scantime - time_convert})
 
         # Remove non-valid rids
-        metadata = {rid: value for rid, value in measurements.items() if rid in valid_rids}
+        measurements = {rid: value for rid, value in measurements.items() if rid in valid_rids}
 
         print log.RESULT, 'Selected {0} subjects.'.format(len(measurements))
-        return metadata
+        return measurements
 
     ############################################################################
     #
@@ -746,10 +777,10 @@ class ClinicalDataHandler(DataHandler):
                 valid_rids.append(rid)
 
         # Remove non-valid rids
-        metadata = {rid: value for rid, value in measurements.items() if rid in valid_rids}
+        measurements = {rid: value for rid, value in measurements.items() if rid in valid_rids}
 
         print log.RESULT, 'Selected {0} subjects.'.format(len(measurements))
-        return metadata
+        return measurements
 
     ############################################################################
     #
@@ -780,6 +811,30 @@ class ClinicalDataHandler(DataHandler):
         print log.RESULT, 'Selected {0} subjects.'.format(len(measurements))
         return measurements
 
+    ############################################################################
+    #
+    # _diagnosis_is_cn()
+    #
+    ############################################################################
+    def _diagnosis_is_cn(self, diagnosis):
+        return self._diagnosis_code['CN'] == diagnosis
+
+    ############################################################################
+    #
+    # _diagnosis_is_mci()
+    #
+    ############################################################################
+    def _diagnosis_is_mci(self, diagnosis):
+        return self._diagnosis_code['EMCI'] <= diagnosis <= self._diagnosis_code['LMCI']
+
+    ############################################################################
+    #
+    # _diagnosis_is_ad()
+    #
+    ############################################################################
+    def _diagnosis_is_ad(self, diagnosis):
+        return self._diagnosis_code['AD'] == diagnosis
+
 
 class SynthDataHandler(DataHandler):
     """
@@ -805,8 +860,7 @@ class SynthDataHandler(DataHandler):
     # get_model_file()
     #
     ############################################################################
-    @classmethod
-    def get_model_file(cls, biomarker, num_samples=None, sampling=None,
+    def get_model_file(self, biomarker, num_samples=None, sampling=None,
                        rate_sigma=None, conversion_sigma=None, run=None):
         """ Get the right model file for the given biomarker. """
         model_file = DataHandler.get_model_file(biomarker)
@@ -823,8 +877,7 @@ class SynthDataHandler(DataHandler):
     # get_samples_file()
     #
     ############################################################################
-    @classmethod
-    def get_samples_file(cls, biomarker, num_samples=None, sampling=None,
+    def get_samples_file(self, biomarker, num_samples=None, sampling=None,
                          rate_sigma=None, conversion_sigma=None, run=None):
         """ Get the right model file for the given biomarker. """
         samples_file = DataHandler.get_samples_file(biomarker)

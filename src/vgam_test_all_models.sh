@@ -19,7 +19,7 @@ do
   do
     for visits in  "bl" "bl m12" "bl m12 m24" "m12" "m24" "m12 m24"
     do
-      prediction/predict_biomarker_values.py ${visits} -m ${method} -p "${biomarker}" --consistent_data --exclude_cn --no_plot
+      prediction/predict_biomarker_values.py ${visits} -m ${method} --predict_biomarker "${biomarker}" --consistent_data --exclude_cn --no_plot
     done
   done
 done
@@ -38,7 +38,7 @@ do
   do
     for visits in "bl m12 m24" "bl m12" "m12 m24"
     do
-      prediction/predict_biomarker_values.py ${visits} -m ${method} -p "${biomarker}" --estimate_dpr --consistent_data --exclude_cn --no_plot
+      prediction/predict_biomarker_values.py ${visits} -m ${method} --predict_biomarker "${biomarker}" --estimate_dpr --consistent_data --exclude_cn --no_plot
     done
   done
 done

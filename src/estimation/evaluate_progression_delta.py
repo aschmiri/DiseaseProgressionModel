@@ -3,10 +3,12 @@ import argparse
 import numpy as np
 from common import log as log
 from common import evaluation_tools as et
+from common.datahandler import DataHandler
 
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--phase', default=None, choices=DataHandler.get_phase_choices(), help='the phase for which the model is to be trained')
     parser.add_argument('--consistent_data', action='store_true', help='us only subjects with bl, m12 and m24 visits')
     parser.add_argument('--estimate_dprs', action='store_true', help='estimate dpis and dprs')
     parser.add_argument('--recompute_estimates', action='store_true', help='recompute the dpi / dpr estimations')
@@ -19,7 +21,10 @@ def main():
     for method in methods:
         estimates.update({method: {}})
         for visits in [['bl'], ['m12'], ['m24'], ['bl', 'm12'], ['m12', 'm24']]:
-            _, diagnoses, dpis, _, _, _ = et.get_progress_estimates(visits, method=method, estimate_dprs=args.estimate_dprs)
+            _, diagnoses, dpis, _, _, _ = et.get_progress_estimates(visits,
+                                                                    method=method,
+                                                                    phase=args.phase,
+                                                                    estimate_dprs=args.estimate_dprs)
 
             diagnoses = np.array(diagnoses)
             dpis = np.array(dpis)

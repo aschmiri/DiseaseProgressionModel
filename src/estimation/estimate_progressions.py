@@ -17,6 +17,7 @@ def main():
     parser.add_argument('visits', nargs='+', type=str, help='the viscodes to be sampled')
     parser.add_argument('-m', '--method', choices=DataHandler.get_method_choices(), default='all', help='the method to collect data for')
     parser.add_argument('-b', '--biomarkers', nargs='+', default=None, help='name of the biomarker to be plotted')
+    parser.add_argument('-p', '--phase', default=None, choices=DataHandler.get_phase_choices(), help='the phase for which the model is to be trained')
     parser.add_argument('--consistent_data', action='store_true', help='us only subjects with bl, m12 and m24 visits')
     parser.add_argument('--estimate_dprs', action='store_true', help='recompute the dpis estimations')
     parser.add_argument('--recompute_estimates', action='store_true', help='recompute the dpis estimations')
@@ -31,8 +32,9 @@ def main():
     args = parser.parse_args()
 
     _, diagnoses, dpis, dprs, mean_min, mean_max = et.get_progress_estimates(args.visits,
-                                                                             biomarkers=args.biomarkers,
                                                                              method=args.method,
+                                                                             biomarkers=args.biomarkers,
+                                                                             phase=args.phase,
                                                                              estimate_dprs=args.estimate_dprs,
                                                                              recompute_estimates=args.recompute_estimates,
                                                                              consistent_data=args.consistent_data)
@@ -174,7 +176,10 @@ def analyse_dpi_estimates(args, dpis, dprs, diagnoses):
     print log.RESULT, 'Leave-one-out accuracy EMCI vs. LMCI {0} (threshold {1})'.format(acc_emci_lmci, t_emci_lmci)
 
     if args.latex_file is not None:
-        filename = os.path.join(DataHandler.get_eval_folder(), args.latex_file)
+        data_handler = DataHandler.get_data_handler(method=args.method,
+                                                    biomarkers=args.biomarkers,
+                                                    phase=args.phase)
+        filename = os.path.join(data_handler.get_eval_folder(), args.latex_file)
         with open(filename, 'a') as latex_file:
             latex_file.write('{0} & {1} & {2:.2f} & {3:.1f} & {4:.2f} & {5:.1f} & {6:.2f} & {7:.1f} & {8:.2f} & {9:.1f}\\\\\n'.format(
                              args.method,

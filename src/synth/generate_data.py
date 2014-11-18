@@ -27,13 +27,12 @@ def main():
     args = parser.parse_args()
 
     print log.INFO, 'Generating synthetic data with {0} samples...'.format(args.number_of_samples)
-    out_file = os.path.join(SynthDataHandler.get_data_folder(), 'synth_data.csv')
-
     # Determine structures to segment
     data_handler = SynthDataHandler()
     biomarkers = data_handler.get_biomarker_names()
 
     # Estimate volumes
+    out_file = os.path.join(data_handler.get_data_folder(), 'synth_data.csv')
     with open(out_file, 'wb') as csvfile:
         writer = csv.writer(csvfile, delimiter=',')
         writer.writerow(['RID', 'VISCODE', 'DX.scan', 'progress', 'rate', 'offset'] + biomarkers)

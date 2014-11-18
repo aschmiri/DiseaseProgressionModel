@@ -77,9 +77,10 @@ def evaluate_experiment(args, biomarker, sampling, viscodes=[0]):
     num_visits = max(viscodes) + 1
     errors_experiment = []
     for run in xrange(args.number_of_runs):
-        model_file = SynthDataHandler.get_model_file(biomarker, num_samples=args.number_of_training_samples,
-                                                     sampling=sampling, run=run)
-        error_folder = SynthDataHandler.make_dir(SynthDataHandler.get_eval_folder(), biomarker)
+        data_handler = SynthDataHandler()
+        model_file = data_handler.get_model_file(biomarker, num_samples=args.number_of_training_samples,
+                                                 sampling=sampling, run=run)
+        error_folder = SynthDataHandler.make_dir(data_handler.get_eval_folder(), biomarker)
         error_file = os.path.join(error_folder, os.path.basename(model_file).replace('.csv', '_test.p'))
         if num_visits > 1:
             error_file = error_file.replace('_test.p', 'v{0}_test.p'.format(num_visits))
@@ -120,7 +121,8 @@ def evaluate_experiment_multiple_biomarkers(args, biomarkers, sampling, viscodes
     errors_experiment = []
     for run in xrange(args.number_of_runs):
         biomarkers_string = '_'.join(biomarkers)
-        error_folder = SynthDataHandler.make_dir(SynthDataHandler.get_eval_folder(), biomarkers_string)
+        data_handler = SynthDataHandler()
+        error_folder = SynthDataHandler.make_dir(data_handler.get_eval_folder(), biomarkers_string)
         error_file_basename = '{0}_model_{1}_{2}_{3}_test.p'.format(
             biomarkers_string, args.number_of_training_samples, sampling, run)
         error_file = os.path.join(error_folder, error_file_basename)

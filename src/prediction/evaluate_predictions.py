@@ -6,12 +6,14 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from common import evaluation_tools as et
 from common import plotting_tools as pt
+from common.datahandler import DataHandler
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', '--biomarkers', nargs='+', default=None, help='name of the biomarker to be plotted')
-    parser.add_argument('-p', '--predict_biomarker', type=str, default='MMSE', help='the biomarker to predict')
+    parser.add_argument('-p', '--phase', default=None, choices=DataHandler.get_phase_choices(), help='the phase for which the model is to be trained')
+    parser.add_argument('--predict_biomarker', type=str, default='MMSE', help='the biomarker to predict')
     parser.add_argument('--recompute_estimates', action='store_true', help='recompute the dpi / dpr estimations')
     parser.add_argument('--recompute_predictions', action='store_true', help='recompute the biomarker predictions')
     parser.add_argument('--plot_file', type=str, default=None, help='filename of the output file')
@@ -23,7 +25,9 @@ def main():
     for method in methods:
         values.update({method: {}})
         _, _, values_observed, values_naive, values_model = \
-            et.get_biomarker_predictions(visits, args.predict_biomarker, method=method,
+            et.get_biomarker_predictions(visits, args.predict_biomarker,
+                                         method=method,
+                                         phase=args.phase,
                                          recompute_estimates=args.recompute_estimates,
                                          recompute_predictions=args.recompute_predictions,
                                          estimate_dprs=False,
@@ -34,7 +38,9 @@ def main():
         values[method].update({'model_dpi': values_model})
 
         _, _, values_observed, values_naive, values_model = \
-            et.get_biomarker_predictions(visits, args.predict_biomarker, method=method,
+            et.get_biomarker_predictions(visits, args.predict_biomarker,
+                                         method=method,
+                                         phase=args.phase,
                                          recompute_estimates=args.recompute_estimates,
                                          recompute_predictions=args.recompute_predictions,
                                          estimate_dprs=True,

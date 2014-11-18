@@ -16,18 +16,19 @@ from common.synthmodel import SynthModel
 def generate_synth_model(biomarker, recompute_models=False, num_samples=1000,
                          sampling='longitudinal', rate_sigma=0.0, conversion_sigma=0.0, run=0):
     # Get model and samples file
-    model_file_experiment = SynthDataHandler.get_model_file(biomarker, num_samples=num_samples,
+    data_handler = SynthDataHandler()
+    model_file_experiment = data_handler.get_model_file(biomarker, num_samples=num_samples,
+                                                        sampling=sampling, rate_sigma=rate_sigma,
+                                                        conversion_sigma=conversion_sigma, run=run)
+    samples_file_experiment = data_handler.get_samples_file(biomarker, num_samples=num_samples,
                                                             sampling=sampling, rate_sigma=rate_sigma,
                                                             conversion_sigma=conversion_sigma, run=run)
-    samples_file_experiment = SynthDataHandler.get_samples_file(biomarker, num_samples=num_samples,
-                                                                sampling=sampling, rate_sigma=rate_sigma,
-                                                                conversion_sigma=conversion_sigma, run=run)
 
     # Read model or recompute
     if os.path.isfile(model_file_experiment) and os.path.isfile(samples_file_experiment) and not recompute_models:
         print log.SKIP, 'Skipping model generation for {0} samples {1}, run {2}'.format(num_samples, sampling, run)
     else:
-        src_folder = os.path.join(SynthDataHandler.get_project_folder(), 'src')
+        src_folder = os.path.join(data_handler.get_project_folder(), 'src')
 
         if os.path.isfile(model_file_experiment):
             call(['rm', model_file_experiment])
@@ -47,8 +48,8 @@ def generate_synth_model(biomarker, recompute_models=False, num_samples=1000,
             call('{0}/training/train_models.py -m synth {1}'.format(
                 src_folder, biomarker_str), shell=True)
 
-            model_file = SynthDataHandler.get_model_file(biomarker)
-            samples_file = SynthDataHandler.get_samples_file(biomarker)
+            model_file = data_handler.get_model_file(biomarker)
+            samples_file = data_handler.get_samples_file(biomarker)
             if os.path.isfile(model_file) and os.path.isfile(samples_file):
                 call(['mv', model_file, model_file_experiment])
                 call(['mv', samples_file, samples_file_experiment])
@@ -106,9 +107,10 @@ def evaluate_synth_model(model_file, biomarker, progress_linspace, number_of_val
 
 
 def generate_synth_test_data(biomarkers, num_test_samples, number_of_visits, run, recompute_test_data=False):
+    data_handler = SynthDataHandler()
     biomarkers_str = '_'.join(biomarkers)
     test_data_filename = 'test_data_{0}_{1}_{2}_{3}.p'.format(biomarkers_str, num_test_samples, number_of_visits, run)
-    test_data_folder = SynthDataHandler.make_dir(SynthDataHandler.get_eval_folder(), biomarkers_str)
+    test_data_folder = SynthDataHandler.make_dir(data_handler.get_eval_folder(), biomarkers_str)
     test_data_file = os.path.join(test_data_folder, test_data_filename)
 
     if os.path.isfile(test_data_file) and not recompute_test_data:

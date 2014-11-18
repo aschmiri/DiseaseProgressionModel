@@ -101,7 +101,7 @@ if [ $experiment -eq "8" ] ; then
   do
     biomarker_str=${biomarker/ /_}
     output_file="${folder}predict_${biomarker_str}.pdf"
-    prediction/evaluate_predictions.py -p "${biomarker}" --plot_file "${output_file}"
+    prediction/evaluate_predictions.py --predict_biomarker "${biomarker}" --plot_file "${output_file}"
   done
 fi
 

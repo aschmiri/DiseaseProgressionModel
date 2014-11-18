@@ -16,7 +16,8 @@ def main():
     parser.add_argument('visits', nargs='+', type=str, help='the viscodes of the visits that are available')
     parser.add_argument('-m', '--method', choices=DataHandler.get_method_choices(), default='all', help='the method to collect data for')
     parser.add_argument('-b', '--biomarkers', nargs='+', default=None, help='name of the biomarker to be plotted')
-    parser.add_argument('-p', '--predict_biomarker', type=str, default='MMSE', help='the biomarker to predict')
+    parser.add_argument('-p', '--phase', default=None, choices=DataHandler.get_phase_choices(), help='the phase for which the model is to be trained')
+    parser.add_argument('--predict_biomarker', type=str, default='MMSE', help='the biomarker to predict')
     parser.add_argument('--recompute_estimates', action='store_true', help='recompute the dpi / dpr estimations')
     parser.add_argument('--recompute_predictions', action='store_true', help='recompute the biomarker predictions')
     parser.add_argument('--estimate_dprs', action='store_true', help='estimate dpis and dprs')
@@ -31,7 +32,9 @@ def main():
 
     _, diagnoses, values_observed, values_naive, values_model = \
         et.get_biomarker_predictions(args.visits, args.predict_biomarker,
-                                     method=args.method, biomarkers=args.biomarkers,
+                                     method=args.method,
+                                     biomarkers=args.biomarkers,
+                                     phase=args.phase,
                                      recompute_estimates=args.recompute_estimates,
                                      recompute_predictions=args.recompute_predictions,
                                      estimate_dprs=args.estimate_dprs,
@@ -112,7 +115,10 @@ def analyse_errors(values1, values2):
 
 
 def print_to_latex(args, results_naive, results_model, num_subjects):
-    filename = os.path.join(DataHandler.get_eval_folder(), args.latex_file)
+    data_handler = DataHandler.get_data_handler(method=args.method,
+                                                biomarkers=args.biomarkers,
+                                                phase=args.phase)
+    filename = os.path.join(data_handler.get_eval_folder(), args.latex_file)
     with open(filename, 'a') as latex_file:
         latex_file.write('{0} & {1} {2} & ${3:.2f}\pm{4:.2f}$ & ${5:.2f}$ & ${6:.2f}\pm{7:.2f}$ & ${8:.2f}$ & {9}\\\\\n'.format(
                          args.predict_biomarker,

@@ -18,7 +18,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--method', choices=DataHandler.get_method_choices(), default='all', help='the method to collect data for')
     parser.add_argument('-b', '--biomarkers', nargs='+', default=None, help='name of the biomarker to be plotted')
+    parser.add_argument('-p', '--phase', default='mci-ad', choices=DataHandler.get_phase_choices(), help='the phase for which the model is to be trained')
     parser.add_argument('-e', '--extrapolator', type=str, choices=['lin', 'sqrt', 'exp'], default='exp', help='the type of extrapolator')
+    parser.add_argument('--xlim', type=float, nargs=2, default=None, help='force certain x limits for plotting')
+    parser.add_argument('--ylim', type=float, nargs=2, default=None, help='force certain y limits for plotting')
     parser.add_argument('--no_model', action='store_true', default=False, help='do not plot the fitted model')
     parser.add_argument('--no_points', action='store_true', default=False, help='do not plot points')
     parser.add_argument('--points_alpha', type=float, default=0.25, help='alpha value of the plotted points')
@@ -34,13 +37,15 @@ def main():
     parser.add_argument('--plot_file', type=str, default=None, help='filename of the output file')
     args = parser.parse_args()
 
-    data_handler = DataHandler.get_data_handler(method=args.method, biomarkers=args.biomarkers)
+    data_handler = DataHandler.get_data_handler(method=args.method,
+                                                biomarkers=args.biomarkers,
+                                                phase=args.phase)
     for biomarker in data_handler.get_biomarker_names():
-        plot_model(args, biomarker)
+        plot_model(args, data_handler, biomarker)
 
 
-def plot_model(args, biomarker):
-    model_file = DataHandler.get_model_file(biomarker)
+def plot_model(args, data_handler, biomarker):
+    model_file = data_handler.get_model_file(biomarker)
     if not os.path.isfile(model_file):
         print log.ERROR, 'Model file not found: {0}'.format(model_file)
         return
@@ -60,13 +65,14 @@ def plot_model(args, biomarker):
     progress_linspace_ex2 = np.linspace(pm.max_progress, max_progress_extrapolate, 20)
 
     # Calc min and max val in interval between 1% and 99% percentie
-    progress_linspace = np.linspace(min_progress_extrapolate, max_progress_extrapolate, 100)
-    min_val = float('inf')
-    max_val = float('-inf')
-    for quantile in [0.1, 0.9]:
-        curve = pm.get_quantile_curve(progress_linspace, quantile)
-        min_val = min(min_val, np.min(curve))
-        max_val = max(max_val, np.max(curve))
+    min_val, max_val = pm.get_value_range([0.1, 0.9])
+#     progress_linspace = np.linspace(min_progress_extrapolate, max_progress_extrapolate, 100)
+#     min_val = float('inf')
+#     max_val = float('-inf')
+#     for quantile in [0.1, 0.9]:
+#         curve = pm.get_quantile_curve(progress_linspace, quantile)
+#         min_val = min(min_val, np.min(curve))
+#         max_val = max(max_val, np.max(curve))
 
     #
     # Setup plot
@@ -95,7 +101,12 @@ def plot_model(args, biomarker):
             ax1.set_title('Quantile curves for {0}'.format(biomarker_string))
         ax1.set_xlabel('Disease progress (days before/after conversion to AD)')
         ax1.set_ylabel(DataHandler.get_biomarker_unit(biomarker))
-        ax1.set_xlim(min_progress_extrapolate, max_progress_extrapolate)
+        if args.xlim is not None:
+            ax1.set_xlim(args.xlim[0], args.xlim[1])
+        else:
+            ax1.set_xlim(min_progress_extrapolate, max_progress_extrapolate)
+        if args.ylim is not None:
+            ax1.set_ylim(args.ylim[0], args.ylim[1])
 
     #
     # Plot the percentile curves of the fitted model
@@ -154,8 +165,10 @@ def plot_model(args, biomarker):
             ax1b.plot(progress_linspace_ex1, mus, '--', color='b')
             mus = [pm.get_mu(p) for p in progress_linspace_ex2]
             ax1b.plot(progress_linspace_ex2, mus, '--', color='b')
-
-        ax1b.set_xlim(min_progress_extrapolate, max_progress_extrapolate)
+        if args.xlim is not None:
+            ax1b.set_xlim(args.xlim[0], args.xlim[1])
+        else:
+            ax1b.set_xlim(min_progress_extrapolate, max_progress_extrapolate)
 
     #
     # Plot errors
@@ -189,30 +202,47 @@ def plot_model(args, biomarker):
     # Plot points
     #
     if not args.no_points and not args.only_densities:
-        samples_file = DataHandler.get_samples_file(biomarker)
+        samples_file = data_handler.get_samples_file(biomarker)
         if not os.path.isfile(samples_file):
             print log.ERROR, 'Samples file not found: {0}'.format(samples_file)
         else:
             m = mlab.csv2rec(samples_file)
             progr_points = m['progress']
             value_points = m['value']
-            diagn_points = [0.5 if p < 0 else 1.0 for p in progr_points]
-            # diagn_points = m['diagnosis']
+            # diagn_points = [0.5 if p < 0 else 1.0 for p in progr_points]
+            diagn_points = m['diagnosis']
 
             print log.INFO, 'Plotting {0} sample points...'.format(len(progr_points))
             ax1.scatter(progr_points, value_points, s=15.0, c=diagn_points, edgecolor='none',
                         vmin=0.0, vmax=1.0, cmap=pt.progression_cmap, alpha=args.points_alpha)
-            legend = ax1.legend([mpl.patches.Rectangle((0, 0), 1, 1, fc=(0.8, 0.8, 0.0, args.points_alpha), linewidth=0),
-                                 mpl.patches.Rectangle((0, 0), 1, 1, fc=(1.0, 0.0, 0.0, args.points_alpha), linewidth=0)],
-                                ['MCI', 'AD'], fontsize=10, ncol=2, loc='upper center', framealpha=0.9)
+            if args.phase == 'cn-mci':
+                rects = [mpl.patches.Rectangle((0, 0), 1, 1, fc=pt.color_cn + (args.points_alpha,), linewidth=0),
+                         mpl.patches.Rectangle((0, 0), 1, 1, fc=pt.color_mci + (args.points_alpha,), linewidth=0)]
+                labels = ['CN', 'MCI']
+            elif args.phase == 'mci-ad':
+                rects = [mpl.patches.Rectangle((0, 0), 1, 1, fc=pt.color_mci + (args.points_alpha,), linewidth=0),
+                         mpl.patches.Rectangle((0, 0), 1, 1, fc=pt.color_ad + (args.points_alpha,), linewidth=0)]
+                labels = ['MCI', 'AD']
+            else:
+                rects = [mpl.patches.Rectangle((0, 0), 1, 1, fc=pt.color_cn + (args.points_alpha,), linewidth=0),
+                         mpl.patches.Rectangle((0, 0), 1, 1, fc=pt.color_mci + (args.points_alpha,), linewidth=0),
+                         mpl.patches.Rectangle((0, 0), 1, 1, fc=pt.color_ad + (args.points_alpha,), linewidth=0)]
+                labels = ['CN', 'MCI', 'AD']
+            legend = ax1.legend(rects, labels, fontsize=10, ncol=len(rects), loc='upper center', framealpha=0.9)
             legend.get_frame().set_edgecolor((0.6, 0.6, 0.6))
 
     #
     # Plot PDFs
     #
     progr_samples = [-2000, -1500, -1000, -500, 0, 500, 1000, 1500, 2000]
+    if args.phase == 'cn-mci':
+        vmin = 0
+        vmax = 2 * len(progr_samples) - 1
+    elif args.phase == 'mci-ad':
+        vmin = -len(progr_samples) + 1
+        vmax = len(progr_samples) - 1
     sample_cmap = cmx.ScalarMappable(
-        norm=colors.Normalize(vmin=-len(progr_samples) + 1, vmax=(len(progr_samples) - 1)),
+        norm=colors.Normalize(vmin=vmin, vmax=vmax),
         cmap=plt.get_cmap(pt.progression_cmap))
 
     if not args.no_sample_lines and not args.only_densities:
@@ -226,6 +256,8 @@ def plot_model(args, biomarker):
         ax2.set_title('Probability density function for {0}'.format(biomarker_string))
         ax2.set_xlabel(DataHandler.get_biomarker_unit(biomarker))
         ax2.set_ylabel('Probability')
+        if args.ylim is not None:
+            ax2.set_xlim(args.ylim[0], args.ylim[1])
 
         values = np.linspace(min_val, max_val, 250)
         for progr in progr_samples:
@@ -233,7 +265,6 @@ def plot_model(args, biomarker):
                 sample_color = sample_cmap.to_rgba(progr_samples.index(progr))
                 linestyle = '--' if progr < pm.min_progress or progr > pm.max_progress else '-'
                 probs = pm.get_density_distribution(values, progr)
-                ax2.set_xlim(min_val, max_val)
                 ax2.plot(values, probs, label=str(progr), color=sample_color, linestyle=linestyle)
 
                 if plot_synth_model:

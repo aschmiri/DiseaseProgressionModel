@@ -95,15 +95,15 @@ def run_experiment(args, biomarker, sampling, num_samples=1000, rate_sigma=0.0, 
 
     errors_experiment = []
     for run in xrange(args.number_of_runs):
+        data_handler = SynthDataHandler()
+        model_file = data_handler.get_model_file(biomarker,
+                                                 num_samples=num_samples,
+                                                 sampling=sampling,
+                                                 rate_sigma=rate_sigma,
+                                                 conversion_sigma=conversion_sigma,
+                                                 run=run)
 
-        model_file = SynthDataHandler.get_model_file(biomarker,
-                                                     num_samples=num_samples,
-                                                     sampling=sampling,
-                                                     rate_sigma=rate_sigma,
-                                                     conversion_sigma=conversion_sigma,
-                                                     run=run)
-
-        error_folder = SynthDataHandler.make_dir(SynthDataHandler.get_eval_folder(), biomarker)
+        error_folder = SynthDataHandler.make_dir(data_handler.get_eval_folder(), biomarker)
         error_file_ending = '_{0}.p'.format(args.metric)
         error_file = os.path.join(error_folder, os.path.basename(model_file).replace('.csv', error_file_ending))
 

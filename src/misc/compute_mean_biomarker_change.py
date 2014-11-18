@@ -43,7 +43,7 @@ def main():
         print log.RESULT, '{0} LMCI: {1}, (n={2})'.format(biomarker, mean_changes_biomarker[0.75], num_subjects[0.75])
         print log.RESULT, '{0} AD:   {1}, (n={2})'.format(biomarker, mean_changes_biomarker[1.0], num_subjects[1.0])
 
-    mean_changes_file = os.path.join(DataHandler.get_eval_folder(), 'mean_changes.p')
+    mean_changes_file = os.path.join(data_handler.get_eval_folder(), 'mean_changes.p')
     pickle.dump(mean_changes, open(mean_changes_file, 'wb'))
 
 

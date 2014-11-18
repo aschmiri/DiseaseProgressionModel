@@ -1,10 +1,14 @@
 #! /usr/bin/env python2.7
 import matplotlib as mpl
 
+
+color_cn = (0.0, 0.5, 0.0)
+color_mci = (0.8, 0.8, 0.0)
+color_ad = (1.0, 0.0, 0.0)
 progression_dict = {
-    'red': ((0.0, 0.0, 0.0), (0.5, 0.8, 0.8), (1.0, 1.0, 1.0)),
-    'green': ((0.0, 0.5, 0.5), (0.5, 0.8, 0.8), (1.0, 0.0, 0.0)),
-    'blue': ((0.0, 0.0, 0.0), (0.5, 0.0, 0.0), (1.0, 0.0, 0.0))
+    'red': ((0.0, color_cn[0], color_cn[0]), (0.5, color_mci[0], color_mci[0]), (1.0, color_ad[0], color_ad[0])),
+    'green': ((0.0, color_cn[1], color_cn[1]), (0.5, color_mci[1], color_mci[1]), (1.0, color_ad[1], color_ad[1])),
+    'blue': ((0.0, color_cn[2], color_cn[2]), (0.5, color_mci[2], color_mci[2]), (1.0, color_ad[2], color_ad[2]))
 }
 progression_cmap = mpl.colors.LinearSegmentedColormap('my_colormap', progression_dict)
 
