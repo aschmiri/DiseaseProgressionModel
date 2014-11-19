@@ -345,6 +345,8 @@ class ClinicalDataHandler(DataHandler):
         else:
             self._phase = phase
 
+        self._model_offset = 2150
+
     ############################################################################
     #
     # get_model_folder()
@@ -703,17 +705,14 @@ class ClinicalDataHandler(DataHandler):
             data_scantime = data_scantime[args]
             data_diagnosis = data_diagnosis[args]
 
+            converter_cn_mci = self._diagnosis_is_cn(data_diagnosis[0]) and self._diagnosis_is_mci(data_diagnosis[-1])
+            converter_mci_ad = self._diagnosis_is_mci(data_diagnosis[0]) and self._diagnosis_is_ad(data_diagnosis[-1])
+            converter = converter_cn_mci or converter_mci_ad
+
             # Select converters with MCI as first and AD as last diagnosis
-            if ((self._phase == 'cn-mci' and
-                 # self._diagnosis_is_cn(data_diagnosis[0]) and
-                 # self._diagnosis_is_mci(data_diagnosis[-1])) or
-                 data_diagnosis[0] == self._diagnosis_code['CN'] and
-                 data_diagnosis[-1] > self._diagnosis_code['CN']) or
-                (self._phase == 'mci-ad' and
-                 # self._diagnosis_is_mci(data_diagnosis[0]) and
-                 # self._diagnosis_is_ad(data_diagnosis[-1]))):
-                 data_diagnosis[0] < self._diagnosis_code['AD'] and
-                 data_diagnosis[-1] == self._diagnosis_code['AD'])):
+            if ((self._phase == 'cn-mci' and converter_cn_mci) or
+                    (self._phase == 'mci-ad' and converter_mci_ad) or
+                    (self._phase == 'joint' and converter)):
                 # Mark as valid
                 valid_rids.append(rid)
 
@@ -722,12 +721,18 @@ class ClinicalDataHandler(DataHandler):
                 scantime_prev = data_scantime[0]
                 for diagnosis, scantime in zip(data_diagnosis, data_scantime):
                     if ((self._phase == 'cn-mci' and
-                         # self._diagnosis_is_mci(diagnosis)
-                         diagnosis > self._diagnosis_code['CN']) or
+                         self._diagnosis_is_mci(diagnosis)) or
                         (self._phase == 'mci-ad' and
-                         # self._diagnosis_is_af(diagnosis))):
-                         diagnosis == self._diagnosis_code['AD'])):
-                        time_convert = scantime_prev + (scantime - scantime_prev) / 2
+                         self._diagnosis_is_ad(diagnosis))):
+                        time_convert = 0.5 * (scantime + scantime_prev)
+                        break
+                    elif (self._phase == 'joint' and converter_cn_mci and
+                          self._diagnosis_is_mci(diagnosis)):
+                        time_convert = 0.5 * (scantime + scantime_prev)
+                        break
+                    elif (self._phase == 'joint' and converter_mci_ad and
+                          self._diagnosis_is_ad(diagnosis)):
+                        time_convert = 0.5 * (scantime + scantime_prev) - self._model_offset
                         break
                     else:
                         scantime_prev = scantime

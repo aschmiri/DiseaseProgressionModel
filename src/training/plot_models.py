@@ -211,6 +211,7 @@ def plot_model(args, data_handler, biomarker):
             value_points = m['value']
             # diagn_points = [0.5 if p < 0 else 1.0 for p in progr_points]
             diagn_points = m['diagnosis']
+            diagn_points[(0.25 <= diagn_points) & (diagn_points <= 0.75)] = 0.5
 
             print log.INFO, 'Plotting {0} sample points...'.format(len(progr_points))
             ax1.scatter(progr_points, value_points, s=15.0, c=diagn_points, edgecolor='none',
@@ -234,13 +235,18 @@ def plot_model(args, data_handler, biomarker):
     #
     # Plot PDFs
     #
-    progr_samples = [-2000, -1500, -1000, -500, 0, 500, 1000, 1500, 2000]
+    progr_samples = [-2000, -1000, 0, 1000, 2000, 3000, 4000] if args.phase == 'joint' else \
+                    [-2000, -1500, -1000, -500, 0, 500, 1000, 1500, 2000]
+
     if args.phase == 'cn-mci':
-        vmin = 0
-        vmax = 2 * len(progr_samples) - 1
+        vmin = -2000  # 0
+        vmax = 6000  # 2 * len(progr_samples) - 1
     elif args.phase == 'mci-ad':
-        vmin = -len(progr_samples) + 1
-        vmax = len(progr_samples) - 1
+        vmin = -6000  # -len(progr_samples) + 1
+        vmax = 2000  # len(progr_samples) - 1
+    elif args.phase == 'joint':
+        vmin = -2000  # -len(progr_samples) + 1
+        vmax = 4000  # len(progr_samples) - 1
     sample_cmap = cmx.ScalarMappable(
         norm=colors.Normalize(vmin=vmin, vmax=vmax),
         cmap=plt.get_cmap(pt.progression_cmap))
@@ -248,7 +254,8 @@ def plot_model(args, data_handler, biomarker):
     if not args.no_sample_lines and not args.only_densities:
         for progr in progr_samples:
             if not args.no_extrapolation or pm.min_progress < progr < pm.max_progress:
-                sample_color = sample_cmap.to_rgba(progr_samples.index(progr))
+                # sample_color = sample_cmap.to_rgba(progr_samples.index(progr))
+                sample_color = sample_cmap.to_rgba(progr)
                 linestyle = '--' if progr < pm.min_progress or progr > pm.max_progress else '-'
                 ax1.axvline(progr, color=sample_color, linestyle=linestyle, alpha=0.3)
 
@@ -256,13 +263,17 @@ def plot_model(args, data_handler, biomarker):
         ax2.set_title('Probability density function for {0}'.format(biomarker_string))
         ax2.set_xlabel(DataHandler.get_biomarker_unit(biomarker))
         ax2.set_ylabel('Probability')
-        if args.ylim is not None:
+        if args.ylim is None:
+            values = np.linspace(min_val, max_val, 250)
+            ax2.set_xlim(min_val, max_val)
+        else:
+            values = np.linspace(args.ylim[0], args.ylim[1], 250)
             ax2.set_xlim(args.ylim[0], args.ylim[1])
 
-        values = np.linspace(min_val, max_val, 250)
         for progr in progr_samples:
             if not args.no_extrapolation or pm.min_progress < progr < pm.max_progress:
-                sample_color = sample_cmap.to_rgba(progr_samples.index(progr))
+                # sample_color = sample_cmap.to_rgba(progr_samples.index(progr))
+                sample_color = sample_cmap.to_rgba(progr)
                 linestyle = '--' if progr < pm.min_progress or progr > pm.max_progress else '-'
                 probs = pm.get_density_distribution(values, progr)
                 ax2.plot(values, probs, label=str(progr), color=sample_color, linestyle=linestyle)

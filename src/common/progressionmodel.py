@@ -125,13 +125,34 @@ class ProgressionModel(object):
             parameters[progr].update({'yoffset': r_sorted['fitmiscyoffset'][i]})
 
         self.all_progresses = sorted(parameters.keys())
-        self.sigma = parameters[self.all_progresses[0]]['sigma']
-        self.lmbda = parameters[self.all_progresses[0]]['lambda']
-        self.yoffset = parameters[self.all_progresses[0]]['yoffset']
 
-        self.all_mus = [parameters[progr]['mu'] for progr in self.all_progresses]
+        # Initialise mus
+        mus = [parameters[progr]['mu'] for progr in self.all_progresses]
+        if abs(np.min(mus) - np.max(mus)) < 0.0001:
+            self.mus = mus[0]
+        else:
+            self.progresses, self.mus = self.__compute_binned_data(self.all_progresses, mus)
 
-        self.progresses, self.mus = self.__compute_binned_data(self.all_progresses, self.all_mus)
+        # Initialise sigmas
+        sigmas = [parameters[progr]['sigma'] for progr in self.all_progresses]
+        if abs(np.min(sigmas) - np.max(sigmas)) < 0.0001:
+            self.sigmas = sigmas[0]
+        else:
+            self.progresses, self.sigmas = self.__compute_binned_data(self.all_progresses, sigmas)
+
+        # Initialise lambdas
+        lambdas = [parameters[progr]['lambda'] for progr in self.all_progresses]
+        if abs(np.min(lambdas) - np.max(lambdas)) < 0.0001:
+            self.lambdas = lambdas[0]
+        else:
+            self.progresses, self.lambdas = self.__compute_binned_data(self.all_progresses, lambdas)
+
+        # Initialise yoffsets
+        yoffsets = [parameters[progr]['yoffset'] for progr in self.all_progresses]
+        if abs(np.min(yoffsets) - np.max(yoffsets)) < 0.0001:
+            self.yoffsets = yoffsets[0]
+        else:
+            self.progresses, self.yoffsets = self.__compute_binned_data(self.all_progresses, yoffsets)
 
         self.min_progress = np.min(self.progresses)
         self.max_progress = np.max(self.progresses)
@@ -245,63 +266,62 @@ class ProgressionModel(object):
     #
     ############################################################################
     def get_parameters(self, progress):
-        return self.lmbda, self.get_mu(progress), self.sigma, self.yoffset
+        return self.get_eta(self.lambdas, progress), self.get_eta(self.mus, progress), self.get_eta(self.sigmas, progress), self.get_eta(self.yoffsets, progress)
 
     ############################################################################
     #
     # get_mu()
     #
     ############################################################################
-    def get_mu(self, progress):
-        if progress in self.progresses:
-            return self.mus[self.progresses.index(progress)]
-
+    def get_eta(self, eta, progress):
+        if isinstance(eta, float):
+            return eta
         elif progress < self.progresses[0]:
             delta_p = self.progresses[1] - self.progresses[0]
-            delta_m = self.mus[1] - self.mus[0]
+            delta_m = eta[1] - eta[0]
 
             if self.extrapolator == 'lin':
                 # Linear:
-                return self.mus[1] - delta_m * ((self.progresses[1] - progress) / delta_p)
+                return eta[1] - delta_m * ((self.progresses[1] - progress) / delta_p)
             elif self.extrapolator == 'sqrt':
                 # Square root:
-                return self.mus[1] - delta_m * math.sqrt((self.progresses[1] - progress) / delta_p)
+                return eta[1] - delta_m * math.sqrt((self.progresses[1] - progress) / delta_p)
             elif self.extrapolator == 'exp':
                 # Exponential:
-                range_m = math.fabs(self.mus[0] - self.get_mu(0))
+                range_m = math.fabs(eta[0] - self.get_eta(eta, 0))
 
                 if delta_m > 0:
-                    return self.mus[0] - range_m + range_m * math.exp(delta_m / (delta_p * range_m) * (progress - self.progresses[0]))
+                    return eta[0] - range_m + range_m * math.exp(delta_m / (delta_p * range_m) * (progress - self.progresses[0]))
                 else:
-                    return self.mus[0] + range_m - range_m * math.exp(-delta_m / (delta_p * range_m) * (progress - self.progresses[0]))
+                    return eta[0] + range_m - range_m * math.exp(-delta_m / (delta_p * range_m) * (progress - self.progresses[0]))
 
                 # sig_m = math.copysign(1, delta_m)
-                # return self.mus[0] - sig_m * (range_m - range_m * math.exp(math.fabs(delta_m) / (delta_p * range_m) * (progress - self.progresses[0])))
+                # return eta[0] - sig_m * (range_m - range_m * math.exp(math.fabs(delta_m) / (delta_p * range_m) * (progress - self.progresses[0])))
             else:
                 print log.ERROR, 'Unknown extrapolator {0}!'.format(self.extrapolator)
                 return 0
 
         elif progress > self.progresses[-1]:
             delta_p = self.progresses[-1] - self.progresses[-2]
-            delta_m = self.mus[-1] - self.mus[-2]
+            delta_m = eta[-1] - eta[-2]
 
             if self.extrapolator == 'lin':
                 # Linear:
-                return self.mus[-2] + delta_m * ((progress - self.progresses[-2]) / delta_p)
+                return eta[-2] + delta_m * ((progress - self.progresses[-2]) / delta_p)
             elif self.extrapolator == 'sqrt':
                 # Square root:
-                return self.mus[-2] + delta_m * math.sqrt((progress - self.progresses[-2]) / delta_p)
+                return eta[-2] + delta_m * math.sqrt((progress - self.progresses[-2]) / delta_p)
             elif self.extrapolator == 'exp':
                 # Exponential:
-                range_m = math.fabs(self.mus[-1] - self.get_mu(0))
+                range_m = math.fabs(eta[-1] - self.get_eta(eta, 0))
 
                 if delta_m > 0:
-                    return self.mus[-1] + range_m - range_m * math.exp(-delta_m / (delta_p * range_m) * (progress - self.progresses[-1]))
+                    return eta[-1] + range_m - range_m * math.exp(-delta_m / (delta_p * range_m) * (progress - self.progresses[-1]))
                 else:
-                    return self.mus[-1] - range_m + range_m * math.exp(delta_m / (delta_p * range_m) * (progress - self.progresses[-1]))
+                    return eta[-1] - range_m + range_m * math.exp(delta_m / (delta_p * range_m) * (progress - self.progresses[-1]))
 
                 # sig_m = math.copysign(1, delta_m)
-                # return self.mus[-1] - sig_m * (-range_m + range_m * math.exp(math.fabs(delta_m) / (delta_p * range_m) * (self.progresses[-1] - progress)))
+                # return eta[-1] - sig_m * (-range_m + range_m * math.exp(math.fabs(delta_m) / (delta_p * range_m) * (self.progresses[-1] - progress)))
             else:
                 print log.ERROR, 'Unknown extrapolator!'
                 return 0
@@ -316,8 +336,8 @@ class ProgressionModel(object):
             progress_next = self.progresses[idx_next]
             factor = (progress - progress_prev) / (progress_next - progress_prev)
 
-            mu_prev = self.mus[idx_prev]
-            mu_next = self.mus[idx_next]
+            mu_prev = eta[idx_prev]
+            mu_next = eta[idx_next]
             return (1 - factor) * mu_prev + factor * mu_next
 
     ############################################################################
