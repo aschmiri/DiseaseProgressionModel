@@ -141,7 +141,7 @@ fi
 # Progression estimates
 #
 if [ $experiment -eq "11" ] ; then
-  for method in  hcv #cog ml vol img all
+  for method in  cog ml vol img all vol2 hcv
   do
     i=1
     for visits in "bl" "bl m12" "bl m12 m24"

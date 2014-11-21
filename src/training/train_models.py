@@ -14,7 +14,6 @@ def main():
     parser.add_argument('-b', '--biomarkers', nargs='+', default=None, help='name of the biomarker to be plotted')
     parser.add_argument('-p', '--phase', default=None, choices=DataHandler.get_phase_choices(), help='the phase for which the model is to be trained')
     parser.add_argument('-n', '--nr_threads', type=int, default=1, help='number of threads')
-    parser.add_argument('-d', '--degrees_of_freedom', type=int, default=2, help='degrees of freedom for the LMS method')
     parser.add_argument('--min_visits', type=int, default=0, help='the minimal number of visits')
     parser.add_argument('--no_regression', action='store_true', default=False, help='do not perform age regression of biomarker values')
     parser.add_argument('--recompute_models', action='store_true', help='recompute the models with new samples')
@@ -105,8 +104,11 @@ def estimate_model(args, data_handler, biomarker):
         samples_file = data_handler.get_samples_file(biomarker)
         stdout_file = samples_file.replace('_samples.csv', '_stdout.Rout')
 
-        command = "R CMD BATCH \"--args input_file='%s' output_file='%s' degrees_of_freedom=%i \" %s %s" \
-                  % (samples_file, model_file, int(args.degrees_of_freedom), r_file, stdout_file)
+        dof = data_handler.get_vgam_degrees_of_freedom(biomarker)
+        zero = data_handler.get_vgam_zero(biomarker)
+        command = ("R CMD BATCH \"--args input_file='{0}' output_file='{1}' "
+                   "degrees_of_freedom='{2}' zero='{3}'\" {4} {5}").format(
+            samples_file, model_file, dof, zero, r_file, stdout_file)
 
         call(command, shell=True)
 

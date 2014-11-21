@@ -82,17 +82,18 @@ class DataHandler(object):
                 self.biomarker_units.update({biomarker_set: biomarker_unit})
 
             for combined_set in self.combined_biomarker_sets:
+                biomarker_names = []
                 if config.has_option(combined_set, 'biomarker_sets'):
                     biomarker_sets = config.getlist(combined_set, 'biomarker_sets')
-                    biomarker_names = []
                     for biomarker_set in biomarker_sets:
                         biomarker_names += config.getlist(biomarker_set, 'biomarker_names')
                     self.biomarker_names.update({combined_set: biomarker_names})
-                elif config.has_option(combined_set, 'biomarker_names'):
-                    biomarker_names = config.getlist(combined_set, 'biomarker_names')
-                    self.biomarker_names.update({combined_set: biomarker_names})
-                else:
+                if config.has_option(combined_set, 'biomarker_names'):
+                    biomarker_names += config.getlist(combined_set, 'biomarker_names')
+                if len(biomarker_names) == 0:
                     print log.ERROR, 'Failed to read set {0}'.format(combined_set)
+                else:
+                    self.biomarker_names.update({combined_set: biomarker_names})
 
             # Load VGAM configurations
             self.vgam_degrees_of_freedom = {'default': config.getint('VGAM', 'degrees_of_freedom')}

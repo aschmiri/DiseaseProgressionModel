@@ -48,7 +48,7 @@ def main():
 
 def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
     print log.INFO, 'Plotting estimates...'
-    test_dpi_max, test_dpi_min, _ = ModelFitter.get_test_dpi_range(args.phase)
+    test_dpi_min, test_dpi_max, _ = ModelFitter.get_test_dpi_range(args.phase)
     dpi_range = float(test_dpi_max - test_dpi_min)
     dpi_factor = float(args.plot_steps) / dpi_range
 
