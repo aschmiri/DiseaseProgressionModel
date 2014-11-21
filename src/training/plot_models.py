@@ -18,7 +18,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--method', choices=DataHandler.get_method_choices(), default='all', help='the method to collect data for')
     parser.add_argument('-b', '--biomarkers', nargs='+', default=None, help='name of the biomarker to be plotted')
-    parser.add_argument('-p', '--phase', default='mci-ad', choices=DataHandler.get_phase_choices(), help='the phase for which the model is to be trained')
+    parser.add_argument('-p', '--phase', default=None, choices=DataHandler.get_phase_choices(), help='the phase for which the model is to be trained')
     parser.add_argument('-e', '--extrapolator', type=str, choices=['lin', 'sqrt', 'exp'], default='exp', help='the type of extrapolator')
     parser.add_argument('--xlim', type=float, nargs=2, default=None, help='force certain x limits for plotting')
     parser.add_argument('--ylim', type=float, nargs=2, default=None, help='force certain y limits for plotting')
@@ -29,7 +29,7 @@ def main():
     parser.add_argument('--no_sample_lines', action='store_true', default=False, help='do not plot the sample lines')
     parser.add_argument('--only_densities', action='store_true', default=False, help='only plot densities')
     parser.add_argument('--no_extrapolation', action='store_true', default=False, help='do not extrapolate the model')
-    parser.add_argument('--plot_mu', action='store_true', default=False, help='plot mu')
+    parser.add_argument('--plot_eta', type=str, choices=['lambda', 'mu', 'sigma'], default=None, help='plot a predictor function')
     parser.add_argument('--plot_errors', action='store_true', default=False, help='plot the errors')
     parser.add_argument('--plot_synth_model', action='store_true', default=False, help='plot density distributions for synthetic data')
     parser.add_argument('--plot_quantile_label', action='store_true', default=False, help='plot labels on the quantile curces')
@@ -143,27 +143,27 @@ def plot_model(args, data_handler, biomarker):
             ax1.plot(progress_linspace_synth, curve_synth, color='b', alpha=alpha)
 
     #
-    # Plot parameter mu
+    # Plot predictor function
     #
-    if args.plot_mu and not args.only_densities:
+    if args.plot_eta is not None and not args.only_densities:
         # Get second axis of plot 1
         ax1b = ax1.twinx()
 
         # Plot all progresses
-        ax1b.scatter(pm.all_progresses, pm.all_mus, facecolor='b', marker='o', edgecolor='none', alpha=0.2)
-        ax1b.text(pm.progresses[-1], pm.mus[-1], '$\mu$', color='b', fontsize=11)
+        # ax1b.scatter(pm.all_progresses, pm.all_mus, facecolor='b', marker='o', edgecolor='none', alpha=0.2)
+        ax1b.text(pm.progresses[-1], pm.sigmas[-1], '$\mu$', color='b', fontsize=11)
 
         # Plot binned progresses
-        ax1b.scatter(pm.progresses, pm.mus, color='b', marker='x')
+        ax1b.scatter(pm.progresses, pm.sigmas, color='b', marker='x')
 
         # Plot interpolated model
-        mus = [pm.get_mu(p) for p in progress_linspace_int]
+        mus = [pm.get_eta(pm.sigmas, p) for p in progress_linspace_int]
         ax1b.plot(progress_linspace_int, mus, color='b')
 
         if not args.no_extrapolation:
-            mus = [pm.get_mu(p) for p in progress_linspace_ex1]
+            mus = [pm.get_eta(pm.sigmas, p) for p in progress_linspace_ex1]
             ax1b.plot(progress_linspace_ex1, mus, '--', color='b')
-            mus = [pm.get_mu(p) for p in progress_linspace_ex2]
+            mus = [pm.get_eta(pm.sigmas, p) for p in progress_linspace_ex2]
             ax1b.plot(progress_linspace_ex2, mus, '--', color='b')
         if args.xlim is not None:
             ax1b.set_xlim(args.xlim[0], args.xlim[1])
@@ -216,11 +216,11 @@ def plot_model(args, data_handler, biomarker):
             print log.INFO, 'Plotting {0} sample points...'.format(len(progr_points))
             ax1.scatter(progr_points, value_points, s=15.0, c=diagn_points, edgecolor='none',
                         vmin=0.0, vmax=1.0, cmap=pt.progression_cmap, alpha=args.points_alpha)
-            if args.phase == 'cn-mci':
+            if args.phase == 'cnmci':
                 rects = [mpl.patches.Rectangle((0, 0), 1, 1, fc=pt.color_cn + (args.points_alpha,), linewidth=0),
                          mpl.patches.Rectangle((0, 0), 1, 1, fc=pt.color_mci + (args.points_alpha,), linewidth=0)]
                 labels = ['CN', 'MCI']
-            elif args.phase == 'mci-ad':
+            elif args.phase == 'mciad':
                 rects = [mpl.patches.Rectangle((0, 0), 1, 1, fc=pt.color_mci + (args.points_alpha,), linewidth=0),
                          mpl.patches.Rectangle((0, 0), 1, 1, fc=pt.color_ad + (args.points_alpha,), linewidth=0)]
                 labels = ['MCI', 'AD']
@@ -238,15 +238,15 @@ def plot_model(args, data_handler, biomarker):
     progr_samples = [-2000, -1000, 0, 1000, 2000, 3000, 4000] if args.phase == 'joint' else \
                     [-2000, -1500, -1000, -500, 0, 500, 1000, 1500, 2000]
 
-    if args.phase == 'cn-mci':
-        vmin = -2000  # 0
-        vmax = 6000  # 2 * len(progr_samples) - 1
-    elif args.phase == 'mci-ad':
-        vmin = -6000  # -len(progr_samples) + 1
-        vmax = 2000  # len(progr_samples) - 1
+    if args.phase == 'cnmci':
+        vmin = -2000
+        vmax = 6000
+    elif args.phase == 'mciad':
+        vmin = -6000
+        vmax = 2000
     elif args.phase == 'joint':
-        vmin = -2000  # -len(progr_samples) + 1
-        vmax = 4000  # len(progr_samples) - 1
+        vmin = -2000
+        vmax = 4000
     sample_cmap = cmx.ScalarMappable(
         norm=colors.Normalize(vmin=vmin, vmax=vmax),
         cmap=plt.get_cmap(pt.progression_cmap))

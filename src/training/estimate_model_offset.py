@@ -72,10 +72,10 @@ def get_fitting_data(args, data_handler_joint):
     else:
         data_handler_1 = DataHandler.get_data_handler(method=args.method,
                                                       biomarkers=args.biomarkers,
-                                                      phase='cn-mci')
+                                                      phase='cnmci')
         data_handler_2 = DataHandler.get_data_handler(method=args.method,
                                                       biomarkers=args.biomarkers,
-                                                      phase='mci-ad')
+                                                      phase='mciad')
 
         errors = np.zeros((len(biomarkers), len(offsets)))
         descriminativeness = np.zeros(len(biomarkers))
@@ -86,6 +86,19 @@ def get_fitting_data(args, data_handler_joint):
             model_file_2 = data_handler_2.get_model_file(biomarker)
             if os.path.isfile(model_file_1) and os.path.isfile(model_file_2):
                 print log.INFO, 'Analysing {0}...'.format(biomarker)
+
+                # Get discriminativeness for all biomarkers as a scaling factor
+                eval_file_1 = model_file_1.replace('.csv', '_eval_cover.csv')
+                eval_file_2 = model_file_2.replace('.csv', '_eval_cover.csv')
+                if os.path.isfile(eval_file_1) and os.path.isfile(eval_file_2):
+                    descriminate_1 = np.mean(mlab.csv2rec(eval_file_1)['error'])
+                    descriminate_2 = np.mean(mlab.csv2rec(eval_file_2)['error'])
+                    descriminativeness[i] = 0.5 * (descriminate_1 + descriminate_2)
+                else:
+                    print log.WARNING, 'Evaluation file missing for {0}'.format(biomarker)
+                    continue
+
+                # Initialise models
                 model_1 = ProgressionModel(biomarker, model_file_1, extrapolator=args.extrapolator)
                 model_2 = ProgressionModel(biomarker, model_file_2, extrapolator=args.extrapolator)
 
@@ -105,14 +118,6 @@ def get_fitting_data(args, data_handler_joint):
 
                 # Get overlap
                 overlap.append(model_1.max_progress - model_2.min_progress)
-
-            # Get discriminativeness for all biomarkers as a scaling factor
-            eval_file_1 = model_file_1.replace('.csv', '_eval_cover.csv')
-            eval_file_2 = model_file_2.replace('.csv', '_eval_cover.csv')
-            if os.path.isfile(eval_file_1) and os.path.isfile(eval_file_2):
-                descriminate_1 = np.mean(mlab.csv2rec(eval_file_1)['error'])
-                descriminate_2 = np.mean(mlab.csv2rec(eval_file_2)['error'])
-                descriminativeness[i] = 0.5 * (descriminate_1 + descriminate_2)
 
         overlap = np.mean(overlap)
         print log.INFO, 'Saving errors to file {0}...'.format(errors_file)

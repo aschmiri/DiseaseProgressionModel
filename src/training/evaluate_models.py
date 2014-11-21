@@ -18,6 +18,7 @@ def main():
     parser.add_argument('-b', '--biomarkers', nargs='+', default=None, help='name of the biomarker to be plotted')
     parser.add_argument('-p', '--phase', default=None, choices=DataHandler.get_phase_choices(), help='the phase for which the model is to be trained')
     parser.add_argument('-n', '--nr_threads', type=int, default=4, help='number of threads')
+    parser.add_argument('--recompute_metric', action='store_true', help='recompute the metric')
     parser.add_argument('--value_samples', type=int, default=100, help='the number of values samples')
     parser.add_argument('--progress_samples', type=int, default=50, help='the number of progress samples')
     parser.add_argument('--quantiles', type=float, nargs=2, default=[0.01, 0.99], help='the quantiles for the interval computation')
@@ -41,7 +42,7 @@ def evaluate_biomarker_cover(args, data_handler, biomarker):
     model_file = data_handler.get_model_file(biomarker)
     eval_file = model_file.replace('.csv', '_eval_{0}.csv'.format(args.metric))
 
-    if os.path.isfile(eval_file):
+    if os.path.isfile(eval_file) and not args.recompute_metric:
         print log.SKIP, 'Evaluation file already existing: {0}'.format(eval_file)
     elif not os.path.isfile(model_file):
         print log.ERROR, 'Model file not found: {0}!'.format(model_file)
@@ -105,7 +106,7 @@ def evaluate_biomarker_disc(args, data_handler, biomarker):
             for value in values:
                 prob_value = model.get_probability_value(value, progress)
                 samples = {'bl': {'scantime': 0, biomarker: value}}
-                estimated_dpi = fitter.get_dpi_for_samples(samples)
+                estimated_dpi = fitter.get_dpi_for_samples(samples, phase=args.args)
                 sample_error += prob_value * np.square(progress - estimated_dpi)
             sample_error = math.sqrt(value_step * sample_error / len(values))
             total_error += sample_error

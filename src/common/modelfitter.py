@@ -16,17 +16,16 @@ class ModelFitter(object):
     """
     TODO: classdocs
     """
-    TEST_SCALE_MIN = 0.1
-    TEST_SCALE_MAX = 3.0
-    TEST_SCALE_STEP = 0.1
+    @staticmethod
+    def get_test_dpi_range(phase=None):
+        if phase == 'joint':
+            return -2000, 4000, 10
+        else:
+            return -3500, 2500, 10
 
-    TEST_DPI_MIN = -3500
-    TEST_DPI_MAX = 2500
-    TEST_DPI_STEP = 10
-
-    TEST_DPR_MIN = 0.0
-    TEST_DPR_MAX = 3.0
-    TEST_DPR_STEP = 0.1
+    @staticmethod
+    def get_test_dpr_range(phase=None):
+        return 0.0, 0.3, 0.1
 
     ############################################################################
     #
@@ -84,44 +83,10 @@ class ModelFitter(object):
 
     ############################################################################
     #
-    # __get_scaling_for_samples()
-    #
-    ############################################################################
-    def __get_scaling_for_samples(self, samples):
-        """ Return the optimal scaling value for a subject given a number of samples
-        and a set of biomarkers.
-
-        :param dict samples: the test samples
-
-        :return: the estimated DPI and DPR
-        """
-        test_scalings = np.arange(self.TEST_SCALE_MIN,
-                                  self.TEST_SCALE_MAX,
-                                  self.TEST_SCALE_STEP)
-
-        # Compute likelihood for each scaling
-        likelihoods = []
-        for scaling in test_scalings:
-            likelihood = 0.0
-            for viscode in samples:
-                scaled_progress = samples[viscode]['progress'] * scaling
-                likelihood += self.model.get_log_likelihood(samples[viscode], scaled_progress)
-            likelihoods.append(likelihood)
-
-        # Sanity check
-        if np.sum(likelihoods) == 0.0:
-            print log.WARNING, 'All likelihoods equal zero!'
-            return None
-
-        # Find the scaling with the highest likelihood
-        return test_scalings[np.argmax(likelihoods)]
-
-    ############################################################################
-    #
     # get_dpi_for_samples()
     #
     ############################################################################
-    def get_dpi_for_samples(self, samples):
+    def get_dpi_for_samples(self, samples, phase=None):
         """ Return the estimated DPI of a subject given a number of samples and
         a set of biomarkers.
 
@@ -129,9 +94,7 @@ class ModelFitter(object):
 
         :return: the estimated DPI
         """
-        test_dpis = np.arange(self.TEST_DPI_MIN,
-                              self.TEST_DPI_MAX,
-                              self.TEST_DPI_STEP)
+        test_dpis = np.arange(*ModelFitter.get_test_dpi_range(phase))
 
         min_scantime = min([samples[v]['scantime'] for v in samples])
 
@@ -157,7 +120,7 @@ class ModelFitter(object):
     # get_dpi_dpr_for_samples()
     #
     ############################################################################
-    def get_dpi_dpr_for_samples(self, samples):
+    def get_dpi_dpr_for_samples(self, samples, phase=None):
         """ Return the estimated DPI and DPR of a subject given a number of samples
         and a set of biomarkers.
 
@@ -165,12 +128,8 @@ class ModelFitter(object):
 
         :return: the estimated DPI and DPR
         """
-        test_dprs = np.arange(self.TEST_DPR_MIN,
-                              self.TEST_DPR_MAX,
-                              self.TEST_DPR_STEP)
-        test_dpis = np.arange(self.TEST_DPI_MIN,
-                              self.TEST_DPI_MAX,
-                              self.TEST_DPI_STEP)
+        test_dprs = np.arange(*ModelFitter.get_test_dpr_range(phase))
+        test_dpis = np.arange(*ModelFitter.get_test_dpi_range(phase))
 
         min_scantime = min([samples[v]['scantime'] for v in samples])
 

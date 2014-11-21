@@ -20,7 +20,6 @@ def get_progress_estimates(visits,
     data_handler = DataHandler.get_data_handler(method=method,
                                                 biomarkers=biomarkers,
                                                 phase=phase)
-    biomarkers = data_handler.get_biomarker_names()
 
     # Get filename
     estimates_file_trunk = 'estimate_dpi_dpr_with_{0}_{1}.p' if estimate_dprs else 'estimate_dpi_with_{0}_{1}.p'
@@ -38,6 +37,7 @@ def get_progress_estimates(visits,
         (rids, diagnoses, dpis, dprs, mean_min, mean_max) = pickle.load(open(estimates_file, 'rb'))
     else:
         # Collect data for test
+        biomarkers = data_handler.get_biomarker_names()
         measurements = data_handler.get_measurements_as_dict(visits=visits,
                                                              biomarkers=biomarkers,
                                                              select_test_set=True,
@@ -58,10 +58,10 @@ def get_progress_estimates(visits,
         if not estimate_dprs or len(visits) == 1:
             if estimate_dprs and len(visits) == 1:
                 print log.WARNING, 'Only one visit, cannot estimate DPR (setting to one)'
-            rids, diagnoses, dpis = estimate_dpis(measurements, visits, fitter)
+            rids, diagnoses, dpis = estimate_dpis(measurements, visits, fitter, phase=phase)
             dprs = np.ones(len(dpis)).tolist()
         else:
-            rids, diagnoses, dpis, dprs = estimate_dpis_dprs(measurements, visits, fitter)
+            rids, diagnoses, dpis, dprs = estimate_dpis_dprs(measurements, visits, fitter, phase=phase)
 
         print log.INFO, 'Saving DPI{0} estimations to {1}...'.format('\DPR' if estimate_dprs else '', estimates_file)
         pickle.dump((rids, diagnoses, dpis, dprs, mean_min, mean_max), open(estimates_file, 'wb'))
@@ -97,7 +97,7 @@ def get_progress_estimates(visits,
     return rids, diagnoses, dpis, dprs, mean_min, mean_max
 
 
-def estimate_dpis(measurements, viscodes, fitter):
+def estimate_dpis(measurements, viscodes, fitter, phase=None):
     rids = []
     diagnoses = []
     dpis = []
@@ -115,7 +115,7 @@ def estimate_dpis(measurements, viscodes, fitter):
         samples = {}
         for viscode in viscodes:
             samples.update({viscode: measurements[rid][viscode]})
-        dpi = fitter.get_dpi_for_samples(samples)
+        dpi = fitter.get_dpi_for_samples(samples, phase=phase)
 
         print log.RESULT, 'Subject {0}: Estimated DPI: {1}, Diagnosis: {2}'.format(rid, dpi, diagnosis)
         if dpi is not None:
@@ -126,7 +126,7 @@ def estimate_dpis(measurements, viscodes, fitter):
     return rids, diagnoses, dpis
 
 
-def estimate_dpis_dprs(measurements, viscodes, fitter):
+def estimate_dpis_dprs(measurements, viscodes, fitter, phase=None):
     # Test all available subjects
     rids = []
     diagnoses = []
@@ -146,7 +146,7 @@ def estimate_dpis_dprs(measurements, viscodes, fitter):
         samples = {}
         for viscode in viscodes:
             samples.update({viscode: measurements[rid][viscode]})
-        dpi, dpr = fitter.get_dpi_dpr_for_samples(samples)
+        dpi, dpr = fitter.get_dpi_dpr_for_samples(samples, phase=phase)
 
         print log.RESULT, 'Subject {0}: Estimated DPI: {1}, DPR: {2}, Diagnosis: {3}'.format(rid, dpi, dpr, diagnosis)
         if dpi is not None and dpr is not None:

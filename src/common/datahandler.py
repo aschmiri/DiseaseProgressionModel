@@ -25,22 +25,39 @@ class DataHandler(object):
     TODO: classdocs
     """
     class Config(object):
-        def __init__(self):
-            class ListConfigParser(ConfigParser.SafeConfigParser):
-                def getlist(self, section, option):
-                    list_string = self.get(section, option)
-                    return [e.strip() for e in list_string.split(',')]
+        class ListConfigParser(ConfigParser.SafeConfigParser):
+            def getlist(self, section, option):
+                list_string = self.get(section, option)
+                return [e.strip() for e in list_string.split(',')]
 
+            def getint(self, section, option):
+                value = self.get(section, option)
+                try:
+                    return int(value)
+                except:
+                    return None
+
+            def getfloat(self, section, option):
+                value = self.get(section, option)
+                try:
+                    return float(value)
+                except:
+                    return None
+
+        def __init__(self):
+            # Load config file
             config_path = os.path.dirname(os.path.relpath(__file__))
             config_file = os.path.join(config_path, '..', 'configure.ini')
-            config = ListConfigParser()
+            config = self.ListConfigParser()
             config.read(config_file)
 
+            # Load default data and project folders
             self.project_folder = config.get('DEFAULT', 'project_folder')
             self.data_folder = config.get('DEFAULT', 'data_folder')
             self.models_folder = config.get('DEFAULT', 'models_folder')
             self.eval_folder = config.get('DEFAULT', 'eval_folder')
 
+            # Load biomarker configurations
             self.biomarker_sets = config.getlist('biomarkers', 'biomarker_sets')
             self.combined_biomarker_sets = config.getlist('biomarkers', 'combined_sets')
             self.biomarker_names = {'synth': SynthModel.get_biomarker_names()}
@@ -77,9 +94,43 @@ class DataHandler(object):
                 else:
                     print log.ERROR, 'Failed to read set {0}'.format(combined_set)
 
+            # Load VGAM configurations
+            self.vgam_degrees_of_freedom = {'default': config.getint('VGAM', 'degrees_of_freedom')}
+            self.vgam_zero = {'default': config.getint('VGAM', 'zero')}
+            for biomarker_set in self.biomarker_sets:
+                # Load specific settings for biomarker set
+                if config.has_option(biomarker_set, 'degrees_of_freedom'):
+                    dof = config.getint(biomarker_set, 'degrees_of_freedom')
+                    self.vgam_degrees_of_freedom.update({biomarker_set: dof})
+                if config.has_option(biomarker_set, 'zero'):
+                    zero = config.getint(biomarker_set, 'zero')
+                    self.vgam_zero.update({biomarker_set: zero})
+
+                # Load specific settings for biomarker
+                for biomarker in self.biomarker_names[biomarker_set]:
+                    if config.has_section(biomarker):
+                        if config.has_option(biomarker, 'degrees_of_freedom'):
+                            dof = config.getint(biomarker, 'degrees_of_freedom')
+                            self.vgam_degrees_of_freedom .update({biomarker: dof})
+                        if config.has_option(biomarker, 'zero'):
+                            zero = config.getint(biomarker, 'zero')
+                            self.vgam_zero.update({biomarker: zero})
+
     _conf = Config()
     _method = None
     _biomarker_subset = None
+
+    ############################################################################
+    #
+    # get_data_handler()
+    #
+    ############################################################################
+    @staticmethod
+    def get_data_handler(method=None, biomarkers=None, phase=None):
+        if method == 'synth':
+            return SynthDataHandler(biomarkers=biomarkers)
+        else:
+            return ClinicalDataHandler(method=method, biomarkers=biomarkers, phase=phase)
 
     ############################################################################
     #
@@ -97,18 +148,6 @@ class DataHandler(object):
 
     ############################################################################
     #
-    # get_data_handler()
-    #
-    ############################################################################
-    @staticmethod
-    def get_data_handler(method=None, biomarkers=None, phase=None):
-        if method == 'synth':
-            return SynthDataHandler(biomarkers=biomarkers)
-        else:
-            return ClinicalDataHandler(method=method, biomarkers=biomarkers, phase=phase)
-
-    ############################################################################
-    #
     # get_method_choices()
     #
     ############################################################################
@@ -123,7 +162,7 @@ class DataHandler(object):
     ############################################################################
     @classmethod
     def get_phase_choices(cls):
-        return ['cn-mci', 'mci-ad', 'joint']
+        return ['cnmci', 'mciad', 'joint']
 
     ############################################################################
     #
@@ -212,21 +251,19 @@ class DataHandler(object):
     # _get_data_file_for_biomarker()
     #
     ############################################################################
-    @classmethod
-    def _get_data_file_for_biomarker(cls, biomarker):
+    def _get_data_file_for_biomarker(self, biomarker):
         """ Get the right data file for the given biomarker. """
-        method = cls._get_method_for_biomarker(biomarker)
-        return cls._get_data_file_for_method(method)
+        method = self._get_method_for_biomarker(biomarker)
+        return self._get_data_file_for_method(method)
 
     ############################################################################
     #
     # _get_data_file_for_method()
     #
     ############################################################################
-    @classmethod
-    def _get_data_file_for_method(cls, method):
+    def _get_data_file_for_method(self, method):
         """ Get the right data file for the given method. """
-        return cls._conf.data_files[method]
+        return self._conf.data_files[method]
 
     ############################################################################
     #
@@ -288,6 +325,44 @@ class DataHandler(object):
 
     ############################################################################
     #
+    # get_vgam_degrees_of_freedom()
+    #
+    ############################################################################
+    def get_vgam_degrees_of_freedom(self, biomarker=None):
+        """ Get the degrees of freedom for the given biomarker.
+        If conflicting settings are given, the following order is considered:
+        biomarker-specific > set-specific > default definition
+        """
+        if biomarker is None:
+            return self._conf.vgam_degrees_of_freedom['default']
+        elif biomarker in self._conf.vgam_degrees_of_freedom:
+            return self._conf.vgam_degrees_of_freedom[biomarker]
+        elif self._get_method_for_biomarker(biomarker) in self._conf.vgam_degrees_of_freedom:
+            return self._conf.vgam_degrees_of_freedom[self._get_method_for_biomarker(biomarker)]
+        else:
+            return self._conf.vgam_degrees_of_freedom['default']
+
+    ############################################################################
+    #
+    # get_vgam_zero()
+    #
+    ############################################################################
+    def get_vgam_zero(self, biomarker=None):
+        """ Get the zero for the given biomarker.
+        If conflicting settings are given, the following order is considered:
+        biomarker-specific > set-specific > default definition
+        """
+        if biomarker is None:
+            return self._conf.vgam_zero['default']
+        elif biomarker in self._conf.vgam_zero:
+            return self._conf.vgam_zero[biomarker]
+        elif self._get_method_for_biomarker(biomarker) in self._conf.vgam_zero:
+            return self._conf.vgam_zero[self._get_method_for_biomarker(biomarker)]
+        else:
+            return self._conf.vgam_zero['default']
+
+    ############################################################################
+    #
     # get_measurements_as_dict()
     #
     ############################################################################
@@ -341,11 +416,11 @@ class ClinicalDataHandler(DataHandler):
             self._method = method
 
         if phase is None:
-            self._phase = 'mci-ad'
+            self._phase = 'mciad'
         else:
             self._phase = phase
 
-        self._model_offset = 2150
+        self._model_offset = 2110
 
     ############################################################################
     #
@@ -706,12 +781,13 @@ class ClinicalDataHandler(DataHandler):
             data_diagnosis = data_diagnosis[args]
 
             converter_cn_mci = self._diagnosis_is_cn(data_diagnosis[0]) and self._diagnosis_is_mci(data_diagnosis[-1])
+            converter_cn_ad = self._diagnosis_is_cn(data_diagnosis[0]) and self._diagnosis_is_ad(data_diagnosis[-1])
             converter_mci_ad = self._diagnosis_is_mci(data_diagnosis[0]) and self._diagnosis_is_ad(data_diagnosis[-1])
             converter = converter_cn_mci or converter_mci_ad
 
             # Select converters with MCI as first and AD as last diagnosis
-            if ((self._phase == 'cn-mci' and converter_cn_mci) or
-                    (self._phase == 'mci-ad' and converter_mci_ad) or
+            if ((self._phase == 'cnmci' and (converter_cn_mci or converter_cn_ad)) or
+                    (self._phase == 'mciad' and converter_mci_ad) or
                     (self._phase == 'joint' and converter)):
                 # Mark as valid
                 valid_rids.append(rid)
@@ -720,9 +796,9 @@ class ClinicalDataHandler(DataHandler):
                 time_convert = None
                 scantime_prev = data_scantime[0]
                 for diagnosis, scantime in zip(data_diagnosis, data_scantime):
-                    if ((self._phase == 'cn-mci' and
-                         self._diagnosis_is_mci(diagnosis)) or
-                        (self._phase == 'mci-ad' and
+                    if ((self._phase == 'cnmci' and
+                         (self._diagnosis_is_mci(diagnosis) or self._diagnosis_is_ad(diagnosis))) or
+                        (self._phase == 'mciad' and
                          self._diagnosis_is_ad(diagnosis))):
                         time_convert = 0.5 * (scantime + scantime_prev)
                         break

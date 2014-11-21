@@ -48,7 +48,9 @@ def main():
 
 def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
     print log.INFO, 'Plotting estimates...'
-    dpi_range = float(ModelFitter.TEST_DPI_MAX - ModelFitter.TEST_DPI_MIN)
+    test_dpi_max, test_dpi_min, _ = ModelFitter.get_test_dpi_range(args.phase)
+    dpi_range = float(test_dpi_max - test_dpi_min)
+    dpi_factor = float(args.plot_steps) / dpi_range
 
     # Setup plot
     fig, ax = plt.subplots(figsize=(6, 2))
@@ -64,14 +66,14 @@ def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
 
     xticks = np.linspace(0, args.plot_steps, 7)
     ax.set_xticks(xticks)
-    ax.set_xticklabels([int(float(tick) / args.plot_steps * dpi_range + ModelFitter.TEST_DPI_MIN) for tick in xticks])
+    ax.set_xticklabels([int(float(tick) / dpi_factor + test_dpi_min) for tick in xticks])
 
     # Compute matrix
     diagnosis_indices = {0.0: 0, 0.25: 1, 0.5: 1, 0.75: 2, 1.0: 3}
     matrix = np.zeros((4, args.plot_steps + 1))
     for dpi, diag in zip(dpis, diagnoses):
         row = diagnosis_indices[diag]
-        dpi_index = round((dpi - ModelFitter.TEST_DPI_MIN) / dpi_range * args.plot_steps)
+        dpi_index = round((dpi - test_dpi_min) * dpi_factor)
         matrix[row, dpi_index] += 1.0
 
     # Draw annotations
@@ -86,9 +88,9 @@ def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
 
         indices = np.where(diagnoses == diag)
         median = np.median(dpis[indices])
-        medians.append((median - ModelFitter.TEST_DPI_MIN) / dpi_range * args.plot_steps)
-        q25.append((median - np.percentile(dpis[indices], 25.0)) / dpi_range * args.plot_steps)
-        q75.append((np.percentile(dpis[indices], 75.0) - median) / dpi_range * args.plot_steps)
+        medians.append((median - test_dpi_min) * dpi_factor)
+        q25.append((median - np.percentile(dpis[indices], 25.0)) * dpi_factor)
+        q75.append((np.percentile(dpis[indices], 75.0) - median) * dpi_factor)
 
     if args.plot_lines:
         ax.set_ylim(-0.01, 0.36)
@@ -108,9 +110,11 @@ def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
         plt.errorbar(medians, [0, 1, 2, 3], xerr=[q25, q75], fmt=None, ecolor=barcol, elinewidth=2, capsize=4, capthick=2)
         plt.plot(medians, [0, 1, 2, 3], linestyle='', color=barcol, marker='|', markersize=15, markeredgewidth=2)
         plt.imshow(matrix, cmap=cmap, interpolation='nearest')
-    plt.axvline((mean_min - ModelFitter.TEST_DPI_MIN) / dpi_range * args.plot_steps, color='k', linestyle=':', alpha=0.6)
-    plt.axvline((mean_max - ModelFitter.TEST_DPI_MIN) / dpi_range * args.plot_steps, color='k', linestyle=':', alpha=0.6)
-    plt.axvline(-ModelFitter.TEST_DPI_MIN / dpi_range * args.plot_steps, color='k', linestyle='-', alpha=0.6)
+    plt.axvline((mean_min - test_dpi_min) * dpi_factor, color='k', linestyle=':', alpha=0.6)
+    plt.axvline((mean_max - test_dpi_min) * dpi_factor, color='k', linestyle=':', alpha=0.6)
+    plt.axvline((0.0 - test_dpi_min) * dpi_factor, color='k', linestyle='-', alpha=0.6)
+    if args.phase == 'joint':
+        plt.axvline((2110.0 - test_dpi_min) * dpi_factor, color='k', linestyle='-', alpha=0.6)
 
     # Draw or save the plot
     plt.tight_layout()
