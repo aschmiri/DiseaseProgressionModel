@@ -25,7 +25,7 @@ class ModelFitter(object):
 
     @staticmethod
     def get_test_dpr_range(phase=None):
-        return 0.0, 0.3, 0.1
+        return 0.0, 3.0, 0.1
 
     ############################################################################
     #
