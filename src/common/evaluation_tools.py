@@ -15,7 +15,8 @@ from common.modelfitter import ModelFitter
 def get_progress_estimates(visits,
                            method=None, biomarkers=None, phase=None,
                            recompute_estimates=False,
-                           estimate_dprs=False, consistent_data=False):
+                           estimate_dprs=False, consistent_data=False,
+                           select_training_set=False, select_test_set=False):
     # Get data handler and biomarker names
     data_handler = DataHandler.get_data_handler(method=method,
                                                 biomarkers=biomarkers,
@@ -38,9 +39,8 @@ def get_progress_estimates(visits,
     else:
         # Collect data for test
         biomarkers = data_handler.get_biomarker_names()
-        measurements = data_handler.get_measurements_as_dict(visits=visits,
+        measurements = data_handler.get_measurements_as_dict(visits=['bl', 'm12', 'm24'],
                                                              biomarkers=biomarkers,
-                                                             select_test_set=True,
                                                              select_complete=True)
 
         # Setup model
@@ -67,15 +67,16 @@ def get_progress_estimates(visits,
         pickle.dump((rids, diagnoses, dpis, dprs, mean_min, mean_max), open(estimates_file, 'wb'))
 
     # Reduce to consistent data sets with bl, m12 and m24 samples
-    if consistent_data:
-        all_biomarkers = DataHandler.get_all_biomarker_names()
-        consistent_data_handler = DataHandler.get_data_handler()
+    if consistent_data or select_training_set or select_test_set:
+        consistent_method = 'all' if consistent_data else method
+        consistent_data_handler = DataHandler.get_data_handler(method=consistent_method)
         consistent_measurements = consistent_data_handler.get_measurements_as_dict(
             visits=['bl', 'm12', 'm24'],
-            biomarkers=all_biomarkers,
-            select_test_set=True,
+            select_training_set=select_training_set,
+            select_test_set=select_test_set,
             select_complete=True,
             no_regression=True)
+
         consistent_rids = []
         consistent_diagnoses = []
         consistent_dpis = []

@@ -2,6 +2,7 @@
 import os.path
 import argparse
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.cm as cmx
 import matplotlib.colors as colors
@@ -18,32 +19,31 @@ def main():
     parser.add_argument('-m', '--method', choices=DataHandler.get_method_choices(), default='all', help='the method to collect data for')
     parser.add_argument('-b', '--biomarkers', nargs='+', default=None, help='name of the biomarker to be plotted')
     parser.add_argument('-p', '--phase', default=None, choices=DataHandler.get_phase_choices(), help='the phase for which the model is to be trained')
-    parser.add_argument('--consistent_data', action='store_true', help='us only subjects with bl, m12 and m24 visits')
     parser.add_argument('--estimate_dprs', action='store_true', help='recompute the dpis estimations')
     parser.add_argument('--recompute_estimates', action='store_true', help='recompute the dpis estimations')
-    parser.add_argument('--no_analysis', action='store_true', help='do not perform analysis')
+    parser.add_argument('--consistent_data', action='store_true', help='us only subjects with bl, m12 and m24 visits')
     parser.add_argument('--no_plot', action='store_true', help='do not plot the results')
-    parser.add_argument('--plot_distribution', action='store_true', help='plot the DP/DPR distribution')
     parser.add_argument('--plot_lines', action='store_true', help='plot graphs instead of matrix')
     parser.add_argument('--plot_steps', type=int, default=15, help='number of steps for the DPI scale')
     parser.add_argument('--plot_file', type=str, default=None, help='filename of the output file')
     parser.add_argument('--plot_cmap_jet', action='store_true', help='use the colour map jet')
-    parser.add_argument('--latex_file', type=str, default=None, help='add output to a LaTeX file')
     args = parser.parse_args()
 
-    _, diagnoses, dpis, dprs, mean_min, mean_max = et.get_progress_estimates(args.visits,
-                                                                             method=args.method,
-                                                                             biomarkers=args.biomarkers,
-                                                                             phase=args.phase,
-                                                                             estimate_dprs=args.estimate_dprs,
-                                                                             recompute_estimates=args.recompute_estimates,
-                                                                             consistent_data=args.consistent_data)
+    # Get estimates
+    _, diagnoses, dpis, dprs, mean_min, mean_max = et.get_progress_estimates(
+        args.visits,
+        method=args.method,
+        biomarkers=args.biomarkers,
+        phase=args.phase,
+        estimate_dprs=args.estimate_dprs,
+        recompute_estimates=args.recompute_estimates,
+        consistent_data=args.consistent_data)
+
+    # Plot results
     if not args.no_plot:
         plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max)
-    if args.plot_distribution and args.estimate_dprs:
-        plot_dpi_dpr_distribution(args, dpis, dprs, diagnoses)
-    if not args.no_analysis:
-        analyse_dpi_estimates(args, dpis, dprs, diagnoses)
+        if args.estimate_dprs:
+            plot_dpi_dpr_distribution(args, dpis, dprs, diagnoses)
 
 
 def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
@@ -127,6 +127,8 @@ def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
 
 def plot_dpi_dpr_distribution(args, dpis, dprs, diagnoses):
     print log.INFO, 'Plotting estimate distributions...'
+    diagnoses = np.array(diagnoses)
+    diagnoses[(0.25 <= diagnoses) & (diagnoses <= 0.75)] = 0.5
 
     # Setup plot
     fig, ax = plt.subplots()
@@ -141,6 +143,14 @@ def plot_dpi_dpr_distribution(args, dpis, dprs, diagnoses):
                 vmin=0.0, vmax=1.0, cmap=pt.progression_cmap,
                 alpha=0.5)
 
+    # Plot legend
+    rects = [mpl.patches.Rectangle((0, 0), 1, 1, fc=pt.color_cn + (0.5,), linewidth=0),
+             mpl.patches.Rectangle((0, 0), 1, 1, fc=pt.color_mci + (0.5,), linewidth=0),
+             mpl.patches.Rectangle((0, 0), 1, 1, fc=pt.color_ad + (0.5,), linewidth=0)]
+    labels = ['CN', 'MCI', 'AD']
+    legend = ax.legend(rects, labels, fontsize=10, ncol=len(rects), loc='upper center', framealpha=0.9)
+    legend.get_frame().set_edgecolor((0.6, 0.6, 0.6))
+
     # Draw or save the plot
     plt.tight_layout()
     if args.plot_file is not None:
@@ -148,115 +158,6 @@ def plot_dpi_dpr_distribution(args, dpis, dprs, diagnoses):
     else:
         plt.show()
     plt.close(fig)
-
-
-def analyse_dpi_estimates(args, dpis, dprs, diagnoses):
-    print log.INFO, 'Analysing classification accuracies...'
-
-    # Calculate accuracy
-    if args.estimate_dprs:
-        features = np.zeros((len(dpis), 2))
-        features[:, 0] = np.array(dpis)
-        features[:, 1] = np.array(dprs)
-    else:
-        features = np.zeros((len(dpis), 1))
-        features[:, 0] = np.array(dpis)
-    diagnoses = np.array(diagnoses)
-
-    features_cn = features[np.where(diagnoses == 0.0)]
-    features_ad = features[np.where(diagnoses == 1.0)]
-    features_emci = features[np.where(diagnoses == 0.25)]
-    features_lmci = features[np.where(diagnoses == 0.75)]
-    features_mci = np.concatenate((features_emci, features_lmci))
-
-    # AD - CL
-    acc_cn_ad, t_cn_ad = run_classification(features_cn, features_ad)
-    print log.RESULT, 'Leave-one-out accuracy CN vs. AD {0} (threshold {1})'.format(acc_cn_ad, t_cn_ad)
-    acc_cn_mci, t_cn_mci = run_classification(features_cn, features_mci)
-    print log.RESULT, 'Leave-one-out accuracy CN vs. MCI {0} (threshold {1})'.format(acc_cn_mci, t_cn_mci)
-    acc_mci_ad, t_mci_ad = run_classification(features_mci, features_ad)
-    print log.RESULT, 'Leave-one-out accuracy MCI vs. AD {0} (threshold {1})'.format(acc_mci_ad, t_mci_ad)
-    acc_emci_lmci, t_emci_lmci = run_classification(features_emci, features_lmci)
-    print log.RESULT, 'Leave-one-out accuracy EMCI vs. LMCI {0} (threshold {1})'.format(acc_emci_lmci, t_emci_lmci)
-
-    if args.latex_file is not None:
-        data_handler = DataHandler.get_data_handler(method=args.method,
-                                                    biomarkers=args.biomarkers,
-                                                    phase=args.phase)
-        filename = os.path.join(data_handler.get_eval_folder(), args.latex_file)
-        with open(filename, 'a') as latex_file:
-            latex_file.write('{0} & {1} & {2:.2f} & {3:.1f} & {4:.2f} & {5:.1f} & {6:.2f} & {7:.1f} & {8:.2f} & {9:.1f}\\\\\n'.format(
-                             args.method,
-                             len(args.visits),
-                             acc_cn_ad, t_cn_ad,
-                             acc_cn_mci, t_cn_mci,
-                             acc_mci_ad, t_mci_ad,
-                             acc_emci_lmci, t_emci_lmci))
-
-
-def run_classification(features1, features2):
-    # Assemble data
-    features = np.concatenate((features1, features2))
-    labels = np.concatenate((np.zeros(len(features1)), np.ones(len(features2))))
-
-#     from sklearn import cross_validation
-#     from sklearn import svm
-#     from sklearn import lda
-#     from sklearn import tree
-#
-#     loo = cross_validation.LeaveOneOut(len(labels))
-#
-#     num_correct = 0
-#     for train_index, test_index in loo:
-#         X_train, X_test = features[train_index], features[test_index]
-#         y_train, y_test = labels[train_index], labels[test_index]
-# #         clf = svm.SVC()
-# #         clf = lda.LDA()
-#         clf = tree.DecisionTreeClassifier()
-# #         clf = linear_model.LinearRegression()
-#         clf.fit(X_train, y_train)
-#
-#         if clf.predict(X_test) == y_test:
-#             num_correct += 1
-#
-#     mean_accuracy = float(num_correct) / len(labels)
-#     mean_tresh = 0
-#
-#     return mean_accuracy, mean_tresh
-
-    # Sort data
-    indices = np.argsort(features[:, 0])
-    features = features[indices]
-    labels = labels[indices]
-
-    num_correct = 0
-    thresholds = []
-    from sklearn import cross_validation
-    loo = cross_validation.LeaveOneOut(len(features))
-
-    # for test_i, test_label in enumerate(labels):
-    for train_index, test_index in loo:
-        X_train, X_test = features[train_index], features[test_index]
-        y_train, y_test = labels[train_index], labels[test_index]
-
-        # Train optimal threshold
-        accuracies = []
-        for thresh in range(len(y_train)):
-            accuracies.append(thresh - np.sum(y_train[:thresh]) + np.sum(y_train[thresh:]))
-        max_index = np.argmax(accuracies)
-
-        # Get and store threshold
-        threshold = 0.5 * (X_train[max_index - 1] + X_train[max_index])
-        thresholds.append(threshold)
-
-        # Test test sample
-        if y_test == (0 if X_test <= threshold else 1):
-            num_correct += 1
-
-    mean_accuracy = float(num_correct) / len(labels)
-    mean_tresh = np.mean(thresholds)
-
-    return mean_accuracy, mean_tresh
 
 
 if __name__ == '__main__':

@@ -133,7 +133,7 @@ if [ $experiment -eq "10" ] ; then
   do
     biomarker_str=${biomarker/ /_}
     output_file="${folder}model_${biomarker_str}.pdf"
-    training/plot_models.py -b "${biomarker}" -p joint --plot_file "${output_file}"
+    training/plot_models.py -b "${biomarker}" -p joint --no_densities --no_sample_lines --plot_file "${output_file}"
   done
 fi
 
