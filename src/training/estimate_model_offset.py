@@ -16,6 +16,7 @@ def main():
     parser.add_argument('-m', '--method', choices=DataHandler.get_method_choices(), default='all', help='the method to collect data for')
     parser.add_argument('-b', '--biomarkers', nargs='+', default=None, help='name of the biomarker to be plotted')
     parser.add_argument('-e', '--extrapolator', type=str, choices=['lin', 'sqrt', 'exp'], default='exp', help='the type of extrapolator')
+    parser.add_argument('--plot_threshold', type=float, default=0.3, help='the threshold above which praphs are plotted')    
     parser.add_argument('--recompute_errors', action='store_true', help='recompute the matrix containing the fitting errors')
     parser.add_argument('--search_range', nargs=3, default=(1000, 5000, 10), help='the range in which the offset is sought')
     args = parser.parse_args()
@@ -33,7 +34,7 @@ def main():
     ax.set_xlabel('Offset (days)')
     ax.set_ylabel('Fitting error')
     for i, biomarker in enumerate(biomarkers):
-        if descriminativeness[i] > 0.4:
+        if descriminativeness[i] > args.plot_threshold:
             print log.RESULT, 'Min error for {0} at {1}'.format(biomarker, offsets[np.argmin(errors[i, :])])
             ax.plot(offsets, errors[i, :], label=biomarker, linestyle='--')
 
