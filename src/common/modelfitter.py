@@ -19,7 +19,7 @@ class ModelFitter(object):
     @staticmethod
     def get_test_dpi_range(phase=None):
         if phase == 'joint':
-            return -2000, 4000, 10
+            return -2500, 4500, 10
         else:
             return -3500, 2500, 10
 

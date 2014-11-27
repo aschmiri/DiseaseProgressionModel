@@ -91,7 +91,7 @@ if [ $experiment -eq "7" ] ; then
     for visits in "bl" "bl m12" "bl m12 m24"
     do
       output_file="${folder}eval_fitting_${method}_${i}.pdf"
-      estimation/estimate_progressions.py ${visits} -m ${method} --consistent_data --no_analysis --plot_file "${output_file}"
+      estimation/estimate_progressions.py ${visits} -m ${method} --consistent_data --plot_file "${output_file}"
       i=`expr $i + 1`   
     done
   done
@@ -133,7 +133,9 @@ if [ $experiment -eq "10" ] ; then
   do
     biomarker_str=${biomarker/ /_}
     output_file="${folder}model_${biomarker_str}.pdf"
-    training/plot_models.py -b "${biomarker}" -p joint --no_densities --no_sample_lines --plot_file "${output_file}"
+    output_file_dens="${folder}model_${biomarker_str}_dens.pdf"
+    training/plot_models.py -b "${biomarker}" -p joint --no_densities --plot_file "${output_file}"
+    training/plot_models.py -b "${biomarker}" -p joint --only_densities --plot_file "${output_file_dens}"
   done
 fi
 
@@ -141,13 +143,13 @@ fi
 # Progression estimates
 #
 if [ $experiment -eq "11" ] ; then
-  for method in  cog ml vol img all vol2 hcv
+  for method in  cog #ml img2 vol img all
   do
     i=1
     for visits in "bl" "bl m12" "bl m12 m24"
     do
       output_file="${folder}eval_fitting_${method}_${i}.pdf"
-      estimation/estimate_progressions.py ${visits} -m ${method} -p joint --consistent_data --no_analysis --plot_file "${output_file}"
+      estimation/estimate_progressions.py ${visits} -m ${method} -p joint --consistent_data --plot_file "${output_file}"
       i=`expr $i + 1`   
     done
   done

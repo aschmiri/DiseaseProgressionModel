@@ -18,7 +18,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--method', choices=DataHandler.get_method_choices(), default='all', help='the method to collect data for')
     parser.add_argument('-b', '--biomarkers', nargs='+', default=None, help='name of the biomarker to be plotted')
-    parser.add_argument('-p', '--phase', default=None, choices=DataHandler.get_phase_choices(), help='the phase for which the model is to be trained')
+    parser.add_argument('-p', '--phase', default='mciad', choices=DataHandler.get_phase_choices(), help='the phase for which the model is to be trained')
     parser.add_argument('-e', '--extrapolator', type=str, choices=['lin', 'sqrt', 'exp'], default='exp', help='the type of extrapolator')
     parser.add_argument('--xlim', type=float, nargs=2, default=None, help='force certain x limits for plotting')
     parser.add_argument('--ylim', type=float, nargs=2, default=None, help='force certain y limits for plotting')
@@ -83,15 +83,15 @@ def plot_model(args, data_handler, biomarker):
     if args.only_densities:
         ax1 = None
         ax2 = plt.subplot(1, 1, 1)
-        pt.setup_axes(plt, ax2)
+        pt.setup_axes(plt, ax2, xgrid=False, ygrid=False)
     elif args.no_densities:
         ax1 = plt.subplot(1, 1, 1)
         ax2 = None
-        pt.setup_axes(plt, ax1, xgrid=False)
+        pt.setup_axes(plt, ax1, xgrid=False, ygrid=False)
     else:
         ax1 = plt.subplot(1, 2, 1)
         ax2 = plt.subplot(1, 2, 2)
-        pt.setup_axes(plt, ax1, xgrid=False)
+        pt.setup_axes(plt, ax1, xgrid=False, ygrid=False)
         pt.setup_axes(plt, ax2)
 
     if not args.only_densities:

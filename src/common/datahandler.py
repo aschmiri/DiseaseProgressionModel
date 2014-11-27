@@ -96,6 +96,7 @@ class DataHandler(object):
                     self.biomarker_names.update({combined_set: biomarker_names})
 
             # Load VGAM configurations
+            self.model_offset = config.getint('VGAM', 'model_offset')
             self.vgam_degrees_of_freedom = {'default': config.getint('VGAM', 'degrees_of_freedom')}
             self.vgam_zero = {'default': config.getint('VGAM', 'zero')}
             for biomarker_set in self.biomarker_sets:
@@ -421,8 +422,6 @@ class ClinicalDataHandler(DataHandler):
         else:
             self._phase = phase
 
-        self._model_offset = 2110
-
     ############################################################################
     #
     # get_model_folder()
@@ -443,6 +442,14 @@ class ClinicalDataHandler(DataHandler):
         """ Get the evaluation folder."""
         return self.make_dir(self._conf.eval_folder,
                              self._phase)
+
+    ############################################################################
+    #
+    # get_model_offset()
+    #
+    ############################################################################
+    def get_model_offset(self):
+        return self._conf.model_offset
 
     ############################################################################
     #
@@ -547,7 +554,7 @@ class ClinicalDataHandler(DataHandler):
                 metadata[rid][viscode].update({'AGE.scan': self.safe_cast(row['AGE.scan'])})
 
                 # Get factor
-                metadata[rid][viscode].update({'FactorMNI': self.safe_cast(row['FactorMNI'])})
+                # metadata[rid][viscode].update({'FactorMNI': self.safe_cast(row['FactorMNI'])})
 
                 # Get diagnosis as numerical value
                 dx = self._diagnosis_code[row['DX.scan']]
@@ -809,7 +816,7 @@ class ClinicalDataHandler(DataHandler):
                         break
                     elif (self._phase == 'joint' and converter_mci_ad and
                           self._diagnosis_is_ad(diagnosis)):
-                        time_convert = 0.5 * (scantime + scantime_prev) - self._model_offset
+                        time_convert = 0.5 * (scantime + scantime_prev) - self._conf.model_offset
                         break
                     else:
                         scantime_prev = scantime

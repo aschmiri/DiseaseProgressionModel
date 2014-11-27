@@ -1,5 +1,4 @@
 #! /usr/bin/env python2.7
-import os.path
 import argparse
 import numpy as np
 import matplotlib as mpl
@@ -114,7 +113,8 @@ def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
     plt.axvline((mean_max - test_dpi_min) * dpi_factor, color='k', linestyle=':', alpha=0.6)
     plt.axvline((0.0 - test_dpi_min) * dpi_factor, color='k', linestyle='-', alpha=0.6)
     if args.phase == 'joint':
-        plt.axvline((2110.0 - test_dpi_min) * dpi_factor, color='k', linestyle='-', alpha=0.6)
+        data_handler = DataHandler.get_data_handler(method=args.method, biomarkers=args.biomarkers, phase=args.phase)
+        plt.axvline((data_handler.get_model_offset() - test_dpi_min) * dpi_factor, color='k', linestyle='-', alpha=0.6)
 
     # Draw or save the plot
     plt.tight_layout()
