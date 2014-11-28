@@ -572,7 +572,7 @@ class ClinicalDataHandler(DataHandler):
                     metadata[rid][viscode].update({'scantime': scantime})
 
         # Return metadata
-        print log.RESULT, 'Collected data of {0} subjects.'.format(len(metadata))
+        print log.INFO, 'Collected data of {0} subjects.'.format(len(metadata))
         return metadata
 
     ############################################################################
@@ -750,7 +750,7 @@ class ClinicalDataHandler(DataHandler):
                     valid_rids.append(rid)
             measurements = {rid: value for rid, value in measurements.items() if rid in valid_rids}
 
-        print log.RESULT, 'Selected {0} subjects.'.format(len(measurements))
+        print log.INFO, 'Selected {0} subjects.'.format(len(measurements))
         return measurements
 
     ############################################################################
@@ -828,7 +828,7 @@ class ClinicalDataHandler(DataHandler):
         # Remove non-valid rids
         measurements = {rid: value for rid, value in measurements.items() if rid in valid_rids}
 
-        print log.RESULT, 'Selected {0} subjects.'.format(len(measurements))
+        print log.INFO, 'Selected {0} subjects.'.format(len(measurements))
         return measurements
 
     ############################################################################
@@ -868,7 +868,7 @@ class ClinicalDataHandler(DataHandler):
         # Remove non-valid rids
         measurements = {rid: value for rid, value in measurements.items() if rid in valid_rids}
 
-        print log.RESULT, 'Selected {0} subjects.'.format(len(measurements))
+        print log.INFO, 'Selected {0} subjects.'.format(len(measurements))
         return measurements
 
     ############################################################################
@@ -889,15 +889,25 @@ class ClinicalDataHandler(DataHandler):
         biomarkers = self.get_biomarker_names() if biomarkers is None else biomarkers
 
         for rid, visit in measurements.items():
-            drop_rid = False
-            for viscode, visdata in visit.items():
-                if visits is None or viscode in visits:
+            # If no visits defined, drop all visits with incomplete measurements
+            if visits is None:
+                for viscode, visdata in visit.items():
                     if not set(biomarkers).issubset(set(visdata)):
-                        drop_rid = True
-            if drop_rid:
-                measurements.pop(rid)
+                        measurements[rid].pop(viscode)
+                if len(measurements[rid]) == 0:
+                    measurements.pop(rid)
+            # Else, drop all subjects with incomplete measurements at the
+            # specified visits
+            else:
+                drop_rid = False
+                for viscode, visdata in visit.items():
+                    if viscode in visits:
+                        if not set(biomarkers).issubset(set(visdata)):
+                            drop_rid = True
+                if drop_rid:
+                    measurements.pop(rid)
 
-        print log.RESULT, 'Selected {0} subjects.'.format(len(measurements))
+        print log.INFO, 'Selected {0} subjects.'.format(len(measurements))
         return measurements
 
     ############################################################################

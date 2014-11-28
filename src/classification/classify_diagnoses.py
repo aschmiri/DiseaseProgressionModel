@@ -18,7 +18,7 @@ def main():
     parser.add_argument('-m', '--method', choices=DataHandler.get_method_choices(), default='all', help='the method to collect data for')
     parser.add_argument('-b', '--biomarkers', nargs='+', default=None, help='name of the biomarker to be plotted')
     parser.add_argument('-p', '--phase', default=None, choices=DataHandler.get_phase_choices(), help='the phase for which the model is to be trained')
-    parser.add_argument('-c', '--classifier', default='lda', choices=['lda', 'svm', 'lsvm', 'rf'], help='the approach used to classify the subjects')
+    parser.add_argument('-c', '--classifier', default='svm', choices=['lda', 'svm', 'lsvm', 'rf'], help='the approach used to classify the subjects')
     parser.add_argument('--estimate_dprs', action='store_true', help='recompute the dpis estimations')
     parser.add_argument('--recompute_estimates', action='store_true', help='recompute the dpis estimations')
     parser.add_argument('--consistent_data', action='store_true', help='us only subjects with bl, m12 and m24 visits')
