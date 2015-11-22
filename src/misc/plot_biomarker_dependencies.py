@@ -36,6 +36,8 @@ def main():
     pt.setup_axes(plt, ax)
     ax.scatter(biomarkers_1, biomarkers_2, s=15.0, c=diagnoses, edgecolor='none',
                vmin=0.0, vmax=1.0, cmap=pt.progression_cmap, alpha=0.25)
+    ax.set_xlabel(biomarkers[0])
+    ax.set_ylabel(biomarkers[1])
 
     # Plot legend
     rects = [mpl.patches.Rectangle((0, 0), 1, 1, fc=pt.color_cn + (0.25,), linewidth=0),
