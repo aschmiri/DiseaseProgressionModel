@@ -33,6 +33,7 @@ def main():
     parser.add_argument('--plot_errors', action='store_true', default=False, help='plot the errors')
     parser.add_argument('--plot_synth_model', action='store_true', default=False, help='plot density distributions for synthetic data')
     parser.add_argument('--plot_quantile_label', action='store_true', default=False, help='plot labels on the quantile curces')
+    parser.add_argument('--plot_donohue', action='store_true', default=False, help='plot the trajectory estimated with Donohue et al.')
     parser.add_argument('--save_plots', action='store_true', default=False, help='save the plots with a default filename')
     parser.add_argument('--plot_file', type=str, default=None, help='filename of the output file')
     args = parser.parse_args()
@@ -58,8 +59,8 @@ def plot_model(args, data_handler, biomarker):
     #
     pm = ProgressionModel(biomarker, model_file, extrapolator=args.extrapolator)
     progress_extrapolate = 0.3 * (pm.max_progress - pm.min_progress)
-    min_progress_extrapolate = pm.min_progress - progress_extrapolate
-    max_progress_extrapolate = pm.max_progress + progress_extrapolate
+    min_progress_extrapolate = int(pm.min_progress - progress_extrapolate)
+    max_progress_extrapolate = int(pm.max_progress + progress_extrapolate)
     progress_linspace_ex1 = np.linspace(min_progress_extrapolate, pm.min_progress, 20)
     progress_linspace_int = np.linspace(pm.min_progress, pm.max_progress, 60)
     progress_linspace_ex2 = np.linspace(pm.max_progress, max_progress_extrapolate, 20)
@@ -99,7 +100,10 @@ def plot_model(args, data_handler, biomarker):
             ax1.set_title('Aligned samples for {0}'.format(biomarker_string))
         else:
             ax1.set_title('Quantile curves for {0}'.format(biomarker_string))
-        ax1.set_xlabel('Disease progress (days before/after conversion to AD)')
+        if args.phase == 'mciad':
+            ax1.set_xlabel('Disease progress (days before/after conversion to AD)')
+        else:
+            ax1.set_xlabel('Disease progress (days before/after conversion to MCI)')
         ax1.set_ylabel(DataHandler.get_biomarker_unit(biomarker))
         if args.xlim is not None:
             ax1.set_xlim(args.xlim[0], args.xlim[1])
@@ -130,6 +134,33 @@ def plot_model(args, data_handler, biomarker):
             if args.plot_quantile_label:
                 label = '$q={0}\%$'.format(quantile * 100)
                 ax1.text(progress_linspace_int[-1] + 10, curve_int[-1], label, fontsize=10)
+
+        if args.plot_donohue:
+            print 'Plotting Donohue'
+            donohue_file = os.path.join(data_handler._conf.models_folder,
+                                        'denohue', 'population_{0}.csv'.format(biomarker.replace(' ', '.')))
+            if not os.path.isfile(donohue_file):
+                print log.ERROR, 'Donohue model file not found: {0}'.format(donohue_file)
+                return
+
+            r = mlab.csv2rec(donohue_file)
+            if args.method == 'joint':
+                offset = 2200
+            else:
+                offset = 300
+            progrs = r[r.dtype.names[0]] * 30.44 + offset
+            vals = r[r.dtype.names[1]]
+            curve_denohue = []
+            progr_denohue = []
+            for p in progress_linspace_int:
+                if progrs[0] < p < progrs[-1]:
+                    i = 1
+                    while p > progrs[i]:
+                        i += 1
+                    # TODO linear interpolation
+                    progr_denohue.append(progrs[i])
+                    curve_denohue.append(vals[i])
+            ax1.plot(progr_denohue, curve_denohue, '--', color='b', linewidth=2)
 
     #
     # Plot synthetic model curve
