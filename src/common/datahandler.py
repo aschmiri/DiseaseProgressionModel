@@ -962,7 +962,7 @@ class SynthDataHandler(DataHandler):
     def get_model_file(self, biomarker, num_samples=None, sampling=None,
                        rate_sigma=None, conversion_sigma=None, run=None):
         """ Get the right model file for the given biomarker. """
-        model_file = DataHandler.get_model_file(biomarker)
+        model_file = super(SynthDataHandler, self).get_model_file(biomarker)
         num_samples_str = '_{0}'.format(num_samples) if num_samples is not None else ''
         sampling_str = '_{0}'.format(sampling) if sampling is not None else ''
         rate_sigma_str = '_sig{0}'.format(rate_sigma) if rate_sigma is not None and rate_sigma > 0.0 else ''
@@ -979,7 +979,7 @@ class SynthDataHandler(DataHandler):
     def get_samples_file(self, biomarker, num_samples=None, sampling=None,
                          rate_sigma=None, conversion_sigma=None, run=None):
         """ Get the right model file for the given biomarker. """
-        samples_file = DataHandler.get_samples_file(biomarker)
+        samples_file = super(SynthDataHandler, self).get_samples_file(biomarker)
         num_samples_str = '_{0}'.format(num_samples) if num_samples is not None else ''
         sampling_str = '_{0}'.format(sampling) if sampling is not None else ''
         rate_sigma_str = '_sig{0}'.format(rate_sigma) if rate_sigma is not None and rate_sigma > 0.0 else ''
