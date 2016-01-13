@@ -6,7 +6,7 @@ experiment=${1-"0"}
 ################################
 
 # Classify diagnoses
-if [ $experiment -eq "1" ] ; then
+if [ ${experiment} -eq "1" ] ; then
   texfile="./results_diagnosis.tex"
   for classifier in lda # svm lsvm rf
   do
@@ -25,7 +25,7 @@ fi
 ################################
 
 # Classify diagnoses
-if [ $experiment -eq "10" ] ; then
+if [ ${experiment} -eq "10" ] ; then
   texfile="results_diagnosis.tex"
   for classifier in svm lsvm lda rf
   do
@@ -39,7 +39,7 @@ if [ $experiment -eq "10" ] ; then
 fi
 
 # Classify converters
-if [ $experiment -eq "11" ] ; then
+if [ ${experiment} -eq "11" ] ; then
   texfile="results_convert.tex"
   for method in cog ml vol img img2 #all
   do
@@ -51,7 +51,7 @@ if [ $experiment -eq "11" ] ; then
 fi
 
 # Classify rapid decline
-if [ $experiment -eq "12" ] ; then
+if [ ${experiment} -eq "12" ] ; then
   texfile="results_decline.tex"
   for method in all #cog ml vol img img2 all
   do

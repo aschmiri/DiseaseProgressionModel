@@ -62,7 +62,11 @@ def set_boxplot_color(boxplot, index, color):
     whisker = boxplot['whiskers'][2 * index + 1]
     whisker.set_linestyle('-')
     whisker.set_color(color)
-    flier = boxplot['fliers'][2 * index]
+    flier = boxplot['fliers'][index]
     flier.set_color(color)
-    flier = boxplot['fliers'][2 * index + 1]
-    flier.set_color(color)
+
+    # for matplotlib < 1.4.0:
+    #  flier = boxplot['fliers'][2 * index]
+    #  flier.set_color(color)
+    #  flier = boxplot['fliers'][2 * index + 1]
+    #  flier.set_color(color)

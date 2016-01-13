@@ -55,7 +55,6 @@ def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
     fig, ax = plt.subplots(figsize=(6, 2))
     biomarkers_str = args.method if args.biomarkers is None else ', '.join(args.biomarkers)
     ax.set_title('DP estimation using {0} at {1}'.format(biomarkers_str, ', '.join(args.visits)))
-    ax.set_xlabel('DP')
     ax.spines['left'].set_position(('outward', 10))
     ax.spines['bottom'].set_position(('outward', 10))
     ax.spines['right'].set_visible(False)

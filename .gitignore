@@ -1,0 +1,14 @@
+.idea
+.project
+.pydevproject
+.RData
+
+models/cnmci
+models/joint
+models/mciad
+models/synth
+eval
+
+/biomarkers/training_samples.csv
+/biomarkers/volumes_all.csv
+/biomarkers/synth_data.csv

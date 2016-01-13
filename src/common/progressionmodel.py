@@ -112,14 +112,21 @@ class ProgressionModel(object):
     ############################################################################
     def __initialise_model(self, model_file):
         r = mlab.csv2rec(model_file)
-        r_sorted = np.sort(r, order=r.dtype.names[2])
+        r_sorted = np.sort(r, order=str(r.dtype.names[2]))
         progrs = r_sorted[r.dtype.names[2]]
 
+        # Determine the key for the log of sigma entry depending on the version of the R VGAM package installed...
+        log_sigma_key = 'logesigma' if 'logesigma' in r_sorted.dtype.names else 'logsigma'
+        if log_sigma_key not in r_sorted.dtype.names:
+            print log.ERROR, 'Unable to determine log sigma key in the model file!'
+            return
+
+        # Get model parameters
         parameters = {}
         for i, progr in enumerate(progrs):
             if progr not in parameters:
                 parameters.update({progr: {}})
-                parameters[progr].update({'sigma': np.exp(r_sorted['logsigma'][i])})
+                parameters[progr].update({'sigma': np.exp(r_sorted[log_sigma_key][i])})
                 parameters[progr].update({'lambda': r_sorted['lambda'][i]})
                 parameters[progr].update({'mu': r_sorted['mu'][i]})
             parameters[progr].update({'yoffset': r_sorted['fitmiscyoffset'][i]})
@@ -162,7 +169,7 @@ class ProgressionModel(object):
     # get_value_range()
     #
     ############################################################################
-    def get_value_range(self, quantiles=[0.1, 0.9]):
+    def get_value_range(self, quantiles=(0.1, 0.9)):
         """ Get the value range estimated by the model in a given std range. """
         min_curve = self.get_quantile_curve(self.progresses, quantiles[0])
         max_curve = self.get_quantile_curve(self.progresses, quantiles[1])
@@ -266,7 +273,10 @@ class ProgressionModel(object):
     #
     ############################################################################
     def get_parameters(self, progress):
-        return self.get_eta(self.lambdas, progress), self.get_eta(self.mus, progress), self.get_eta(self.sigmas, progress), self.get_eta(self.yoffsets, progress)
+        return self.get_eta(self.lambdas, progress),\
+               self.get_eta(self.mus, progress), \
+               self.get_eta(self.sigmas, progress), \
+               self.get_eta(self.yoffsets, progress)
 
     ############################################################################
     #
@@ -296,7 +306,8 @@ class ProgressionModel(object):
                     return eta[0] + range_m - range_m * math.exp(-delta_m / (delta_p * range_m) * (progress - self.progresses[0]))
 
                 # sig_m = math.copysign(1, delta_m)
-                # return eta[0] - sig_m * (range_m - range_m * math.exp(math.fabs(delta_m) / (delta_p * range_m) * (progress - self.progresses[0])))
+                # return eta[0] - sig_m * (range_m - range_m * math.exp(math.fabs(delta_m) /
+                #     (delta_p * range_m) * (progress - self.progresses[0])))
             else:
                 print log.ERROR, 'Unknown extrapolator {0}!'.format(self.extrapolator)
                 return 0
@@ -321,7 +332,8 @@ class ProgressionModel(object):
                     return eta[-1] - range_m + range_m * math.exp(delta_m / (delta_p * range_m) * (progress - self.progresses[-1]))
 
                 # sig_m = math.copysign(1, delta_m)
-                # return eta[-1] - sig_m * (-range_m + range_m * math.exp(math.fabs(delta_m) / (delta_p * range_m) * (self.progresses[-1] - progress)))
+                # return eta[-1] - sig_m * (-range_m + range_m * math.exp(math.fabs(delta_m) /
+                #     (delta_p * range_m) * (self.progresses[-1] - progress)))
             else:
                 print log.ERROR, 'Unknown extrapolator!'
                 return 0

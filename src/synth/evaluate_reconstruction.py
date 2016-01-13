@@ -190,7 +190,7 @@ def plot_boxplots_samplings(args, biomarkers, errors, num_samples):
 
     ax.set_title('Influence of the sampling strategy')
     ax.set_ylabel(ylabels[args.metric])
-    ax.set_xticklabels([])
+    plt.tick_params(labelbottom='off')
 
     # Collect data
     data = []
@@ -220,7 +220,7 @@ def plot_boxplots_samplings(args, biomarkers, errors, num_samples):
 
     # Write category labels
     for i, biomarker in enumerate(biomarkers):
-        plt.text((i + 0.5) * len(samplings) + 0.5, -0.06 * max_data,
+        plt.text((i + 0.5) * len(samplings) + 0.5, -0.07 * max_data,
                  biomarker_strings[biomarker],
                  horizontalalignment='center', size=15)
 
@@ -262,7 +262,7 @@ def plot_boxplots_noisy_data(args, biomarkers, errors, sigmas, noise_on_rate=Tru
     else:
         ax.set_title('Influence of variations in point of conversion')
     ax.set_ylabel(ylabels[args.metric])
-    ax.set_xticklabels([])
+    plt.tick_params(labelbottom='off')
 
     # Collect data
     data = []
@@ -292,7 +292,7 @@ def plot_boxplots_noisy_data(args, biomarkers, errors, sigmas, noise_on_rate=Tru
 
     # Write category labels
     for i, biomarker in enumerate(biomarkers):
-        plt.text((i + 0.5) * len(sigmas) + 0.5, -0.06 * max_data,
+        plt.text((i + 0.5) * len(sigmas) + 0.5, -0.07 * max_data,
                  biomarker_strings[biomarker],
                  horizontalalignment='center', size=15)
 
