@@ -9,7 +9,6 @@ import numpy as np
 from common import log as log
 from common.progressionmodel import ProgressionModel
 from common.progressionmodel import MultiBiomarkerProgressionModel
-from common.datahandler import DataHandler
 
 
 class ModelFitter(object):
@@ -47,39 +46,6 @@ class ModelFitter(object):
             print log.INFO, 'Initialised model fitter with {0}'.format(model.models.keys())
         else:
             print log.ERROR, 'Invalid model type!'
-
-    ############################################################################
-    #
-    # get_scaled_measurements()
-    #
-    ############################################################################
-    def get_scaled_measurements(self, measurements):
-        """ Return the optimally scaled measurements.
-
-        :param dict measurements: the measurements
-
-        :return: the optimally scaled measurements
-        :rtype: dict
-        """
-        for rid in measurements:
-            print log.INFO, 'Estimating optimal scaling for subject {0}...'.format(rid)
-
-            # Collect samples
-            samples = {}
-            for viscode in measurements[rid]:
-                samples.update({viscode: measurements[rid][viscode]})
-
-            # Get and save scaling
-            scaling = self.__get_scaling_for_samples(samples)
-            print log.RESULT, 'Optimal scaling value:', scaling
-
-            # Update all progresses
-            for viscode in measurements[rid]:
-                progress = DataHandler.safe_cast(measurements[rid][viscode]['progress'], int)
-                measurements[rid][viscode].update({'scaling': scaling})
-                measurements[rid][viscode].update({'progress': progress * scaling})
-
-        return measurements
 
     ############################################################################
     #
