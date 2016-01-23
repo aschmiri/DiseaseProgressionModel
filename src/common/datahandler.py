@@ -590,18 +590,27 @@ class ClinicalDataHandler(DataHandler):
         biomarkers = self.get_biomarker_names() if biomarkers is None else biomarkers
         biomarker_values = self._get_biomarker_values_as_dict(measurements, biomarkers=biomarkers, no_regression=no_regression)
 
-        # Update metadata with feature values
+        # Update metadata with feature values and remove visits without biomarker data
+        return_measurements = {}
         for rid in measurements:
+            visits = {}
             for viscode in measurements[rid]:
+                visit_data = measurements[rid][viscode]
+                num_biomarkers = 0
                 for biomarker in biomarkers:
                     try:
                         value = biomarker_values[rid][viscode][biomarker]
-                        measurements[rid][viscode].update({biomarker: value})
+                        visit_data.update({biomarker: value})
+                        num_biomarkers += 1
                     except KeyError:
                         # TODO: Debug message
                         pass
 
-        return measurements
+                if num_biomarkers > 0:
+                    visits.update({viscode: visit_data})
+            if len(visits) > 0:
+                return_measurements.update({rid: visits})
+        return return_measurements
 
     ############################################################################
     #
