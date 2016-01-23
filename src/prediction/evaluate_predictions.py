@@ -32,6 +32,7 @@ def main():
                                          recompute_predictions=args.recompute_predictions,
                                          estimate_dprs=False,
                                          exclude_cn=True,
+                                         select_test_set=True,
                                          consistent_data=True)
         values[method].update({'observed': values_observed})
         values[method].update({'naive': values_naive})
@@ -45,6 +46,7 @@ def main():
                                          recompute_predictions=args.recompute_predictions,
                                          estimate_dprs=True,
                                          exclude_cn=True,
+                                         select_test_set=True,
                                          consistent_data=True)
         values[method].update({'model_dpi_dpr': values_model})
 

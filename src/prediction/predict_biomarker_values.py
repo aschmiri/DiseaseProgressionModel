@@ -38,6 +38,7 @@ def main():
                                      recompute_estimates=args.recompute_estimates,
                                      recompute_predictions=args.recompute_predictions,
                                      estimate_dprs=args.estimate_dprs,
+                                     select_test_set=True,
                                      consistent_data=args.consistent_data,
                                      exclude_cn=args.exclude_cn,
                                      use_last_visit=args.use_last_visit,

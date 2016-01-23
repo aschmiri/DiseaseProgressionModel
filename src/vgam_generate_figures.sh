@@ -91,7 +91,7 @@ if [ ${experiment} -eq "7" ] ; then
     i=1
     for visits in "bl" "bl m12" "bl m12 m24"
     do
-      output_file="${folder}eval_fitting_${method}_${i}.eps"
+      output_file="${folder}eval_fitting_${method}_${i}.pdf"
       estimation/estimate_progressions.py ${visits} -m ${method} --consistent_data --plot_file "${output_file}"
       i=`expr ${i} + 1`
     done
@@ -105,7 +105,7 @@ if [ ${experiment} -eq "8" ] ; then
   for biomarker in "MMSE" "CDRSB" "FAQ" "Right Hippocampus"
   do
     biomarker_str=${biomarker/ /_}
-    output_file="${folder}predict_${biomarker_str}.eps"
+    output_file="${folder}predict_${biomarker_str}.pdf"
     prediction/evaluate_predictions.py --predict_biomarker "${biomarker}" --plot_file "${output_file}"
   done
 fi
@@ -212,7 +212,7 @@ if [ ${experiment} -eq "24" ] ; then
     for visits in "bl" "bl m12" "bl m12 m24"
     do
       output_file="${folder}eval_fitting_${method}_${i}.png"
-estimation/estimate_progressions.py ${visits} -m ${method} -p joint --consistent_data --plot_file "${output_file}"
+      estimation/estimate_progressions.py ${visits} -m ${method} -p joint --consistent_data --plot_file "${output_file}"
       i=`expr ${i} + 1`
     done
   done

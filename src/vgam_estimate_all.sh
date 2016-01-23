@@ -1,9 +1,10 @@
 #! /bin/bash
 if [ -z $1 ] ; then
-  methods=(cog ml vol img hcv img2 all)
+  methods=(cog ml vol img all)
 else
   methods=($1)
 fi
+
 phase=joint
 
 for method in ${methods[*]}

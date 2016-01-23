@@ -54,8 +54,7 @@ def generate_csv_files(args, data_handler):
             for _, visit_data in visits.items():
                 try:
                     progress = DataHandler.safe_cast(visit_data['progress'], int)
-                    biomarker_name = biomarker
-                    value = DataHandler.safe_cast(visit_data[biomarker_name], float)
+                    value = DataHandler.safe_cast(visit_data[biomarker], float)
                     diagnosis = DataHandler.safe_cast(visit_data['DX.scan'], float)
                     if progress is not None and value is not None:
                         writer.writerow([rid, progress, value, diagnosis])

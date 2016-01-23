@@ -8,7 +8,7 @@ phase=joint
 
 for biomarker in "MMSE" "FAQ" "CDRSB" "Right Hippocampus"
 do
-  for method in ${methods[*]}
+  for method in ${#methods[*]}
   do
     for visits in  "bl" "bl m12" "bl m12 m24" "m12" "m24" "m12 m24"
     do
@@ -19,7 +19,7 @@ done
 
 for biomarker in "MMSE" "FAQ" "CDRSB" "Right Hippocampus"
 do
-  for method in ${methods[*]}
+  for method in ${#methods[*]}
   do
     for visits in "bl m12 m24" "bl m12" "m12 m24"
     do

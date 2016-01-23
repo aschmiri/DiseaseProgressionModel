@@ -165,8 +165,8 @@ def estimate_dpis_dprs(measurements, viscodes, fitter, phase=None):
 # ------------------------------------------------------------------------------
 def get_biomarker_predictions(visits, predict_biomarker,
                               method=None, biomarkers=None, phase=None,
-                              recompute_estimates=False, recompute_predictions=False,
-                              estimate_dprs=False, consistent_data=False, exclude_cn=False,
+                              recompute_estimates=False, recompute_predictions=False, estimate_dprs=False,
+                              select_test_set=False, consistent_data=False, exclude_cn=False,
                               use_last_visit=False, naive_use_diagnosis=False):
 
     # Get prediction file
@@ -209,11 +209,13 @@ def get_biomarker_predictions(visits, predict_biomarker,
                                                                            phase=phase,
                                                                            recompute_estimates=recompute_estimates,
                                                                            estimate_dprs=estimate_dprs,
+                                                                           select_test_set=select_test_set,
                                                                            consistent_data=consistent_data)
 
         # Collect biomarker data for test
         measurements = data_handler.get_measurements_as_dict(visits=visits + [predict_visit],
                                                              biomarkers=[predict_biomarker],
+                                                             select_test_set=select_test_set,
                                                              select_complete=True)
         model = ProgressionModel(predict_biomarker, data_handler.get_model_file(predict_biomarker))
 
@@ -271,6 +273,13 @@ def get_biomarker_predictions(visits, predict_biomarker,
                 value_naive = intercept + mean_change * measurements[rid][predict_visit]['scantime']
                 values_naive.append(value_naive)
 
+                # Plot estimates
+                plot = True
+                if plot and diagnosis > 0.0 and dpr > 0.0:
+                    plot_predictions(predict_biomarker, model, visits, measurements[rid], dpi, dpr,
+                                     value_model, value_naive,
+                                     mean_quantile, mean_change, intercept, rid)
+
                 # Append rid and diagnosis
                 rids.append(rid)
                 diagnoses.append(diagnosis)
@@ -290,7 +299,7 @@ def get_biomarker_predictions(visits, predict_biomarker,
 
     # Exclude healthy subjects
     if exclude_cn:
-        indices = np.where(diagnoses != 0.0)
+        indices = np.where(diagnoses > 0.25)
         rids = rids[indices]
         diagnoses = diagnoses[indices]
         values_observed = values_observed[indices]
@@ -310,3 +319,74 @@ def get_predicted_visit(visits):
     else:
         print log.ERROR, 'Invalid last visit!'
         return None
+
+
+import matplotlib.pyplot as plt
+import matplotlib.colors as colors
+import matplotlib.cm as cm
+import common.plotting_tools as pt
+
+
+def plot_predictions(biomarker, model, visits, rid_measurements, dpi, dpr,
+                     value_model, value_naive, mean_quantile, change, intercept, rid):
+    next_visit = get_predicted_visit(visits)
+    scantime_first_visit = rid_measurements[visits[0]]['scantime']
+    scantime_next_visit = rid_measurements[next_visit]['scantime']
+    progress_first_visit = ModelFitter.scantime_to_progress(scantime_first_visit, scantime_first_visit, dpi, dpr)
+    progress_next_visit = ModelFitter.scantime_to_progress(scantime_next_visit, scantime_first_visit, dpi, dpr)
+    total_scantime  = scantime_next_visit - scantime_first_visit
+    progress_linspace = np.linspace(progress_first_visit - total_scantime * 0.05,
+                                    progress_next_visit + total_scantime * 0.05, 100)
+
+    fig, ax = plt.subplots()
+    pt.setup_axes(plt, ax)
+    ax.set_title('{0} predictions for RID {1} (DPI={2}, DPR={3})'.format(pt.get_biomarker_string(biomarker), rid, dpi, dpr))
+    ax.set_xlim(progress_first_visit - total_scantime * 0.1, progress_next_visit + total_scantime * 0.1)
+
+    color_mapper = cm.ScalarMappable(cmap=plt.get_cmap(pt.progression_cmap),
+                                     norm=colors.Normalize(vmin=0.0, vmax=1.0))
+
+    # Plot the percentile curves of the fitted model
+    quantiles = [0.1, 0.25, 0.5, 0.75, 0.9]
+    grey_values = ['0.8', '0.6', '0.4', '0.62', '0.84']
+    for grey_value, quantile in zip(grey_values, quantiles):
+        curve = model.get_quantile_curve(progress_linspace, quantile)
+        ax.plot(progress_linspace, curve, zorder=1, color=grey_value)
+
+    # Collect points
+    progr_points = []
+    value_points = []
+    diagn_points = []
+    for visit in visits + [next_visit]:
+        value_points.append(rid_measurements[visit][biomarker])
+        progr_points.append(ModelFitter.scantime_to_progress(rid_measurements[visit]['scantime'],
+                                                             scantime_first_visit, dpi, dpr))
+        diagn_points.append(rid_measurements[visit]['DX.scan'])
+
+    # Collect lines
+    predict_diagnosis = rid_measurements[next_visit]['DX.scan']
+    predict_linspace = np.linspace(progress_first_visit, progress_next_visit, 50)
+    curve = [model.get_value_at_quantile(p, mean_quantile) for p in predict_linspace]
+    line = [change * ModelFitter.progress_to_scantime(p, scantime_first_visit, dpi, dpr) + intercept for p in predict_linspace]
+
+    # Plot model and linear prediction line
+    ax.plot(predict_linspace, line, zorder=1, linestyle='--', linewidth=2, color='k',
+            label='naive prediction')
+    ax.plot(predict_linspace, curve, zorder=1, linestyle='-', linewidth=2, color='k',
+            label='model-based prediction')
+    ax.scatter(progr_points, value_points, zorder=2, s=50.0,
+               c=[color_mapper.to_rgba(d) for d in diagn_points], edgecolor='none')
+
+    # Plot the predicted values
+    ax.scatter([progress_next_visit], [value_naive], zorder=2, s=50.0, c='w',
+               edgecolor=color_mapper.to_rgba(predict_diagnosis))
+    ax.scatter([progress_next_visit], [value_model], zorder=2, s=50.0, c='w',
+               edgecolor=color_mapper.to_rgba(predict_diagnosis))
+
+    plt.tight_layout()
+    plt.legend()
+    plot_filename = os.path.join('/Users/aschmiri/Desktop/temp',
+                                 'plot_predictions_{0}_{1}.pdf'.format(rid, biomarker))
+    plt.savefig(plot_filename, transparent=True)
+    # plt.show()
+    plt.close(fig)

@@ -15,9 +15,11 @@ from common.modelfitter import ModelFitter
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('visits', nargs='+', type=str, help='the viscodes to be sampled')
-    parser.add_argument('-m', '--method', choices=DataHandler.get_method_choices(), default='all', help='the method to collect data for')
+    parser.add_argument('-m', '--method', choices=DataHandler.get_method_choices(), default='all',
+                        help='the method to collect data for')
     parser.add_argument('-b', '--biomarkers', nargs='+', default=None, help='name of the biomarker to be plotted')
-    parser.add_argument('-p', '--phase', default=None, choices=DataHandler.get_phase_choices(), help='the phase for which the model is to be trained')
+    parser.add_argument('-p', '--phase', default=None, choices=DataHandler.get_phase_choices(),
+                        help='the phase for which the model is to be trained')
     parser.add_argument('--estimate_dprs', action='store_true', help='recompute the dpis estimations')
     parser.add_argument('--recompute_estimates', action='store_true', help='recompute the dpis estimations')
     parser.add_argument('--consistent_data', action='store_true', help='us only subjects with bl, m12 and m24 visits')
@@ -36,6 +38,7 @@ def main():
         phase=args.phase,
         estimate_dprs=args.estimate_dprs,
         recompute_estimates=args.recompute_estimates,
+        select_test_set=True,
         consistent_data=args.consistent_data)
 
     # Plot results
@@ -87,8 +90,8 @@ def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
         indices = np.where(diagnoses == diag)
         median = np.median(dpis[indices])
         medians.append((median - test_dpi_min) * dpi_factor)
-        q25.append((median - np.percentile(dpis[indices], 25.0)) * dpi_factor)
-        q75.append((np.percentile(dpis[indices], 75.0) - median) * dpi_factor)
+        q25.append((median - np.percentile(dpis[indices], 25)) * dpi_factor)
+        q75.append((np.percentile(dpis[indices], 75) - median) * dpi_factor)
 
     if args.plot_lines:
         ax.set_ylim(-0.01, 0.36)
@@ -104,9 +107,11 @@ def plot_dpi_estimates(args, dpis, diagnoses, mean_min, mean_max):
         ax.set_yticklabels(['CN', 'EMCI', 'LMCI', 'AD'])
 
         cmap = plt.get_cmap('jet') if args.plot_cmap_jet else plt.get_cmap('Greys')
-        barcol = 'w' if args.plot_cmap_jet else 'r'
-        plt.errorbar(medians, [0, 1, 2, 3], xerr=[q25, q75], fmt=None, ecolor=barcol, elinewidth=2, capsize=4, capthick=2)
-        plt.plot(medians, [0, 1, 2, 3], linestyle='', color=barcol, marker='|', markersize=15, markeredgewidth=2)
+        bar_color = 'w' if args.plot_cmap_jet else 'r'
+        plt.errorbar(medians, [0, 1, 2, 3], xerr=[q25, q75], fmt='none',
+                     ecolor=bar_color, elinewidth=2,
+                     capsize=4, capthick=2)
+        plt.plot(medians, [0, 1, 2, 3], linestyle='', color=bar_color, marker='|', markersize=15, markeredgewidth=2)
         plt.imshow(matrix, cmap=cmap, interpolation='nearest')
     plt.axvline((mean_min - test_dpi_min) * dpi_factor, color='k', linestyle=':', alpha=0.6)
     plt.axvline((mean_max - test_dpi_min) * dpi_factor, color='k', linestyle=':', alpha=0.6)
@@ -143,6 +148,7 @@ def plot_dpi_dpr_distribution(args, dpis, dprs, diagnoses):
                 alpha=0.5)
 
     # Plot legend
+    # noinspection PyUnresolvedReferences
     rects = [mpl.patches.Rectangle((0, 0), 1, 1, fc=pt.color_cn + (0.5,), linewidth=0),
              mpl.patches.Rectangle((0, 0), 1, 1, fc=pt.color_mci + (0.5,), linewidth=0),
              mpl.patches.Rectangle((0, 0), 1, 1, fc=pt.color_ad + (0.5,), linewidth=0)]
