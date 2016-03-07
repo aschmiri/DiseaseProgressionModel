@@ -38,12 +38,12 @@ def main():
         consistent_data=args.consistent_data)
 
     # Select converters and non-converters sets
-    rcds = get_rcds(args, rids, diagnoses, dpis, dprs)
-    rfds = get_rfds(args, rids, diagnoses, dpis, dprs)
+    rcds, non_rcds = get_rcds(args, rids, diagnoses, dpis, dprs)
+    rfds, non_rfds = get_rfds(args, rids, diagnoses, dpis, dprs)
 
     # Analyse output
-    analyse_decline(args, rids, dpis, dprs, rcds)
-    analyse_decline(args, rids, dpis, dprs, rfds)
+    analyse_decline(args, rids, dpis, dprs, rcds, non_rcds)
+    analyse_decline(args, rids, dpis, dprs, rfds, non_rfds)
 
 
 def get_rcds(args, rids, diagnoses, dpis, dprs):
@@ -55,6 +55,7 @@ def get_rcds(args, rids, diagnoses, dpis, dprs):
         no_regression=True)
 
     rcds = set()
+    non_rcds = set()
     for rid in rids:
         if rid in measurements:
             mmse_bl = measurements[rid]['bl']['MMSE']
@@ -62,9 +63,12 @@ def get_rcds(args, rids, diagnoses, dpis, dprs):
             rcd = (mmse_bl - mmse_m24) >= 8
             if rcd:
                 rcds.add(rid)
+            else:
+                non_rcds.add(rid)
 
     print log.RESULT, 'Selected {0} subjects with rapid cognitive decline (RCD).'.format(len(rcds))
-    return rcds
+    print log.RESULT, 'Selected {0} subjects without rapid cognitive decline (non-RCD).'.format(len(non_rcds))
+    return rcds, non_rcds
 
 
 def get_rfds(args, rids, diagnoses, dpis, dprs):
@@ -76,6 +80,7 @@ def get_rfds(args, rids, diagnoses, dpis, dprs):
         no_regression=True)
 
     rfds = set()
+    non_rfds = set()
     for rid in rids:
         if rid in measurements:
             faq_bl = measurements[rid]['bl']['FAQ']
@@ -83,16 +88,34 @@ def get_rfds(args, rids, diagnoses, dpis, dprs):
             rcd = (faq_m24 - faq_bl) >= 10
             if rcd:
                 rfds.add(rid)
+            else:
+                non_rfds.add(rid)
 
     print log.RESULT, 'Selected {0} subjects with rapid functional decline (RFD).'.format(len(rfds))
-    return rfds
+    print log.RESULT, 'Selected {0} subjects without rapid functional decline (non-RFD).'.format(len(non_rfds))
+    return rfds, non_rfds
 
 
-def analyse_decline(args, rids, dpis, dprs, rds):
+def analyse_decline(args, rids, dpis, dprs, rds, non_rds):
     print log.INFO, 'Analysing classification accuracies...'
-    dpis = np.array(dpis)
-    dprs = np.array(dprs)
-    labels = np.array([1 if rid in rds else 0 for rid in rids])
+    # dpis = np.array(dpis)
+    # dprs = np.array(dprs)
+    # labels = np.array([1 if rid in rds else 0 for rid in rids])
+    dpis_rds = []
+    dpis_nonrds = []
+    dprs_rds = []
+    dprs_nonrds = []
+    for rid, dpi, dpr in zip(rids, dpis, dprs):
+        if rid in rds:
+            dpis_rds.append(dpi)
+            dprs_rds.append(dpr)
+        elif rid in non_rds:
+            dpis_nonrds.append(dpi)
+            dprs_nonrds.append(dpr)
+
+    dpis = np.concatenate((dpis_rds, dpis_nonrds))
+    dprs = np.concatenate((dprs_rds, dprs_nonrds))
+    labels = np.concatenate((np.ones(len(dpis_rds)), np.zeros(len(dpis_nonrds))))
 
     # Assemble features
     features = np.zeros((len(dpis), 2))
