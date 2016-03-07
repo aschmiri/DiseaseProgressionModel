@@ -53,8 +53,11 @@ def read_measurements_from_cvs(filename):
             biomarker = row['Biomarker Name']
             if biomarker in DataHandler.get_all_biomarker_names():
                 for visit in visits:
-                    measurements[0][visit].update({biomarker: float(row[visit])})
-                    biomarkers.add(biomarker)
+                    try:
+                        measurements[0][visit].update({biomarker: float(row[visit])})
+                        biomarkers.add(biomarker)
+                    except ValueError:
+                        pass
 
     return measurements, list(biomarkers)
 
@@ -127,13 +130,14 @@ def plot_biomarker(data_handler, biomarker, measurements, dpi, dpr):
     value_points = []
     diagn_points = []
     for visit in measurements[0]:
-        progress = measurements[0][visit]['scantime'] * dpr + dpi
-        value = measurements[0][visit][biomarker]
-        progr_points.append(progress)
-        value_points.append(value)
-        diagn_points.append(1.0)
-        ax1.axvline(progress, color='b', linestyle='--')
-        ax1.text(progress + 150, value, visit, color='b', fontsize=10)
+        if biomarker in measurements[0][visit]:
+            progress = measurements[0][visit]['scantime'] * dpr + dpi
+            value = measurements[0][visit][biomarker]
+            progr_points.append(progress)
+            value_points.append(value)
+            diagn_points.append(1.0)
+            ax1.axvline(progress, color='b', linestyle='--')
+            ax1.text(progress + 150, value, visit, color='b', fontsize=10)
 
     ax1.scatter(progr_points, value_points, s=25.0, color='b', edgecolor='none',
                 vmin=0.0, vmax=1.0, alpha=0.9)
