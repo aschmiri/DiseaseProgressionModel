@@ -119,6 +119,22 @@ class SynthModel(object):
             else:
                 return cls._transform_coordinates(biomarker, stats.gamma.ppf(cdf, k, scale=theta))
 
+
+    ############################################################################
+    #
+    # get_distributed_value()
+    #
+    ############################################################################
+    @classmethod
+    def get_mean_value(cls, biomarker, progress, fixed_sigma=None):
+        if cls._models[biomarker]['noise'] == 'gaussian':
+            median = cls.get_median(biomarker, progress)
+            return median
+        elif cls._models[biomarker]['noise'] == 'gamma':
+            k, theta = cls._get_gamma_parameters(biomarker, progress)
+            return cls._transform_coordinates(biomarker, k * theta)
+
+
     ############################################################################
     #
     # get_median()
