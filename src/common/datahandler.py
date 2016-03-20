@@ -458,7 +458,8 @@ class ClinicalDataHandler(DataHandler):
     ############################################################################
     def get_measurements_as_dict(self, min_visits=0, visits=None, biomarkers=None,
                                  select_training_set=False, select_test_set=False,
-                                 select_complete=False, no_regression=False):
+                                 select_complete=False, no_regression=False,
+                                 exclude_deceased=False):
         """ Return all subjects measurements as a dictionary.
 
         Arguments:
@@ -498,6 +499,8 @@ class ClinicalDataHandler(DataHandler):
             measurements = self._select_visits(measurements, min_visits=min_visits, visits=visits)
         if select_complete:
             measurements = self._select_complete_measurements(measurements, biomarkers=biomarkers, visits=visits)
+        if exclude_deceased:
+            measurements = self._exclude_deceased(measurements)
 
         # Return measurements=
         return measurements
@@ -915,6 +918,44 @@ class ClinicalDataHandler(DataHandler):
                             drop_rid = True
                 if drop_rid:
                     measurements.pop(rid)
+
+        print log.INFO, 'Selected {0} subjects.'.format(len(measurements))
+        return measurements
+
+    ############################################################################
+    #
+    # _exclude_deceased()
+    #
+    ############################################################################
+    def _exclude_deceased(self, measurements):
+        """ Select only measurements with complete biomarker sets.
+
+        :param dict measurements: the input measurements
+        :param list biomarkers: the biomarkers that have to be available
+
+        :return: the selected output measurements
+        :rtype: dict
+        """
+        print log.INFO, 'Excluding subjects that deceased during the study...'
+
+        # RIDS of subjects that withdrew from the study due to death.
+        # These are all subjects with WDREASEON = 2 (ADNI1) or WDREASEON = 1 (ADNIGO/2) in TREATDIS.xlsx
+        rids1 = {438, 103, 397, 1184, 884, 1338, 78, 1021, 1244, 825, 1277, 517, 821, 240, 1119, 177, 647, 67, 273, 786,
+                 559, 500, 607, 669, 293, 1211, 362, 963, 312, 1284, 57, 865, 155, 425, 326, 638, 1103}
+        rids2 = {1203, 514, 4223, 4474, 15, 4237, 258, 289, 892, 830, 4609, 715, 408, 588, 4442, 4733, 376, 4770, 256,
+                 294, 108, 4892, 1271, 1394, 4282, 4897, 42, 1116, 4802, 1406, 1425, 947, 702, 4337, 4805, 649, 4910,
+                 572, 388, 4096, 1057, 922}
+        ridsGO = {973, 1010, 1131, 1194, 2070, 128, 834, 845}
+
+        # Subjects with death cause other than AD (Of the few where the death cause is actually indicated)
+        rids_other_cause = {397, 78, 1021, 821, 647, 273, 963, 638,  # ADNI1
+                            1203, 4892, 42, 4805,  # ADNI2
+                            1131, 2070}  # ADNIGO
+
+        rids_death_by_ad = rids1.union(rids2).union(ridsGO).difference(rids_other_cause)
+        for rid in rids_death_by_ad:
+            if rid in measurements:
+                measurements.pop(rid)
 
         print log.INFO, 'Selected {0} subjects.'.format(len(measurements))
         return measurements

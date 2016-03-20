@@ -339,8 +339,10 @@ def plot_predictions(biomarker, model, visits, rid_measurements, dpi, dpr,
                                     progress_next_visit + total_scantime * 0.05, 100)
 
     fig, ax = plt.subplots()
-    pt.setup_axes(plt, ax)
+    pt.setup_axes(plt, ax, xgrid=False, ygrid=False)
     ax.set_title('{0} predictions for RID {1} (DPI={2}, DPR={3})'.format(pt.get_biomarker_string(biomarker), rid, dpi, dpr))
+    ax.set_xlabel('Disease progress (days before/after conversion to AD)')
+    ax.set_ylabel(DataHandler.get_biomarker_unit(biomarker))
     ax.set_xlim(progress_first_visit - total_scantime * 0.1, progress_next_visit + total_scantime * 0.1)
 
     color_mapper = cm.ScalarMappable(cmap=plt.get_cmap(pt.progression_cmap),

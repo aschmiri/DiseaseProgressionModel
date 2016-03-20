@@ -15,6 +15,7 @@ def main():
     parser.add_argument('-p', '--phase', default=None, choices=DataHandler.get_phase_choices(), help='the phase for which the model is to be trained')
     parser.add_argument('-n', '--nr_threads', type=int, default=1, help='number of threads')
     parser.add_argument('--min_visits', type=int, default=0, help='the minimal number of visits')
+    parser.add_argument('--exclude_deceased', action='store_true', help='exclude subjects that deceased due to AD during study')
     parser.add_argument('--no_regression', action='store_true', default=False, help='do not perform age regression of biomarker values')
     parser.add_argument('--recompute_models', action='store_true', help='recompute the models with new samples')
     args = parser.parse_args()
@@ -41,7 +42,8 @@ def generate_csv_files(args, data_handler):
 
     biomarkers = data_handler.get_biomarker_names()
     measurements = data_handler.get_measurements_as_dict(min_visits=args.min_visits,
-                                                         select_training_set=True)
+                                                         select_training_set=True,
+                                                         exclude_deceased=args.exclude_deceased)
     for biomarker in biomarkers:
         print log.INFO, 'Generating output CSV for {0}...'.format(biomarker)
         samples_file = data_handler.get_samples_file(biomarker)
