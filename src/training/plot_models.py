@@ -138,7 +138,7 @@ def plot_model(args, data_handler, biomarker):
         if args.plot_donohue:
             print 'Plotting Donohue'
             donohue_file = os.path.join(data_handler._conf.models_folder,
-                                        'denohue', 'population_{0}.csv'.format(biomarker.replace(' ', '.')))
+                                        'donohue', 'population_{0}.csv'.format(biomarker.replace(' ', '.')))
             if not os.path.isfile(donohue_file):
                 print log.ERROR, 'Donohue model file not found: {0}'.format(donohue_file)
                 return
@@ -150,17 +150,17 @@ def plot_model(args, data_handler, biomarker):
                 offset = 300
             progrs = r[r.dtype.names[0]] * 30.44 + offset
             vals = r[r.dtype.names[1]]
-            curve_denohue = []
-            progr_denohue = []
+            curve_donohue = []
+            progr_donohue = []
             for p in progress_linspace_int:
                 if progrs[0] < p < progrs[-1]:
                     i = 1
                     while p > progrs[i]:
                         i += 1
                     # TODO linear interpolation
-                    progr_denohue.append(progrs[i])
-                    curve_denohue.append(vals[i])
-            ax1.plot(progr_denohue, curve_denohue, '--', color='b', linewidth=2)
+                    progr_donohue.append(progrs[i])
+                    curve_donohue.append(vals[i])
+            ax1.plot(progr_donohue, curve_donohue, '--', color='b', linewidth=2)
 
     #
     # Plot synthetic model curve

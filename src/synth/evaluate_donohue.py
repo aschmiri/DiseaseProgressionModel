@@ -46,7 +46,7 @@ def evaluate_curves(biomarker_name, num_samples=200, show_plots=False, csig=0):
         ax = None
 
     # Initialise values
-    offset_donohue = 0 #182.5
+    offset_donohue = 0  # 182.5
     errors_donohue = []
     errors_vgam_mean = []
     errors_vgam_median = []
@@ -83,15 +83,15 @@ def evaluate_curves(biomarker_name, num_samples=200, show_plots=False, csig=0):
         progrs = r[r.dtype.names[0]] - offset_donohue
         vals = r[r.dtype.names[1]]
 
-        curve_denohue = []
-        progr_denohue = []
+        curve_donohue = []
+        progr_donohue = []
         for p in progress_linspace:
             if progrs[0] < p < progrs[-1]:
                 i = 1
                 while p > progrs[i]:
                     i += 1
-                progr_denohue.append(float(progrs[i]))
-                curve_denohue.append(float(vals[i]))
+                progr_donohue.append(float(progrs[i]))
+                curve_donohue.append(float(vals[i]))
             else:
                 print log.WARNING, 'Model scope too small... skipping!'
                 continue
@@ -113,12 +113,12 @@ def evaluate_curves(biomarker_name, num_samples=200, show_plots=False, csig=0):
                                   np.sum(pm.get_density_distribution(values, p))) for p in progress_linspace]
 
         # Calculate errors
-        errors_donohue.append(np.mean(np.abs(np.array(curve_denohue) - np.array(mean_curve))))
+        errors_donohue.append(np.mean(np.abs(np.array(curve_donohue) - np.array(mean_curve))))
         errors_vgam_mean.append(np.mean(np.abs(np.array(curve_vgam_mean) - np.array(mean_curve))))
         errors_vgam_median.append(np.mean(np.abs(np.array(curve_vgam_median) - np.array(median_curve))))
 
         if show_plots:
-            ax.plot(progr_denohue, curve_denohue, '--', color='g', alpha=0.2, linewidth=2)
+            ax.plot(progr_donohue, curve_donohue, '--', color='g', alpha=0.2, linewidth=2)
             # ax.plot(progress_linspace, curve_vgam_median, '-', color='r', alpha=0.2, linewidth=2)
             ax.plot(progress_linspace, curve_vgam_mean, '--', color='r', alpha=0.2, linewidth=2)
 
